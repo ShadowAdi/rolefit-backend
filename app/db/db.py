@@ -1,0 +1,124 @@
+import os
+import asyncio
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.exc import SQLAlchemyError
+from app.core.logger import logger
+from app.core.AppError import AppError
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    logger.exception("DATABASE_URL environment variable is not set")
+    raise AppError(
+        message="Database configuration is missing",
+        status_code=500,
+        error_code="DB_CONFIG_ERROR",
+        details={"issue": "DATABASE_URL environment variable not found"}
+    )
+
+
+async def connect_with_retry(
+    database_url: str,
+    max_retries: int = 5,
+    initial_delay: float = 2
+):
+    """
+    Async database connection with exponential backoff.
+    """
+    retry_count = 0
+    delay = initial_delay
+
+    connect_args = {}
+    if "postgresql" in database_url.lower():
+        connect_args["sslmode"] = "disable"
+
+    while retry_count < max_retries:
+        try:
+            logger.info(f"Attempting to connect to database (attempt {retry_count + 1}/{max_retries})...")
+
+            engine = create_engine(
+                url=database_url,
+                echo=False,
+                pool_pre_ping=True,
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                connect_args=connect_args,
+            )
+
+            # Test connection
+            with engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+
+            logger.info("Database connection successful")
+            return engine
+
+        except SQLAlchemyError as e:
+            retry_count += 1
+            logger.warning(f"DB connection failed (attempt {retry_count}/{max_retries}): {type(e).__name__}")
+
+            if retry_count >= max_retries:
+                logger.exception("Max retries reached. Could not connect to database.")
+                raise AppError(
+                    message="Failed to connect to database after multiple attempts",
+                    status_code=500,
+                    error_code="DB_CONNECTION_ERROR"
+                ) from e
+
+            await asyncio.sleep(delay)
+            delay *= 2  # exponential backoff
+
+        except Exception as e:
+            retry_count += 1
+            logger.warning(f"Unexpected error during connection: {type(e).__name__}")
+
+            if retry_count >= max_retries:
+                logger.exception("Max retries reached with unexpected error.")
+                raise AppError(
+                    message="Unexpected error connecting to database",
+                    status_code=500,
+                    error_code="DB_UNEXPECTED_ERROR",
+                    details={"error": str(e)}
+                ) from e
+
+            await asyncio.sleep(delay)
+            delay *= 2
+
+
+engine = None
+SessionLocal = None
+Base = declarative_base()
+
+
+async def init_db():
+    """Initialize database with async retry"""
+    global engine, SessionLocal
+
+    engine = await connect_with_retry(DATABASE_URL)
+
+    # Create all tables
+    Base.metadata.create_all(engine)
+
+    SessionLocal = sessionmaker(
+        bind=engine,
+        autoflush=False,
+        autocommit=False,
+    )
+
+
+def get_db():
+    """Dependency for FastAPI"""
+    db = SessionLocal()
+    try:
+        yield db
+    except SQLAlchemyError as e:
+        logger.error(f"Database session error: {str(e)}")
+        db.rollback()
+        raise
+    except Exception:
+        logger.exception("Unexpected database session error")
+        db.rollback()
+        raise
+    finally:
+        db.close()
