@@ -11,6 +11,7 @@ from app.core.logger import logger
 from app.core.AppError import AppError, app_error_handler
 from contextlib import asynccontextmanager
 from app.core.cors import setup_cors
+from app.api.router import api_router
 
 load_dotenv()
 
@@ -32,6 +33,7 @@ app = FastAPI(lifespan=lifespan)
 
 setup_cors(app=app)
 app.add_exception_handler(AppError, app_error_handler)
+app.include_router(api_router, prefix="/api")
 
 
 @app.get("/")
