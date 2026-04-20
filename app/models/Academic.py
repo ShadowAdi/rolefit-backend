@@ -11,7 +11,7 @@ class Academic(Base):
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     degree_name = Column(String, nullable=False, index=True)
     college_name = Column(String, nullable=False, index=True)
-    userId = Column(UUID, ForeignKey("User.id"), nullable=False)
+    profileId = Column(UUID, ForeignKey("Profile.id"), nullable=False)
     description = Column(String, nullable=True)
     links = Column(JSON, nullable=True)
     start_month = Column(Integer, nullable=True)

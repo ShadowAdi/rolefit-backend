@@ -15,7 +15,7 @@ class Publication(Base):
     authors = Column(JSON, nullable=False)
     description = Column(String, nullable=True)
     url = Column(String, nullable=True)
-    userId = Column(UUID, ForeignKey("User.id"), nullable=False)
+    profileId = Column(UUID, ForeignKey("Profile.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,

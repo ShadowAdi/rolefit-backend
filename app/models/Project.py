@@ -11,7 +11,7 @@ class Project(Base):
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     title = Column(String, nullable=False, unique=True, index=True)
     description = Column(String, nullable=False)
-    userId = Column(UUID, ForeignKey("User.id"), nullable=False)
+    profileId = Column(UUID, ForeignKey("Profile.id"), nullable=False)
     techStack = Column(JSON, nullable=True)
     links = Column(JSON, nullable=True)
     startDate = Column(DateTime, nullable=True)

@@ -22,7 +22,7 @@ class Experience(Base):
     end_date = Column(DateTime, nullable=True)
     end_month = Column(Integer, nullable=True)
     end_year = Column(Integer, nullable=True)
-    userId = Column(UUID, ForeignKey("User.id"), nullable=False)
+    profileId = Column(UUID, ForeignKey("Profile.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
