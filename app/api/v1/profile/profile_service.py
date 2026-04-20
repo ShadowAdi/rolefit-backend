@@ -10,7 +10,11 @@ from app.schema.Profile import (
     ProfileResponse,
     ProfileUpdateRequest,
 )
-from app.response.profile_responses import ProfileCreateResponse, ProfileGetResponse
+from app.response.profile_responses import (
+    ProfileCreateResponse,
+    ProfileGetResponse,
+    ProfileUpdateResponse,
+)
 from app.core.logger import logger
 from app.validators.profile_validators import ProfileValidator
 
@@ -214,4 +218,145 @@ class ProfileServiceClass:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while retrieving profile",
+            )
+
+    def update_profile(
+        self, db: Session, userId: str, payload: ProfileUpdateRequest
+    ) -> ProfileUpdateResponse:
+        """
+        Update an existing user profile.
+
+        Args:
+            db: Database session
+            userId: User ID whose profile to update
+            payload: Profile update request data
+
+        Returns:
+            ProfileUpdateResponse: Updated profile data
+
+        Raises:
+            HTTPException: If validation fails, user not found, or profile doesn't exist
+        """
+        try:
+            if not userId:
+                logger.error(
+                    f"Profile update failed: Missing user ID",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User ID is required",
+                )
+
+            try:
+                logger.info(f"Validating profile update request for user: {userId}")
+                if payload.full_name is not None:
+                    ProfileValidator.validate_full_name(payload.full_name)
+                if payload.headline is not None:
+                    ProfileValidator.validate_headline(payload.headline)
+                if payload.summary is not None:
+                    ProfileValidator.validate_summary(payload.summary)
+                if payload.links is not None:
+                    ProfileValidator.validate_links(payload.links)
+            except ValueError as validation_error:
+                logger.warning(
+                    f"Profile update validation failed for user {userId}: {str(validation_error)}",
+                    extra={"userId": userId, "error": str(validation_error)},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Validation error: {str(validation_error)}",
+                )
+
+            logger.debug(f"Checking if user exists: {userId}")
+            user = db.query(User).filter(User.id == userId).first()
+            if not user:
+                logger.warning(
+                    f"Profile update failed: User not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist",
+                )
+
+            logger.debug(f"Retrieving profile for user: {userId}")
+            user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
+
+            if not user_profile:
+                logger.warning(
+                    f"Profile update failed: User profile not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User profile does not exist. Please create a profile first.",
+                )
+
+            logger.info(
+                f"Updating profile for user: {userId}",
+                extra={"userId": userId, "profileId": str(user_profile.id)},
+            )
+
+            if payload.full_name is not None:
+                user_profile.full_name = payload.full_name
+                logger.debug(
+                    f"Updated full_name for user {userId}",
+                    extra={"userId": userId, "full_name": payload.full_name},
+                )
+
+            if payload.headline is not None:
+                user_profile.headline = payload.headline
+                logger.debug(
+                    f"Updated headline for user {userId}",
+                    extra={"userId": userId, "headline": payload.headline},
+                )
+
+            if payload.summary is not None:
+                user_profile.summary = payload.summary
+                logger.debug(
+                    f"Updated summary for user {userId}",
+                    extra={"userId": userId},
+                )
+
+            if payload.links is not None:
+                user_profile.links = payload.links
+                logger.debug(
+                    f"Updated links for user {userId}",
+                    extra={"userId": userId},
+                )
+
+            db.commit()
+            db.refresh(user_profile)
+
+            logger.info(
+                f"Profile updated successfully for user: {userId}",
+                extra={"userId": userId, "profileId": str(user_profile.id)},
+            )
+
+            return ProfileUpdateResponse.model_validate(user_profile)
+
+        except HTTPException:
+            raise
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"Database error during profile update for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while updating profile",
+            )
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error during profile update for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while updating profile",
             )
