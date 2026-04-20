@@ -39,3 +39,32 @@ def create_profile(data: ProfileCreateRequest, db: Session = Depends(get_db)):
         data=ProfileResponse.model_validate(profile),
         timestamp=datetime.now(timezone.utc),
     )
+
+
+@router.get(
+    "/",
+    response_model=ProfileResponse,
+    status_code=status.HTTP_200_OK,
+)
+def get_profile(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """
+    Get current authenticated user profile.
+
+    Args:
+        current_user: Current authenticated user from JWT token
+        db: Database session
+
+    Returns:
+        GetUserApiResponse: Current user profile data
+    """
+    profile = ProfileServiceClass.get_profile(db, current_user.id)
+
+    return ProfileResponse(
+        success=True,
+        status_code=status.HTTP_200_OK,
+        message="Profile fetched successfully",
+        data=profile,
+        timestamp=datetime.now(timezone.utc),
+    )
