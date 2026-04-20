@@ -14,6 +14,7 @@ from app.response.profile_responses import (
     ProfileCreateResponse,
     ProfileGetResponse,
     ProfileUpdateResponse,
+    ProfileDeleteResponse,
 )
 from app.core.logger import logger
 from app.validators.profile_validators import ProfileValidator
@@ -361,16 +362,16 @@ class ProfileServiceClass:
                 detail="An unexpected error occurred while updating profile",
             )
 
-    def delete_profile(self, db: Session, userId: str) -> ProfileGetResponse:
+    def delete_profile(self, db: Session, userId: str) -> ProfileDeleteResponse:
         """
-        Get profile details for a user.
+        Delete an existing user profile.
 
         Args:
             db: Database session
-            userId: User ID whose profile to retrieve
+            userId: User ID whose profile to delete
 
         Returns:
-            ProfileGetResponse: User profile data
+            ProfileDeleteResponse: Deletion confirmation with profile details
 
         Raises:
             HTTPException: If user not found or profile doesn't exist
@@ -378,7 +379,7 @@ class ProfileServiceClass:
         try:
             if not userId:
                 logger.error(
-                    f"Profile retrieval failed: Missing user ID",
+                    f"Profile deletion failed: Missing user ID",
                     extra={"userId": userId},
                 )
                 raise HTTPException(
@@ -390,7 +391,7 @@ class ProfileServiceClass:
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
-                    f"Profile retrieval failed: User not found",
+                    f"Profile deletion failed: User not found",
                     extra={"userId": userId},
                 )
                 raise HTTPException(
@@ -398,42 +399,61 @@ class ProfileServiceClass:
                     detail="User does not exist",
                 )
 
-            logger.debug(f"Retrieving profile for user: {userId}")
+            logger.debug(f"Retrieving profile for deletion for user: {userId}")
             user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
 
             if not user_profile:
                 logger.warning(
-                    f"Profile retrieval failed: User profile not found",
+                    f"Profile deletion failed: User profile not found",
                     extra={"userId": userId},
                 )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User profile does not exist. Please create a profile first.",
+                    detail="User profile does not exist",
                 )
 
-            db.query(Profile).filter(Profile.userId == user.id).delete()
+            profile_id = user_profile.id
+            profile_full_name = user_profile.full_name
 
-            return {"id": user_profile.id, "full_name": user_profile.full_name}
+            logger.info(
+                f"Deleting profile for user: {userId}",
+                extra={"userId": userId, "profileId": str(profile_id)},
+            )
+            db.query(Profile).filter(Profile.userId == user.id).delete()
+            db.commit()
+
+            logger.info(
+                f"Profile deleted successfully for user: {userId}",
+                extra={"userId": userId, "profileId": str(profile_id)},
+            )
+
+            return ProfileDeleteResponse(
+                message=f"Profile for user {profile_full_name} has been successfully deleted",
+                id=profile_id,
+                full_name=profile_full_name,
+            )
 
         except HTTPException:
             raise
         except SQLAlchemyError as e:
+            db.rollback()
             logger.error(
-                f"Database error during profile retrieval for user {userId}: {str(e)}",
+                f"Database error during profile deletion for user {userId}: {str(e)}",
                 extra={"userId": userId, "error": str(e)},
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred while retrieving profile",
+                detail="Database error occurred while deleting profile",
             )
         except Exception as e:
+            db.rollback()
             logger.error(
-                f"Unexpected error during profile retrieval for user {userId}: {str(e)}",
+                f"Unexpected error during profile deletion for user {userId}: {str(e)}",
                 extra={"userId": userId, "error": str(e)},
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An unexpected error occurred while retrieving profile",
+                detail="An unexpected error occurred while deleting profile",
             )

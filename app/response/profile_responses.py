@@ -45,6 +45,16 @@ class ProfileUpdateResponse(BaseModel):
     updated_at: datetime = Field(..., description="Last profile update timestamp")
 
 
+class ProfileDeleteResponse(BaseModel):
+    """Response for deleting a profile"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    message: str = Field(..., description="Success message")
+    id: UUID = Field(..., description="Deleted profile ID")
+    full_name: str = Field(..., description="User full name of deleted profile")
+
+
 class ProfileListResponse(BaseModel):
     """Response for listing profiles"""
 
