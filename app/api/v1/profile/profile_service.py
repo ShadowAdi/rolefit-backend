@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException, status
 from app.models.Profile import Profile
 from app.models.User import User
@@ -115,6 +115,29 @@ class ProfileServiceClass:
 
         except HTTPException:
             raise
+        except IntegrityError as e:
+            db.rollback()
+            if (
+                "uq_profile_user_id" in str(e.orig)
+                or "duplicate key" in str(e.orig).lower()
+            ):
+                logger.warning(
+                    f"Unique constraint violation: User already has a profile",
+                    extra={"userId": userId, "error": str(e.orig)},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="User already has a profile. Update the existing profile instead.",
+                )
+            logger.error(
+                f"Integrity error during profile creation for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e.orig)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database constraint violation occurred",
+            )
         except SQLAlchemyError as e:
             db.rollback()
             logger.error(
