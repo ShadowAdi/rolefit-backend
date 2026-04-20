@@ -12,7 +12,6 @@ from app.response.profile_responses import (
 from sqlalchemy.orm import Session
 from app.db.db import get_db
 from .profile_service import ProfileServiceClass
-from datetime import datetime, timezone
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
