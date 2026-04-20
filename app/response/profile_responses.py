@@ -1,0 +1,57 @@
+from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+from uuid import UUID
+from typing import Optional, Dict, Any
+
+
+class ProfileCreateResponse(BaseModel):
+    """Response for profile creation"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID = Field(..., description="Profile unique identifier")
+    userId: UUID = Field(..., description="Associated user ID")
+    full_name: str = Field(..., description="User full name")
+    headline: str = Field(..., description="Professional headline")
+    created_at: datetime = Field(..., description="Profile creation timestamp")
+
+
+class ProfileGetResponse(BaseModel):
+    """Response for getting profile details"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID = Field(..., description="Profile unique identifier")
+    userId: UUID = Field(..., description="Associated user ID")
+    full_name: str = Field(..., description="User full name")
+    headline: str = Field(..., description="Professional headline")
+    summary: Optional[str] = Field(None, description="Professional summary or bio")
+    links: Optional[Dict[str, Any]] = Field(None, description="Social profile links")
+    created_at: datetime = Field(..., description="Profile creation timestamp")
+    updated_at: datetime = Field(..., description="Last profile update timestamp")
+
+
+class ProfileUpdateResponse(BaseModel):
+    """Response for updating user profile"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID = Field(..., description="Profile unique identifier")
+    userId: UUID = Field(..., description="Associated user ID")
+    full_name: str = Field(..., description="User full name")
+    headline: str = Field(..., description="Professional headline")
+    summary: Optional[str] = Field(None, description="Professional summary or bio")
+    links: Optional[Dict[str, Any]] = Field(None, description="Social profile links")
+    updated_at: datetime = Field(..., description="Last profile update timestamp")
+
+
+class ProfileListResponse(BaseModel):
+    """Response for listing profiles"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID = Field(..., description="Profile unique identifier")
+    userId: UUID = Field(..., description="Associated user ID")
+    full_name: str = Field(..., description="User full name")
+    headline: str = Field(..., description="Professional headline")
+    created_at: datetime = Field(..., description="Profile creation timestamp")
