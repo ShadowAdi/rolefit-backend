@@ -11,7 +11,7 @@ class Experience(Base):
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     company_name = Column(String, nullable=False, index=True)
     description = Column(String, nullable=False)
-    techStack = Column(JSON, nullable=False)
+    techStack = Column(JSON, nullable=True)
     role = Column(String, nullable=False, index=True)
     employment_type = Column(String, nullable=True)
     location_type = Column(String, nullable=True)

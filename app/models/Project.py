@@ -12,7 +12,7 @@ class Project(Base):
     title = Column(String, nullable=False, unique=True, index=True)
     description = Column(String, nullable=False)
     userId = Column(UUID, ForeignKey("User.id"), nullable=False)
-    techStack = Column(JSON, nullable=False)
+    techStack = Column(JSON, nullable=True)
     links = Column(JSON, nullable=True)
     startDate = Column(DateTime, nullable=True)
     endDate = Column(DateTime, nullable=True)
