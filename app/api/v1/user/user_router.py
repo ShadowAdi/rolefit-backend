@@ -3,7 +3,6 @@ from app.schema.User import (
     RegisterApiResponse,
     UserRegisterResponse,
     GetUserApiResponse,
-    UpdateUserApiResponse,
     DeleteUserApiResponse,
     UserDeleteResponse,
 )
