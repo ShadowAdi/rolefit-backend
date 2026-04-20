@@ -1,5 +1,5 @@
 from app.db.db import Base
-from sqlalchemy import Column, String, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import timezone, datetime
 import uuid
@@ -9,7 +9,7 @@ class Project(Base):
     __tablename__ = "Project"
 
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
-    title = Column(String, nullable=False, unique=True, index=True)
+    title = Column(String, nullable=False, index=True)
     description = Column(String, nullable=False)
     profileId = Column(UUID, ForeignKey("Profile.id"), nullable=False)
     techStack = Column(JSON, nullable=True)
