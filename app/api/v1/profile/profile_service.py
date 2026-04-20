@@ -360,3 +360,80 @@ class ProfileServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while updating profile",
             )
+
+    def delete_profile(self, db: Session, userId: str) -> ProfileGetResponse:
+        """
+        Get profile details for a user.
+
+        Args:
+            db: Database session
+            userId: User ID whose profile to retrieve
+
+        Returns:
+            ProfileGetResponse: User profile data
+
+        Raises:
+            HTTPException: If user not found or profile doesn't exist
+        """
+        try:
+            if not userId:
+                logger.error(
+                    f"Profile retrieval failed: Missing user ID",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User ID is required",
+                )
+
+            logger.debug(f"Checking if user exists: {userId}")
+            user = db.query(User).filter(User.id == userId).first()
+            if not user:
+                logger.warning(
+                    f"Profile retrieval failed: User not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist",
+                )
+
+            logger.debug(f"Retrieving profile for user: {userId}")
+            user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
+
+            if not user_profile:
+                logger.warning(
+                    f"Profile retrieval failed: User profile not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User profile does not exist. Please create a profile first.",
+                )
+
+            db.query(Profile).filter(Profile.userId == user.id).delete()
+
+            return {"id": user_profile.id, "full_name": user_profile.full_name}
+
+        except HTTPException:
+            raise
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database error during profile retrieval for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while retrieving profile",
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during profile retrieval for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while retrieving profile",
+            )
