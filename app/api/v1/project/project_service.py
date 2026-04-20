@@ -639,3 +639,6 @@ class ProjectServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while deleting project",
             )
+
+
+ProjectService = ProjectServiceClass()
