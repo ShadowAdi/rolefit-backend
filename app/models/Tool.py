@@ -1,19 +1,16 @@
 from app.db.db import Base
-from sqlalchemy import Column, String, DateTime, ForeignKey, JSON
+from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import timezone, datetime
 import uuid
 
 
-class Profile(Base):
-    __tablename__ = "Profile"
+class Tool(Base):
+    __tablename__ = "Tool"
 
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
-    userId = Column(UUID, ForeignKey("User.id"), nullable=False)
-    full_name = Column(String, nullable=False, index=True)
-    summary = Column(String, nullable=True)
-    headline = Column(String, nullable=False)
-    links = Column(JSON, nullable=True)
+    name = Column(String, nullable=False, unique=True, index=True)
+    created_by = Column(UUID, ForeignKey("User.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
