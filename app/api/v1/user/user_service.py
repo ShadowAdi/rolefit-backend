@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
 from uuid import UUID
 from app.models.User import User
-from app.schema.User import UserCreateRequest, UserUpdateRequest, UserResponse
+from app.schema.User import UserCreateRequest, UserResponse
 from app.core.logger import logger
 from app.utils.utils import hash_password
 from app.validators.user_validators import UserValidator
