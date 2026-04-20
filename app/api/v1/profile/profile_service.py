@@ -1,13 +1,10 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException, status
-from uuid import UUID
-from pydantic import ValidationError
 from app.models.Profile import Profile
 from app.models.User import User
 from app.schema.Profile import (
     ProfileCreateRequest,
-    ProfileResponse,
     ProfileUpdateRequest,
 )
 from app.response.profile_responses import (
