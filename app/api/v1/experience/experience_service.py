@@ -200,3 +200,120 @@ class ExperienceServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while creating the experience.",
             )
+
+    def list_experiences(self, db: Session, userId) -> list[ExperienceGetResponse]:
+        """
+        Retrieve all experiences for an authenticated user.
+
+        Steps:
+        1. Verify user authentication (userId exists)
+        2. Verify user exists in database
+        3. Verify user has a profile
+        4. Fetch all experiences associated with user's profile
+        5. Return experiences as response objects
+
+        Args:
+            db: Database session
+            userId: Authenticated user's ID
+
+        Returns:
+            List of ExperienceGetResponse objects with experience details
+
+        Raises:
+            HTTPException: For authentication, validation, or database errors
+        """
+        try:
+            logger.info(f"Starting experience retrieval process for user: {userId}")
+
+            if not userId:
+                logger.error(
+                    "Experience retrieval failed: No user ID provided (authentication missing)"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication required: User ID is missing",
+                )
+
+            logger.info(f"Verifying user exists with ID: {userId}")
+            user = db.query(User).filter(User.id == userId).first()
+
+            if not user:
+                logger.warning(
+                    f"Experience retrieval failed: User not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist. Invalid user ID.",
+                )
+
+            logger.info(f"User verified successfully: {userId}")
+
+            logger.info(f"Verifying user profile exists for user: {userId}")
+            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+
+            if not user_profile:
+                logger.warning(
+                    f"Experience retrieval failed: User profile not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User profile does not exist. Please create a profile first.",
+                )
+
+            logger.info(f"User profile verified successfully for user: {userId}")
+
+            logger.info(f"Fetching all experiences for profile: {user_profile.id}")
+
+            experiences = (
+                db.query(Experience)
+                .filter(Experience.profileId == user_profile.id)
+                .all()
+            )
+
+            logger.info(
+                f"Successfully retrieved experiences",
+                extra={
+                    "userId": userId,
+                    "profileId": user_profile.id,
+                    "experienceCount": len(experiences),
+                },
+            )
+
+            return [
+                ExperienceGetResponse.model_validate(experience)
+                for experience in experiences
+            ]
+
+        except HTTPException:
+            raise
+
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database error during experience retrieval for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while retrieving experiences.",
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during experience retrieval for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                    "errorType": type(e).__name__,
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while retrieving experiences.",
+            )
