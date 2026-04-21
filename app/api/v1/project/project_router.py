@@ -17,7 +17,7 @@ from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
 from typing import List
 
-router = APIRouter(prefix="/", tags=["Project"])
+router = APIRouter(prefix="", tags=["Project"])
 
 
 @router.post(
