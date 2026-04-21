@@ -5,6 +5,7 @@ from app.api.v1.auth import auth_router
 from app.api.v1.profile import profile_router
 from app.api.v1.project import project_router
 from app.api.v1.experience import experience_router
+from app.api.v1.academics import academics_router
 
 
 v1_router = APIRouter()
@@ -16,4 +17,7 @@ v1_router.include_router(profile_router.router, prefix="/profile", tags=["profil
 v1_router.include_router(project_router.router, prefix="/project", tags=["project"])
 v1_router.include_router(
     experience_router.router, prefix="/experience", tags=["experience"]
+)
+v1_router.include_router(
+    academics_router.router, prefix="/academics", tags=["academics"]
 )
