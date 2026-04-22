@@ -86,4 +86,4 @@ async def delete_job_description(
 ):
     user_id = current_user.get("user_id") or current_user.get("id")
     logger.info(f"Deleting job description {jd_id} for user: {user_id}")
-    jd_service.delete_jd(db, jd_id, user_id)
+    return jd_service.delete_jd(db, jd_id, user_id)
