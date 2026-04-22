@@ -3,7 +3,6 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
 from uuid import UUID
 from app.models.JobDescription import JobDescription
-from app.models.Profile import Profile
 from app.models.User import User
 from app.schema.JobDescription import (
     JobDescriptionCreate,
@@ -15,6 +14,7 @@ from app.response.job_description_response import (
     format_job_descriptions_response,
 )
 from app.core.logger import logger
+from app.core.AppError import AppError
 from app.validators.job_description_validators import (
     validate_job_description_create,
     validate_job_description_update,
@@ -26,9 +26,7 @@ class JobDescriptionClass:
     def create_jd(
         self, db: Session, userId: str, payload: JobDescriptionCreate
     ) -> JobDescriptionResponse:
-        """
-        Create a new job description manually (without AI parsing)
-        """
+
         try:
             if not userId:
                 logger.error(
@@ -40,22 +38,12 @@ class JobDescriptionClass:
                     detail="User ID is required",
                 )
 
-            try:
-                logger.info(
-                    f"Validating job description creation request for user: {userId}"
-                )
-                validate_job_description_create(payload)
-            except Exception as validation_error:
-                logger.warning(
-                    f"JD validation failed for user {userId}: {str(validation_error)}",
-                    extra={"userId": userId, "error": str(validation_error)},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Validation error: {str(validation_error)}",
-                )
+            logger.info(
+                f"Validating job description creation request for user: {userId}"
+            )
+            validate_job_description_create(payload)
 
-            user = db.query(User).filter(User.id == userId).first()
+            user = db.query(User).filter(User.id == UUID(userId)).first()
             if not user:
                 logger.warning(
                     "JD creation failed: User not found",
@@ -152,6 +140,15 @@ class JobDescriptionClass:
 
         except HTTPException:
             raise
+        except AppError as e:
+            logger.warning(
+                f"Validation error during JD creation for user {userId}: {e.message}",
+                extra={"userId": userId, "error_code": e.error_code},
+            )
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=e.message,
+            )
         except IntegrityError as e:
             db.rollback()
             logger.error(
@@ -187,9 +184,7 @@ class JobDescriptionClass:
             )
 
     def get_jd(self, db: Session, jd_id: str, userId: str) -> JobDescriptionResponse:
-        """
-        Get a specific job description by ID
-        """
+
         try:
             if not jd_id or not userId:
                 raise HTTPException(
@@ -225,9 +220,28 @@ class JobDescriptionClass:
 
         except HTTPException:
             raise
+        except ValueError as e:
+            logger.warning(
+                f"Invalid UUID format for JD retrieval",
+                extra={"userId": userId, "jd_id": jd_id, "error": str(e)},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Job Description ID or User ID format",
+            )
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database error retrieving JD for user {userId}: {str(e)}",
+                extra={"userId": userId, "jd_id": jd_id, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while retrieving job description",
+            )
         except Exception as e:
             logger.error(
-                f"Error retrieving JD for user {userId}: {str(e)}",
+                f"Unexpected error retrieving JD for user {userId}: {str(e)}",
                 extra={"userId": userId, "jd_id": jd_id, "error": str(e)},
                 exc_info=True,
             )
@@ -237,9 +251,7 @@ class JobDescriptionClass:
             )
 
     def get_all_jds(self, db: Session, userId: str) -> List[JobDescriptionResponse]:
-        """
-        Get all job descriptions for a user
-        """
+
         try:
             if not userId:
                 raise HTTPException(
@@ -263,9 +275,28 @@ class JobDescriptionClass:
 
         except HTTPException:
             raise
+        except ValueError as e:
+            logger.warning(
+                f"Invalid UUID format for user: {str(e)}",
+                extra={"userId": userId},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid User ID format",
+            )
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database error retrieving JDs for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while retrieving job descriptions",
+            )
         except Exception as e:
             logger.error(
-                f"Error retrieving JDs for user {userId}: {str(e)}",
+                f"Unexpected error retrieving JDs for user {userId}: {str(e)}",
                 extra={"userId": userId, "error": str(e)},
                 exc_info=True,
             )
@@ -277,9 +308,7 @@ class JobDescriptionClass:
     def update_jd(
         self, db: Session, jd_id: str, userId: str, payload: JobDescriptionUpdate
     ) -> JobDescriptionResponse:
-        """
-        Update a job description
-        """
+
         try:
             if not jd_id or not userId:
                 raise HTTPException(
@@ -287,22 +316,8 @@ class JobDescriptionClass:
                     detail="Job Description ID and User ID are required",
                 )
 
-            try:
-                logger.info(f"Validating job description update for user: {userId}")
-                validate_job_description_update(payload)
-            except Exception as validation_error:
-                logger.warning(
-                    f"JD validation failed for user {userId}: {str(validation_error)}",
-                    extra={
-                        "userId": userId,
-                        "jd_id": jd_id,
-                        "error": str(validation_error),
-                    },
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Validation error: {str(validation_error)}",
-                )
+            logger.info(f"Validating job description update for user: {userId}")
+            validate_job_description_update(payload)
 
             jd = (
                 db.query(JobDescription)
@@ -396,6 +411,24 @@ class JobDescriptionClass:
 
         except HTTPException:
             raise
+        except AppError as e:
+            logger.warning(
+                f"Validation error during JD update for user {userId}: {e.message}",
+                extra={"userId": userId, "jd_id": jd_id, "error_code": e.error_code},
+            )
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=e.message,
+            )
+        except ValueError as e:
+            logger.warning(
+                f"Invalid UUID format for JD update",
+                extra={"userId": userId, "jd_id": jd_id, "error": str(e)},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Job Description ID or User ID format",
+            )
         except IntegrityError as e:
             db.rollback()
             logger.error(
@@ -431,9 +464,7 @@ class JobDescriptionClass:
             )
 
     def delete_jd(self, db: Session, jd_id: str, userId: str) -> dict:
-        """
-        Delete a job description
-        """
+
         try:
             if not jd_id or not userId:
                 raise HTTPException(
@@ -472,6 +503,15 @@ class JobDescriptionClass:
 
         except HTTPException:
             raise
+        except ValueError as e:
+            logger.warning(
+                f"Invalid UUID format for JD deletion",
+                extra={"userId": userId, "jd_id": jd_id, "error": str(e)},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid Job Description ID or User ID format",
+            )
         except SQLAlchemyError as e:
             db.rollback()
             logger.error(
