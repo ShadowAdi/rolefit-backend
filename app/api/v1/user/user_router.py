@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 
-router = APIRouter(prefix="/api/v1/user", tags=["Users"])
+router = APIRouter(tags=["Users"])
 
 
 @router.post(

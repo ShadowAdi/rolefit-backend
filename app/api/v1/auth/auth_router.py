@@ -7,7 +7,6 @@ from app.dependency.dependencies import get_db
 from app.core.logger import logger
 
 router = APIRouter(
-    prefix="/api/v1/auth",
     tags=["Authentication"],
     responses={
         422: {"description": "Validation Error"},
