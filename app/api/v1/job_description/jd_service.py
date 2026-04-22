@@ -287,7 +287,6 @@ class JobDescriptionClass:
                     detail="Job Description ID and User ID are required",
                 )
 
-            # Validate payload
             try:
                 logger.info(f"Validating job description update for user: {userId}")
                 validate_job_description_update(payload)
@@ -305,7 +304,6 @@ class JobDescriptionClass:
                     detail=f"Validation error: {str(validation_error)}",
                 )
 
-            # Check if job description exists
             jd = (
                 db.query(JobDescription)
                 .filter(
@@ -325,7 +323,6 @@ class JobDescriptionClass:
                     detail="Job description not found",
                 )
 
-            # Check for duplicate if role_name or company is being updated
             if payload.role_name or payload.company:
                 role_name_lower = (payload.role_name or jd.Role_Name).lower().strip()
                 company_lower = (payload.company or jd.Company).lower().strip()
@@ -356,7 +353,6 @@ class JobDescriptionClass:
                         detail="Another job description with the same role and company already exists",
                     )
 
-            # Update fields
             if payload.role_name:
                 jd.Role_Name = payload.role_name.lower().strip()
             if payload.company:
