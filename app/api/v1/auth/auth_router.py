@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.schema.auth import LoginRequest
 from app.response.user_responses import UserAuthenticatedResponse
-from .auth_router import AuthServiceClass
+from .auth_service import AuthServiceClass
 from app.dependency.dependencies import get_db
 from app.core.logger import logger
 
