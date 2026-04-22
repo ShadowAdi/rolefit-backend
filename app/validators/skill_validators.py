@@ -31,29 +31,44 @@ class SkillValidator(BaseModel):
 
     @staticmethod
     def validate_name_format(v: str) -> str:
-        """Additional validation to ensure proper skill name format"""
+        """Convert skill name to lowercase for consistent storage.
+
+        Examples:
+        - "Frontend", "frontend", "FRONTEND" -> "frontend"
+        - "REST API", "rest api" -> "rest api"
+        - "Web Design" -> "web design"
+        """
         if not v:
             return v
 
-        # Capitalize first letter of each word
-        formatted_name = " ".join(word.capitalize() for word in v.split())
-
-        return formatted_name
+        # Convert to lowercase for consistency
+        return v.strip().lower()
 
     @staticmethod
     def validate_uniqueness_check(
         name: str, existing_skills: Optional[list] = None
     ) -> bool:
-        """
-        Check if skill name already exists (case-insensitive)
-        This should be called before creating a new skill
+        """Check if skill name already exists (case-insensitive).
+
+        Args:
+            name: Skill name to check
+            existing_skills: List of existing skill names to check against
+
+        Returns:
+            True if skill is unique
+
+        Raises:
+            ValueError: If skill already exists
         """
         if not existing_skills:
             return True
 
-        # Check against existing skills (case-insensitive)
+        # Convert to lowercase for comparison
+        normalized_name = name.strip().lower()
+
+        # Check against existing skills
         for skill in existing_skills:
-            if skill.lower() == name.lower():
+            if skill.lower() == normalized_name:
                 raise ValueError(
                     f"Skill '{name}' already exists. Skill names must be unique."
                 )

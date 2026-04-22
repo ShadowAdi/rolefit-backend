@@ -87,9 +87,10 @@ class SkillServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Checking if skill name already exists: {validated_name}")
-            existing_skill = db.query(Skill).filter(
-                Skill.name.ilike(validated_name)
-            ).first()
+            # Check for exact match (skills stored in lowercase)
+            existing_skill = (
+                db.query(Skill).filter(Skill.name == validated_name).first()
+            )
 
             if existing_skill:
                 logger.warning(
@@ -244,7 +245,9 @@ class SkillServiceClass:
                     },
                 )
 
-                return [SkillListResponse.model_validate(skill) for skill in user_skills]
+                return [
+                    SkillListResponse.model_validate(skill) for skill in user_skills
+                ]
             else:
                 logger.info(f"Fetching all available skills")
 
@@ -819,9 +822,7 @@ class SkillServiceClass:
                 detail="An unexpected error occurred while deleting skill.",
             )
 
-    def add_skill_to_user(
-        self, db: Session, userId: str, skillId: str
-    ) -> dict:
+    def add_skill_to_user(self, db: Session, userId: str, skillId: str) -> dict:
         """
         Add a skill to a user's profile.
 
@@ -967,9 +968,7 @@ class SkillServiceClass:
                 detail="An unexpected error occurred while adding skill to user.",
             )
 
-    def remove_skill_from_user(
-        self, db: Session, userId: str, skillId: str
-    ) -> dict:
+    def remove_skill_from_user(self, db: Session, userId: str, skillId: str) -> dict:
         """
         Remove a skill from a user's profile.
 
