@@ -20,14 +20,13 @@ print("=" * 60)
 print("\n1. Registering user...")
 try:
     response = requests.post(
-        f"{BASE_URL}/user/register",
-        json={"email": email, "password": password}
+        f"{BASE_URL}/user/register", json={"email": email, "password": password}
     )
     print(f"   Status: {response.status_code}")
     if response.status_code != 201:
         print(f"   Response: {response.text}")
         exit(1)
-    
+
     user_data = response.json()
     user_id = user_data.get("data", {}).get("id")
     print(f"   User ID: {user_id}")
@@ -39,14 +38,13 @@ except Exception as e:
 print("\n2. Logging in...")
 try:
     response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"email": email, "password": password}
+        f"{BASE_URL}/auth/login", json={"email": email, "password": password}
     )
     print(f"   Status: {response.status_code}")
     if response.status_code != 200:
         print(f"   Response: {response.text}")
         exit(1)
-    
+
     access_token = response.json().get("access_token")
     print(f"   Token: {access_token[:20]}...")
 except Exception as e:
@@ -64,28 +62,27 @@ payload = {
     "tech_stack": ["Python", "FastAPI", "PostgreSQL"],
     "role_type": "Full-time",
     "location": "Remote",
-    "experience_required": "5+ years"
+    "experience_required": "5+ years",
 }
 
 print(f"   Payload: {json.dumps(payload, indent=2)}")
 
 try:
     response = requests.post(
-        f"{BASE_URL}/job-descriptions/",
-        json=payload,
-        headers=headers
+        f"{BASE_URL}/job-descriptions/", json=payload, headers=headers
     )
     print(f"   Status: {response.status_code}")
     print(f"   Response: {response.text[:500]}")
-    
+
     if response.status_code == 201:
         print("   ✓ SUCCESS!")
     else:
         print("   ✗ FAILED!")
-        
+
 except Exception as e:
     print(f"   ERROR: {e}")
     import traceback
+
     traceback.print_exc()
 
 print("\n" + "=" * 60)
