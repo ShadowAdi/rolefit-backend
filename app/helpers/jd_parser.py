@@ -1,11 +1,9 @@
 import requests
 import json
+import re
 from app.core.logger import logger
 from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
-
-SARVAM_API_URL = "https://api.sarvam.ai/v1/chat/completions"
-REQUEST_TIMEOUT = 20
-MAX_TOKENS = 2000
+from app.utils.sarvam_const import MAX_TOKENS, REQUEST_TIMEOUT, SARVAM_API_URL
 
 
 def parse_jd_with_ai(raw_jd: str) -> dict:
@@ -34,7 +32,13 @@ Job Description:
 
     payload = {
         "model": "sarvam-m",
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a JSON extractor. Return ONLY valid JSON. No markdown, no explanation, no code fences.",
+            },
+            {"role": "user", "content": prompt},
+        ],
         "max_tokens": MAX_TOKENS,
         "temperature": 0.2,
     }
@@ -68,7 +72,10 @@ Job Description:
         )
         raise ValueError("No content in API response")
 
-    parsed_json = json.loads(message_content)
+    clean = message_content.strip()
+    if clean.startswith("```"):
+        clean = re.sub(r"```(?:json)?\n?", "", clean).strip().rstrip("```").strip()
+    parsed_json = json.loads(clean)
 
     logger.debug(
         f"Successfully parsed JD with AI",

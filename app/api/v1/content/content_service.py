@@ -1,11 +1,16 @@
+import requests
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException, status
+import json
 from app.models.JobDescription import JobDescription
 from app.models.User import User
 from app.core.logger import logger
 from uuid import UUID
 from app.helpers.filter_jd import filter_jd
+from app.helpers.resume_prompt import build_resume_prompt
+from app.utils.sarvam_const import MAX_TOKENS, REQUEST_TIMEOUT, SARVAM_API_URL
+from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 
 
 class ContentServiceClass:
@@ -58,7 +63,64 @@ class ContentServiceClass:
                     detail="Job description not found",
                 )
 
-            filter_jd(jobId=jd.id, userId=user.id, db=db)
+            job_profile_response = filter_jd(
+                jobId=str(jd.id), userId=str(user.id), db=db
+            )
+
+            headers = sarvam_api_key_headers()
+
+            # Build the resume generation prompt using filtered user data
+            prompt = build_resume_prompt(job_profile_response)
+
+            payload = {
+                "model": "sarvam-m",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": MAX_TOKENS,
+            }
+
+            logger.debug(f"Calling Sarvam AI API for resume generation")
+
+            response = requests.post(
+                SARVAM_API_URL,
+                json=payload,
+                headers=headers,
+                timeout=REQUEST_TIMEOUT,
+            )
+
+            response.raise_for_status()
+
+            response_data = response.json()
+
+            if "choices" not in response_data or len(response_data["choices"]) == 0:
+                logger.error(
+                    "Invalid API response: No choices in response",
+                    extra={"response": response_data},
+                )
+                raise ValueError("Invalid response from AI API")
+
+            message_content = (
+                response_data["choices"][0].get("message", {}).get("content", "")
+            )
+
+            if not message_content:
+                logger.error(
+                    "Invalid API response: No message content",
+                    extra={"response": response_data},
+                )
+                raise ValueError("No content in API response")
+
+            parsed_json = json.loads(message_content)
+
+            logger.debug(
+                f"Successfully generated resume text",
+                extra={"userId": userId, "jobId": jobId},
+            )
+
+            return {
+                "resume_text": message_content.strip(),
+                "userId": userId,
+                "jobId": jobId,
+            }
 
         except HTTPException:
             raise
