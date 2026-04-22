@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from uuid import UUID
+from typing import Optional
 
 
 class SkillCreateRequest(BaseModel):
@@ -17,6 +18,20 @@ class SkillUpdateRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     name: str = Field(..., min_length=1, max_length=255, description="Skill name")
+
+
+class AddSkillToUserRequest(BaseModel):
+    """Request schema for adding a skill to user profile.
+    
+    Accept EITHER skillId OR skillName:
+    - skillId: Add existing skill directly
+    - skillName: Create skill if doesn't exist, then add (all in one call)
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    skillId: Optional[UUID] = Field(None, description="Skill ID (if skill already exists)")
+    skillName: Optional[str] = Field(None, min_length=1, max_length=255, description="Skill name (create if not exists, then add)")
 
 
 class SkillResponse(BaseModel):

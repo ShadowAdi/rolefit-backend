@@ -4,7 +4,11 @@ from fastapi import HTTPException, status
 from app.models.User import User
 from app.models.Skill import Skill
 from app.models.UserSkill import UserSkill
-from app.schema.Skill import SkillCreateRequest, SkillUpdateRequest
+from app.schema.Skill import (
+    SkillCreateRequest,
+    SkillUpdateRequest,
+    AddSkillToUserRequest,
+)
 from app.response.skill_responses import (
     SkillCreateResponse,
     SkillGetResponse,
@@ -822,21 +826,31 @@ class SkillServiceClass:
                 detail="An unexpected error occurred while deleting skill.",
             )
 
-    def add_skill_to_user(self, db: Session, userId: str, skillId: str) -> dict:
+    def add_skill_to_user(
+        self, db: Session, userId: str, payload: AddSkillToUserRequest
+    ) -> dict:
         """
         Add a skill to a user's profile.
+
+        Handles two scenarios in a single API call:
+        1. User selects existing skill: Send skillId -> add directly
+        2. User types new skill name: Send skillName -> create if doesn't exist, then add
 
         Steps:
         1. Verify user authentication (userId exists)
         2. Verify user exists in database
-        3. Verify skill exists
-        4. Check if user already has this skill
-        5. Create UserSkill record linking user and skill
+        3. Determine skill:
+           - If skillId provided: fetch existing skill
+           - If skillName provided: find or create skill
+        4. Verify skill exists/was created
+        5. Check if user already has this skill
+        6. Create UserSkill record linking user and skill
+        7. Return success response
 
         Args:
             db: Database session
             userId: Authenticated user's ID
-            skillId: Skill ID to add
+            payload: AddSkillToUserRequest with either skillId or skillName
 
         Returns:
             dict with success message and skill details
@@ -847,7 +861,11 @@ class SkillServiceClass:
         try:
             logger.info(
                 f"Starting skill addition process",
-                extra={"userId": userId, "skillId": skillId},
+                extra={
+                    "userId": userId,
+                    "skillId": payload.skillId,
+                    "skillName": payload.skillName,
+                },
             )
 
             if not userId:
@@ -857,6 +875,16 @@ class SkillServiceClass:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Authentication required: User ID is missing",
+                )
+
+            # Validate that either skillId or skillName is provided
+            if not payload.skillId and not payload.skillName:
+                logger.error(
+                    "Skill addition failed: Neither skillId nor skillName provided"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Either skillId or skillName must be provided",
                 )
 
             logger.info(f"Verifying user exists with ID: {userId}")
@@ -874,27 +902,76 @@ class SkillServiceClass:
 
             logger.info(f"User verified successfully: {userId}")
 
-            logger.info(f"Verifying skill exists with ID: {skillId}")
-            skill = db.query(Skill).filter(Skill.id == skillId).first()
+            # Handle skillId case - skill already exists
+            if payload.skillId:
+                logger.info(f"Fetching existing skill by ID: {payload.skillId}")
+                skill = db.query(Skill).filter(Skill.id == payload.skillId).first()
 
-            if not skill:
-                logger.warning(
-                    f"Skill addition failed: Skill not found",
-                    extra={"userId": userId, "skillId": skillId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Skill not found.",
-                )
+                if not skill:
+                    logger.warning(
+                        f"Skill addition failed: Skill not found",
+                        extra={"userId": userId, "skillId": payload.skillId},
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Skill not found.",
+                    )
+                logger.info(f"Skill found by ID: {payload.skillId}")
 
-            logger.info(f"Skill verified successfully: {skillId}")
+            # Handle skillName case - create if doesn't exist
+            else:
+                logger.info(f"Processing skill by name: {payload.skillName}")
 
+                try:
+                    # Validate and format the skill name
+                    validated_name = SkillValidator.validate_name(payload.skillName)
+                    validated_name = SkillValidator.validate_name_format(validated_name)
+                    logger.info(f"Skill name validated and formatted: {validated_name}")
+                except ValueError as validation_error:
+                    logger.warning(
+                        f"Skill name validation failed",
+                        extra={
+                            "userId": userId,
+                            "error": str(validation_error),
+                            "skillName": payload.skillName,
+                        },
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"Validation error: {str(validation_error)}",
+                    )
+
+                # Check if skill already exists
+                logger.info(f"Checking if skill exists: {validated_name}")
+                skill = db.query(Skill).filter(Skill.name == validated_name).first()
+
+                if skill:
+                    logger.info(
+                        f"Skill already exists in database",
+                        extra={"skillName": validated_name, "skillId": skill.id},
+                    )
+                else:
+                    # Create new skill
+                    logger.info(f"Creating new skill: {validated_name}")
+                    skill = Skill(
+                        name=validated_name,
+                        created_by=userId,
+                    )
+                    db.add(skill)
+                    db.commit()
+                    db.refresh(skill)
+                    logger.info(
+                        f"Skill created successfully",
+                        extra={"skillId": skill.id, "skillName": skill.name},
+                    )
+
+            # Check if user already has this skill
             logger.info(f"Checking if user already has this skill")
             existing_user_skill = (
                 db.query(UserSkill)
                 .filter(
                     UserSkill.userId == userId,
-                    UserSkill.skillId == skillId,
+                    UserSkill.skillId == skill.id,
                 )
                 .first()
             )
@@ -902,15 +979,16 @@ class SkillServiceClass:
             if existing_user_skill:
                 logger.warning(
                     f"Skill addition failed: User already has this skill",
-                    extra={"userId": userId, "skillId": skillId},
+                    extra={"userId": userId, "skillId": skill.id},
                 )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="User already has this skill.",
                 )
 
+            # Add skill to user
             logger.info(f"Adding skill to user")
-            user_skill = UserSkill(userId=userId, skillId=skillId)
+            user_skill = UserSkill(userId=userId, skillId=skill.id)
 
             db.add(user_skill)
             db.commit()
@@ -920,7 +998,7 @@ class SkillServiceClass:
                 f"Skill added to user successfully",
                 extra={
                     "userId": userId,
-                    "skillId": skillId,
+                    "skillId": skill.id,
                     "skillName": skill.name,
                 },
             )
@@ -928,8 +1006,9 @@ class SkillServiceClass:
             return {
                 "success": True,
                 "message": "Skill added to user profile successfully",
-                "skillId": str(skillId),
+                "skillId": str(skill.id),
                 "skillName": skill.name,
+                "skillCreated": False if payload.skillId else True,
             }
 
         except HTTPException:
@@ -941,7 +1020,8 @@ class SkillServiceClass:
                 f"Database error during skill addition for user {userId}",
                 extra={
                     "userId": userId,
-                    "skillId": skillId,
+                    "skillId": payload.skillId,
+                    "skillName": payload.skillName,
                     "error": str(e),
                 },
                 exc_info=True,
@@ -957,7 +1037,8 @@ class SkillServiceClass:
                 f"Unexpected error during skill addition for user {userId}",
                 extra={
                     "userId": userId,
-                    "skillId": skillId,
+                    "skillId": payload.skillId,
+                    "skillName": payload.skillName,
                     "error": str(e),
                     "errorType": type(e).__name__,
                 },
