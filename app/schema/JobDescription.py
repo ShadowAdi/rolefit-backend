@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List
 from enum import Enum
 from datetime import datetime
@@ -19,11 +19,13 @@ class LocationTypeEnum(str, Enum):
 class JobDescriptionCreate(BaseModel):
     """Schema for creating a new job description"""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     user_id: Optional[str] = Field(None)  # UUID as string; typically from auth context
     role_name: Optional[str] = Field(None, min_length=1, max_length=255)
     company: Optional[str] = Field(None, min_length=1, max_length=255)
-    role_type: Optional[RoleTypeEnum] = Field(default=RoleTypeEnum.FULL_TIME)
-    location: Optional[LocationTypeEnum] = Field(default=LocationTypeEnum.REMOTE)
+    role_type: Optional[RoleTypeEnum] = None
+    location: Optional[LocationTypeEnum] = None
     location_city: Optional[str] = Field(None, max_length=255)
     salary_min: Optional[str] = Field(None, max_length=255)
     salary_max: Optional[str] = Field(None, max_length=255)
@@ -35,14 +37,11 @@ class JobDescriptionCreate(BaseModel):
     summary: Optional[str] = Field(None, max_length=2000)
     raw_jd: str = Field(..., min_length=1)  # Required
 
-    class Config:
-        pass
-
 
 class JobDescriptionUpdate(BaseModel):
     """Schema for updating a job description"""
 
-    user_id: Optional[str] = Field(None)  # UUID as string
+    model_config = ConfigDict(populate_by_name=True)
     role_name: Optional[str] = Field(None, min_length=1, max_length=255)
     company: Optional[str] = Field(None, min_length=1, max_length=255)
     role_type: Optional[RoleTypeEnum] = None
@@ -58,12 +57,11 @@ class JobDescriptionUpdate(BaseModel):
     summary: Optional[str] = Field(None, max_length=2000)
     raw_jd: Optional[str] = Field(None, min_length=1)
 
-    class Config:
-        pass
-
 
 class JobDescriptionResponse(BaseModel):
     """Schema for job description response"""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: str
     user_id: str
@@ -83,6 +81,3 @@ class JobDescriptionResponse(BaseModel):
     raw_jd: str
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True

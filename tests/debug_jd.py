@@ -72,7 +72,14 @@ try:
         f"{BASE_URL}/job-descriptions/", json=payload, headers=headers
     )
     print(f"   Status: {response.status_code}")
-    print(f"   Response: {response.text[:500]}")
+    print(f"   Response: {response.text[:1000]}")
+    print(f"   Response Length: {len(response.text)}")
+
+    try:
+        error_data = response.json()
+        print(f"   Error JSON: {json.dumps(error_data, indent=2)[:1000]}")
+    except:
+        pass
 
     if response.status_code == 201:
         print("   ✓ SUCCESS!")
