@@ -1,10 +1,5 @@
 from app.db.db import Base
-from sqlalchemy import (
-    Column,
-    String,
-    DateTime,
-    Enum as SQLEnum,
-)
+from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from datetime import timezone, datetime
 import uuid
@@ -47,6 +42,7 @@ class JobDescription(Base):
     Required_Skills = Column(ARRAY(String), default=[])
     Experience_Required = Column(String, nullable=True)
     Summary = Column(String, nullable=True)
+    userId = Column(UUID, ForeignKey("User.id"), nullable=False)
     Raw_JD = Column(String, nullable=False)
     Created_At = Column(DateTime, default=datetime.now(timezone.utc))
     Updated_At = Column(

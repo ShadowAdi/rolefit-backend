@@ -19,6 +19,7 @@ class LocationTypeEnum(str, Enum):
 class JobDescriptionCreate(BaseModel):
     """Schema for creating a new job description"""
 
+    user_id: Optional[str] = Field(None)  # UUID as string; typically from auth context
     role_name: Optional[str] = Field(None, min_length=1, max_length=255)
     company: Optional[str] = Field(None, min_length=1, max_length=255)
     role_type: Optional[RoleTypeEnum] = Field(default=RoleTypeEnum.FULL_TIME)
@@ -41,6 +42,7 @@ class JobDescriptionCreate(BaseModel):
 class JobDescriptionUpdate(BaseModel):
     """Schema for updating a job description"""
 
+    user_id: Optional[str] = Field(None)  # UUID as string
     role_name: Optional[str] = Field(None, min_length=1, max_length=255)
     company: Optional[str] = Field(None, min_length=1, max_length=255)
     role_type: Optional[RoleTypeEnum] = None
@@ -64,6 +66,7 @@ class JobDescriptionResponse(BaseModel):
     """Schema for job description response"""
 
     id: str
+    user_id: str
     role_name: Optional[str]
     company: Optional[str]
     role_type: Optional[str]

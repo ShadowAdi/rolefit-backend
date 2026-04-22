@@ -11,6 +11,7 @@ def format_job_description_response(
     """
     return JobDescriptionResponse(
         id=str(job_description.id),
+        user_id=str(job_description.userId),
         role_name=job_description.Role_Name,
         company=job_description.Company,
         role_type=(
@@ -43,6 +44,7 @@ def format_job_descriptions_response(
 
 def create_job_description_response(
     id: str,
+    user_id: str,
     role_name: Optional[str],
     company: Optional[str],
     role_type: Optional[str],
@@ -65,6 +67,7 @@ def create_job_description_response(
     """
     return JobDescriptionResponse(
         id=id,
+        user_id=user_id,
         role_name=role_name,
         company=company,
         role_type=role_type,
