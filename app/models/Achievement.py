@@ -18,6 +18,7 @@ class Achievement(Base):
     end_month = Column(String, nullable=True)
     end_year = Column(Integer, nullable=True)
     links = Column(JSON, nullable=True)
+    priority = Column(Integer, nullable=True, default=0)
     profileId = Column(UUID, ForeignKey("Profile.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(

@@ -35,6 +35,7 @@ class AchievementGetResponse(BaseModel):
     links: Optional[Dict[str, str]] = Field(
         None, description="Links related to the achievement"
     )
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(..., description="Achievement creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -59,6 +60,7 @@ class AchievementUpdateResponse(BaseModel):
     links: Optional[Dict[str, str]] = Field(
         None, description="Links related to the achievement"
     )
+    priority: Optional[int] = Field(None, description="Priority level")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
 
@@ -75,5 +77,6 @@ class AchievementListResponse(BaseModel):
     )
     start_year: Optional[int] = Field(None, description="Start year")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(..., description="Achievement creation timestamp")
