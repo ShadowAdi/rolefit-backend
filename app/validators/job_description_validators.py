@@ -30,7 +30,7 @@ def validate_job_description_create(data: JobDescriptionCreate) -> JobDescriptio
                 message="salary_max format is invalid",
             )
 
-    if data.role_type == "Internship":
+    if data.role_type and data.role_type.value == "Internship":
         if not data.salary_min and not data.duration:
             raise AppError(
                 status_code=400,
@@ -49,7 +49,9 @@ def validate_job_description_create(data: JobDescriptionCreate) -> JobDescriptio
         ]
     )
 
-    if not has_optional_data and data.role_type == "Full-time":
+    if not has_optional_data and (
+        not data.role_type or data.role_type.value == "Full-time"
+    ):
         pass
 
     return data

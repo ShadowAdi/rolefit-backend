@@ -36,7 +36,7 @@ class JobDescriptionCreate(BaseModel):
     raw_jd: str = Field(..., min_length=1)  # Required
 
     class Config:
-        use_enum_values = True
+        pass
 
 
 class JobDescriptionUpdate(BaseModel):
@@ -59,7 +59,7 @@ class JobDescriptionUpdate(BaseModel):
     raw_jd: Optional[str] = Field(None, min_length=1)
 
     class Config:
-        use_enum_values = True
+        pass
 
 
 class JobDescriptionResponse(BaseModel):
