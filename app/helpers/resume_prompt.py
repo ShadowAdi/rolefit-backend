@@ -26,28 +26,7 @@ def build_resume_prompt(user_data: dict) -> str:
     achievements = user_data.get("achievements", [])
     jd = user_data.get("job_description", {})
 
-    # Determine if education should be at top or bottom
-    # Rule: If not from top college, put at bottom
-    education_at_bottom = False
-    top_colleges = [
-        "iit",
-        "mit",
-        "stanford",
-        "harvard",
-        "berkeley",
-        "cmu",
-        "oxford",
-        "cambridge",
-        "top tier",
-        "ivy league",
-    ]
-
-    if academics:
-        college_name = academics[0].get("college_name", "").lower()
-        if not any(tier in college_name for tier in top_colleges):
-            education_at_bottom = True
-
-    # Build sections based on priority
+    # Build sections in order (user controls section placement via priority)
     sections = []
 
     # 1. Header with contact info
@@ -66,29 +45,29 @@ Links: {profile.get('links', 'N/A')}"""
 {profile.get('summary')}"""
         )
 
-    # 3. Skills and Tools (highly relevant to JD)
+    # 3. Skills and Tools (all of them)
     if skills or tools:
         sections.append(
             f"""SKILLS & TECHNOLOGIES:
-Skills: {', '.join([s.get('name', '') for s in skills[:8]])}
-Tools: {', '.join([t.get('name', '') for t in tools[:5]])}"""
+Skills: {', '.join([s.get('name', '') for s in skills])}
+Tools: {', '.join([t.get('name', '') for t in tools])}"""
         )
 
-    # 4. Relevant Experiences (top 3 from filter)
+    # 4. Relevant Experiences (all filtered experiences, already prioritized)
     if experiences:
         sections.append(
             f"""PROFESSIONAL EXPERIENCE:
 {format_experiences(experiences)}"""
         )
 
-    # 5. Projects (top 3 from filter, 1-3 bullets each)
+    # 5. Projects (all filtered projects, already prioritized, 1-3 bullets each)
     if projects:
         sections.append(
             f"""PROJECTS:
 {format_projects(projects)}"""
         )
 
-    # 6. Achievements
+    # 6. Achievements (all filtered achievements, already prioritized)
     if achievements:
         sections.append(
             f"""ACHIEVEMENTS & CERTIFICATIONS:
@@ -102,18 +81,14 @@ Tools: {', '.join([t.get('name', '') for t in tools[:5]])}"""
 {format_publications(publications)}"""
         )
 
-    # 8. Education (top or bottom based on tier)
-    if academics and not education_at_bottom:
+    # 8. Education (user controls placement via priority in database)
+    if academics:
         sections.append(
             f"""EDUCATION:
 {format_education(academics)}"""
         )
 
     sections_str = "\n\n".join(sections)
-
-    # Add education at bottom if low tier
-    if academics and education_at_bottom:
-        sections_str += f"\n\nEDUCATION:\n{format_education(academics)}"
 
     # Build the main prompt
     prompt = f"""You are a professional resume writer. Generate a clean, ATS-friendly, ONE-PAGE resume in plain text format.
@@ -167,7 +142,7 @@ def format_experiences(experiences: list) -> str:
         return ""
 
     formatted = []
-    for exp in experiences[:3]:  # Top 3 experiences
+    for exp in experiences:
         company = exp.get("company_name", "Company")
         role = exp.get("role", "Role")
         dates = f"{exp.get('start_year', '')}" + (
@@ -193,7 +168,7 @@ def format_projects(projects: list) -> str:
         return ""
 
     formatted = []
-    for proj in projects[:3]:  # Top 3 projects
+    for proj in projects:  # Send all filtered projects
         title = proj.get("title", "Project")
         description = proj.get("description", "")
         tech_stack = proj.get("techStack", [])
@@ -212,7 +187,7 @@ def format_achievements(achievements: list) -> str:
         return ""
 
     formatted = []
-    for ach in achievements[:5]:  # Top 5 achievements
+    for ach in achievements:  # Send all filtered achievements
         title = ach.get("title", "Achievement")
         achievement_type = ach.get("achievement_type", "")
         year = ach.get("end_year", "")
@@ -248,7 +223,7 @@ def format_publications(publications: list) -> str:
         return ""
 
     formatted = []
-    for pub in publications[:3]:  # Top 3 publications
+    for pub in publications:  # Send all filtered publications
         title = pub.get("title", "Publication")
         publisher = pub.get("publisher", "")
         year = pub.get("publication_date", "")

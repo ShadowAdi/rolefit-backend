@@ -3,7 +3,7 @@ import json
 import re
 from app.core.logger import logger
 from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
-from app.utils.sarvam_const import MAX_TOKENS, REQUEST_TIMEOUT, SARVAM_API_URL
+from app.utils.sarvam_const import MAX_TOKENS, JD_PARSE_TIMEOUT, SARVAM_API_URL
 
 
 def parse_jd_with_ai(raw_jd: str) -> dict:
@@ -49,7 +49,7 @@ Job Description:
         SARVAM_API_URL,
         json=payload,
         headers=headers,
-        timeout=REQUEST_TIMEOUT,
+        timeout=JD_PARSE_TIMEOUT,
     )
 
     response.raise_for_status()

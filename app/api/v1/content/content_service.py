@@ -9,7 +9,7 @@ from app.core.logger import logger
 from uuid import UUID
 from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
-from app.utils.sarvam_const import MAX_TOKENS, REQUEST_TIMEOUT, SARVAM_API_URL
+from app.utils.sarvam_const import MAX_TOKENS, RESUME_GEN_TIMEOUT, SARVAM_API_URL
 from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 
 
@@ -84,7 +84,7 @@ class ContentServiceClass:
                 SARVAM_API_URL,
                 json=payload,
                 headers=headers,
-                timeout=REQUEST_TIMEOUT,
+                timeout=RESUME_GEN_TIMEOUT,
             )
 
             response.raise_for_status()
