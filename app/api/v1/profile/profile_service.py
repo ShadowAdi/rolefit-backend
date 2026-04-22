@@ -52,6 +52,8 @@ class ProfileServiceClass:
                 ProfileValidator.validate_full_name(payload.full_name)
                 ProfileValidator.validate_headline(payload.headline)
                 ProfileValidator.validate_summary(payload.summary)
+                ProfileValidator.validate_resume_link(payload.resume_link)
+                ProfileValidator.validate_cover_letter_link(payload.cover_letter_link)
                 ProfileValidator.validate_links(payload.links)
             except ValueError as validation_error:
                 logger.warning(
@@ -99,6 +101,8 @@ class ProfileServiceClass:
                 full_name=payload.full_name,
                 summary=payload.summary,
                 headline=payload.headline,
+                resume_link=payload.resume_link,
+                cover_letter_link=payload.cover_letter_link,
                 links=payload.links,
             )
 
@@ -277,6 +281,12 @@ class ProfileServiceClass:
                     ProfileValidator.validate_headline(payload.headline)
                 if payload.summary is not None:
                     ProfileValidator.validate_summary(payload.summary)
+                if payload.resume_link is not None:
+                    ProfileValidator.validate_resume_link(payload.resume_link)
+                if payload.cover_letter_link is not None:
+                    ProfileValidator.validate_cover_letter_link(
+                        payload.cover_letter_link
+                    )
                 if payload.links is not None:
                     ProfileValidator.validate_links(payload.links)
             except ValueError as validation_error:
@@ -338,6 +348,23 @@ class ProfileServiceClass:
                 logger.debug(
                     f"Updated summary for user {userId}",
                     extra={"userId": userId},
+                )
+
+            if payload.resume_link is not None:
+                user_profile.resume_link = payload.resume_link
+                logger.debug(
+                    f"Updated resume_link for user {userId}",
+                    extra={"userId": userId, "resume_link": payload.resume_link},
+                )
+
+            if payload.cover_letter_link is not None:
+                user_profile.cover_letter_link = payload.cover_letter_link
+                logger.debug(
+                    f"Updated cover_letter_link for user {userId}",
+                    extra={
+                        "userId": userId,
+                        "cover_letter_link": payload.cover_letter_link,
+                    },
                 )
 
             if payload.links is not None:

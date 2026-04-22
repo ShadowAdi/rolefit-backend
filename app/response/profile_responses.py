@@ -13,6 +13,8 @@ class ProfileCreateResponse(BaseModel):
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., description="User full name")
     headline: str = Field(..., description="Professional headline")
+    resume_link: str = Field(..., description="Link to user's resume")
+    cover_letter_link: str = Field(..., description="Link to user's cover letter")
     created_at: datetime = Field(..., description="Profile creation timestamp")
 
 
@@ -26,6 +28,8 @@ class ProfileGetResponse(BaseModel):
     full_name: str = Field(..., description="User full name")
     headline: str = Field(..., description="Professional headline")
     summary: Optional[str] = Field(None, description="Professional summary or bio")
+    resume_link: str = Field(..., description="Link to user's resume")
+    cover_letter_link: str = Field(..., description="Link to user's cover letter")
     links: Optional[Dict[str, Any]] = Field(None, description="Social profile links")
     created_at: datetime = Field(..., description="Profile creation timestamp")
     updated_at: datetime = Field(..., description="Last profile update timestamp")
@@ -41,6 +45,8 @@ class ProfileUpdateResponse(BaseModel):
     full_name: str = Field(..., description="User full name")
     headline: str = Field(..., description="Professional headline")
     summary: Optional[str] = Field(None, description="Professional summary or bio")
+    resume_link: str = Field(..., description="Link to user's resume")
+    cover_letter_link: str = Field(..., description="Link to user's cover letter")
     links: Optional[Dict[str, Any]] = Field(None, description="Social profile links")
     updated_at: datetime = Field(..., description="Last profile update timestamp")
 
@@ -64,4 +70,6 @@ class ProfileListResponse(BaseModel):
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., description="User full name")
     headline: str = Field(..., description="Professional headline")
+    resume_link: str = Field(..., description="Link to user's resume")
+    cover_letter_link: str = Field(..., description="Link to user's cover letter")
     created_at: datetime = Field(..., description="Profile creation timestamp")

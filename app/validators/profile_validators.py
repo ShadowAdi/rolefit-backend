@@ -53,6 +53,30 @@ class ProfileValidator(BaseModel):
         return v.strip()
 
     @staticmethod
+    def validate_resume_link(v: str) -> str:
+        """Validate resume link format"""
+        if not v or not v.strip():
+            raise ValueError("Resume link cannot be empty")
+
+        url_pattern = r"^https?://[^\s/$.?#].[^\s]*$"
+        if not re.match(url_pattern, v):
+            raise ValueError(f"Invalid URL format for resume link: {v}")
+
+        return v.strip()
+
+    @staticmethod
+    def validate_cover_letter_link(v: str) -> str:
+        """Validate cover letter link format"""
+        if not v or not v.strip():
+            raise ValueError("Cover letter link cannot be empty")
+
+        url_pattern = r"^https?://[^\s/$.?#].[^\s]*$"
+        if not re.match(url_pattern, v):
+            raise ValueError(f"Invalid URL format for cover letter link: {v}")
+
+        return v.strip()
+
+    @staticmethod
     def validate_links(v: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """Validate links object"""
         if v is None:
