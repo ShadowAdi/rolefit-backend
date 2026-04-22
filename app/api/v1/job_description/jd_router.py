@@ -81,13 +81,13 @@ async def update_job_description(
     status_code=status.HTTP_201_CREATED,
 )
 async def generate_job_description(
-    raw_jd: str,
+    payload: JobDescriptionCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     user_id = current_user.get("user_id") or current_user.get("id")
     logger.info(f"Generating job description from raw JD for user: {user_id}")
-    return jd_service.generate_jd(db, user_id, raw_jd)
+    return jd_service.generate_jd(db, user_id, payload.raw_jd)
 
 
 @router.delete(
