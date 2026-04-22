@@ -18,7 +18,7 @@ class ProfileValidator(BaseModel):
         if len(v) > 255:
             raise ValueError("Full name must not exceed 255 characters")
 
-        name_pattern = r"^[a-zA-Z\s\-']{2,255}$"
+        name_pattern = r"^[a-zA-Z0-9\s\-'\.]{2,255}$"
         if not re.match(name_pattern, v):
             raise ValueError("Full name contains invalid characters")
 
