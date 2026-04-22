@@ -30,29 +30,44 @@ class ToolValidator(BaseModel):
 
     @staticmethod
     def validate_name_format(v: str) -> str:
-        """Additional validation to ensure proper tool name format"""
+        """Convert tool name to lowercase for consistent storage.
+
+        Examples:
+        - "GitHub", "github", "GITHUB" -> "github"
+        - "VS Code", "vs code" -> "vs code"
+        - "Docker" -> "docker"
+        """
         if not v:
             return v
 
-        # Capitalize first letter of each word
-        formatted_name = " ".join(word.capitalize() for word in v.split())
-
-        return formatted_name
+        # Convert to lowercase for consistency
+        return v.strip().lower()
 
     @staticmethod
     def validate_uniqueness_check(
         name: str, existing_tools: Optional[list] = None
     ) -> bool:
-        """
-        Check if tool name already exists (case-insensitive)
-        This should be called before creating a new tool
+        """Check if tool name already exists (case-insensitive).
+
+        Args:
+            name: Tool name to check
+            existing_tools: List of existing tool names to check against
+
+        Returns:
+            True if tool is unique
+
+        Raises:
+            ValueError: If tool already exists
         """
         if not existing_tools:
             return True
 
-        # Check against existing tools (case-insensitive)
+        # Convert to lowercase for comparison
+        normalized_name = name.strip().lower()
+
+        # Check against existing tools
         for tool in existing_tools:
-            if tool.lower() == name.lower():
+            if tool.lower() == normalized_name:
                 raise ValueError(
                     f"Tool '{name}' already exists. Tool names must be unique."
                 )
