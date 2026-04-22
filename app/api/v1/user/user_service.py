@@ -37,15 +37,6 @@ class UserServiceClass:
                 )
 
             try:
-                validated_username = UserValidator.validate_username(data.username)
-            except ValueError as e:
-                logger.warning(f"Username validation failed: {str(e)}")
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=str(e),
-                )
-
-            try:
                 UserValidator.validate_password(data.password)
             except ValueError as e:
                 logger.warning(f"Password validation failed: {str(e)}")
@@ -64,24 +55,9 @@ class UserServiceClass:
                     detail="Email already registered",
                 )
 
-            existing_username = (
-                db.query(User).filter(User.username == data.username).first()
-            )
-            if existing_username:
-                logger.warning(
-                    f"Registration attempted with existing username: {data.username}"
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Username already taken",
-                )
-
             user = User(
                 email=validated_email,
                 password=hash_password(data.password),
-                username=validated_username,
-                profile_url=data.profile_url,
-                bio=data.bio,
             )
 
             db.add(user)
