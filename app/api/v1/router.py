@@ -8,6 +8,7 @@ from app.api.v1.experience import experience_router
 from app.api.v1.academics import academics_router
 from app.api.v1.skill import skill_router
 from app.api.v1.tools import tool_router
+from app.api.v1.job_description import jd_router
 
 
 v1_router = APIRouter()
@@ -25,3 +26,6 @@ v1_router.include_router(
 )
 v1_router.include_router(skill_router.router, prefix="/skills", tags=["skills"])
 v1_router.include_router(tool_router.router, prefix="/tools", tags=["tools"])
+v1_router.include_router(
+    jd_router.router, prefix="/job-descriptions", tags=["Job Descriptions"]
+)
