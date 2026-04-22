@@ -229,15 +229,27 @@ class ResumeGenerationTester:
             headers = self.get_headers(user)
 
             payload = {
-                "title": "Senior Software Engineer",
+                "role_name": "Senior Software Engineer",
                 "company": "Tech Company",
-                "description": "Looking for experienced software engineer with Python and microservices experience.",
-                "requirements": [
+                "raw_jd": "Looking for experienced software engineer with 5+ years experience in Python and microservices. Must have experience with FastAPI, PostgreSQL, Docker, and Kubernetes.",
+                "required_skills": [
                     "5+ years experience",
                     "Python",
                     "FastAPI",
                     "PostgreSQL",
+                    "Docker",
+                    "Kubernetes",
                 ],
+                "tech_stack": [
+                    "Python",
+                    "FastAPI",
+                    "PostgreSQL",
+                    "Docker",
+                    "Kubernetes",
+                ],
+                "role_type": "Full-time",
+                "location": "Remote",
+                "experience_required": "5+ years of software engineering experience",
             }
 
             response = requests.post(url, json=payload, headers=headers)

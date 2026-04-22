@@ -6,12 +6,8 @@ from app.schema.JobDescription import JobDescriptionCreate, JobDescriptionUpdate
 def validate_job_description_create(data: JobDescriptionCreate) -> JobDescriptionCreate:
     """Validate job description creation data"""
 
-    if data.user_id is None:
-        raise AppError(
-            status_code=400,
-            error_code="INVALID_USER_ID",
-            message="user_id is required",
-        )
+    # Note: user_id is extracted from current_user by the router, not from the payload
+    # So we don't validate it here
 
     if not data.raw_jd or not data.raw_jd.strip():
         raise AppError(

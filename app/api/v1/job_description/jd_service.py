@@ -8,7 +8,7 @@ from fastapi import HTTPException, status
 from uuid import UUID
 import requests
 import json
-from app.models.JobDescription import JobDescription
+from app.models.JobDescription import JobDescription, RoleTypeEnum, LocationTypeEnum
 from app.models.User import User
 from app.schema.JobDescription import (
     JobDescriptionCreate,
@@ -95,8 +95,12 @@ class JobDescriptionClass:
                 userId=UUID(userId),
                 Role_Name=role_name_lower,
                 Company=company_lower,
-                Role_Type=payload.role_type,
-                Location=payload.location,
+                Role_Type=(
+                    RoleTypeEnum(payload.role_type) if payload.role_type else None
+                ),
+                Location=(
+                    LocationTypeEnum(payload.location) if payload.location else None
+                ),
                 Location_City=(
                     payload.location_city.lower().strip()
                     if payload.location_city
