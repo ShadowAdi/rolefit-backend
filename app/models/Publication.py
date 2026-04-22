@@ -15,6 +15,7 @@ class Publication(Base):
     authors = Column(JSON, nullable=False)
     description = Column(String, nullable=True)
     url = Column(String, nullable=True)
+    priority = Column(Integer, nullable=True, default=0)
     profileId = Column(UUID, ForeignKey("Profile.id"), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(

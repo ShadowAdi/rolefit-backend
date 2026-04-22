@@ -21,9 +21,7 @@ from app.models.Tool import Tool
 from app.models.Academic import Academic
 from app.models.UserSkill import UserSkill
 from app.models.UserTool import UserTool
-
-from app.helpers.jd_parser import parse_jd_with_ai
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 
 def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
@@ -179,6 +177,7 @@ def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
                     "start_year": exp.start_year,
                     "end_month": exp.end_month,
                     "end_year": exp.end_year,
+                    "priority": exp.priority,
                     "techStack": exp.techStack,
                 }
                 for exp in experiences
@@ -194,6 +193,7 @@ def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
                     "start_year": ach.start_year,
                     "end_month": ach.end_month,
                     "end_year": ach.end_year,
+                    "priority": ach.priority,
                     "links": ach.links,
                 }
                 for ach in achievements
@@ -205,6 +205,7 @@ def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
                     "description": proj.description,
                     "techStack": proj.techStack,
                     "links": proj.links,
+                    "priority": proj.priority,
                     "startDate": proj.startDate.isoformat() if proj.startDate else None,
                     "endDate": proj.endDate.isoformat() if proj.endDate else None,
                 }
@@ -222,6 +223,7 @@ def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
                     ),
                     "authors": pub.authors,
                     "description": pub.description,
+                    "priority": pub.priority,
                     "url": pub.url,
                 }
                 for pub in publications
@@ -236,6 +238,7 @@ def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
                     "start_year": acad.start_year,
                     "end_month": acad.end_month,
                     "end_year": acad.end_year,
+                    "priority": acad.priority,
                     "links": acad.links,
                 }
                 for acad in academics

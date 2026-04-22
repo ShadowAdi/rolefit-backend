@@ -37,6 +37,7 @@ class ExperienceGetResponse(BaseModel):
     start_year: Optional[int] = Field(None, description="Start year")
     end_month: Optional[int] = Field(None, description="End month")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(..., description="Experience creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -63,6 +64,7 @@ class ExperienceUpdateResponse(BaseModel):
     start_year: Optional[int] = Field(None, description="Start year")
     end_month: Optional[int] = Field(None, description="End month")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
 
@@ -78,5 +80,6 @@ class ExperienceListResponse(BaseModel):
     location_type: Optional[str] = Field(None, description="Location type")
     start_year: Optional[int] = Field(None, description="Start year")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(..., description="Experience creation timestamp")

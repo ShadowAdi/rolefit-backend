@@ -30,6 +30,7 @@ class ProjectGetResponse(BaseModel):
     links: Optional[Dict[str, str]] = Field(None, description="Project links")
     startDate: Optional[datetime] = Field(None, description="Project start date")
     endDate: Optional[datetime] = Field(None, description="Project end date")
+    priority: Optional[int] = Field(None, description="Priority level")
     created_at: datetime = Field(..., description="Project creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -48,6 +49,7 @@ class ProjectUpdateResponse(BaseModel):
     links: Optional[Dict[str, str]] = Field(None, description="Project links")
     startDate: Optional[datetime] = Field(None, description="Project start date")
     endDate: Optional[datetime] = Field(None, description="Project end date")
+    priority: Optional[int] = Field(None, description="Priority level")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
 
@@ -65,4 +67,5 @@ class ProjectListResponse(BaseModel):
     )
     startDate: Optional[datetime] = Field(None, description="Project start date")
     endDate: Optional[datetime] = Field(None, description="Project end date")
+    priority: Optional[int] = Field(None, description="Priority level")
     created_at: datetime = Field(..., description="Project creation timestamp")

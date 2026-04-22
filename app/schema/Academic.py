@@ -31,6 +31,9 @@ class AcademicCreateRequest(BaseModel):
     start_year: Optional[int] = Field(None, ge=1900, le=2100, description="Start year")
     end_month: Optional[int] = Field(None, ge=1, le=12, description="End month (1-12)")
     end_year: Optional[int] = Field(None, ge=1900, le=2100, description="End year")
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class AcademicUpdateRequest(BaseModel):
@@ -56,6 +59,9 @@ class AcademicUpdateRequest(BaseModel):
     start_year: Optional[int] = Field(None, ge=1900, le=2100, description="Start year")
     end_month: Optional[int] = Field(None, ge=1, le=12, description="End month (1-12)")
     end_year: Optional[int] = Field(None, ge=1900, le=2100, description="End year")
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class AcademicResponse(BaseModel):
@@ -77,5 +83,6 @@ class AcademicResponse(BaseModel):
     start_year: Optional[int] = Field(None, description="Start year")
     end_month: Optional[int] = Field(None, description="End month")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")

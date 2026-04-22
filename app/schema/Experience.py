@@ -36,6 +36,9 @@ class ExperienceCreateRequest(BaseModel):
     start_year: Optional[int] = Field(None, ge=1900, le=2100, description="Start year")
     end_month: Optional[int] = Field(None, ge=1, le=12, description="End month (1-12)")
     end_year: Optional[int] = Field(None, ge=1900, le=2100, description="End year")
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class ExperienceUpdateRequest(BaseModel):
@@ -70,6 +73,9 @@ class ExperienceUpdateRequest(BaseModel):
     start_year: Optional[int] = Field(None, ge=1900, le=2100, description="Start year")
     end_month: Optional[int] = Field(None, ge=1, le=12, description="End month (1-12)")
     end_year: Optional[int] = Field(None, ge=1900, le=2100, description="End year")
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class ExperienceResponse(BaseModel):
@@ -93,6 +99,7 @@ class ExperienceResponse(BaseModel):
     start_year: Optional[int] = Field(None, description="Start year")
     end_month: Optional[int] = Field(None, description="End month")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(..., description="Experience creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")

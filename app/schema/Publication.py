@@ -25,6 +25,9 @@ class PublicationCreateRequest(BaseModel):
     url: Optional[str] = Field(
         None, max_length=2000, description="URL to the publication"
     )
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class PublicationUpdateRequest(BaseModel):
@@ -48,6 +51,9 @@ class PublicationUpdateRequest(BaseModel):
     url: Optional[str] = Field(
         None, max_length=2000, description="URL to the publication"
     )
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class PublicationResponse(BaseModel):
@@ -64,6 +70,7 @@ class PublicationResponse(BaseModel):
         None, description="Publication description or abstract"
     )
     url: Optional[str] = Field(None, description="URL to the publication")
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(
         ..., description="Publication record creation timestamp"

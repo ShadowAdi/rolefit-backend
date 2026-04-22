@@ -35,6 +35,7 @@ class AcademicGetResponse(BaseModel):
     start_year: Optional[int] = Field(None, description="Start year")
     end_month: Optional[int] = Field(None, description="End month")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -57,6 +58,7 @@ class AcademicUpdateResponse(BaseModel):
     start_year: Optional[int] = Field(None, description="Start year")
     end_month: Optional[int] = Field(None, description="End month")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
 
@@ -71,4 +73,5 @@ class AcademicListResponse(BaseModel):
     profileId: UUID = Field(..., description="Associated profile ID")
     start_year: Optional[int] = Field(None, description="Start year")
     end_year: Optional[int] = Field(None, description="End year")
+    priority: Optional[int] = Field(None, description="Priority level")
     created_at: datetime = Field(..., description="Record creation timestamp")

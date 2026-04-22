@@ -16,6 +16,7 @@ class Project(Base):
     links = Column(JSON, nullable=True)
     startDate = Column(DateTime, nullable=True)
     endDate = Column(DateTime, nullable=True)
+    priority = Column(Integer, nullable=True, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,

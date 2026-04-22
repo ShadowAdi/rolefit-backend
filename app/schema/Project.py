@@ -21,6 +21,9 @@ class ProjectCreateRequest(BaseModel):
     )
     startDate: Optional[datetime] = Field(None, description="Project start date")
     endDate: Optional[datetime] = Field(None, description="Project end date")
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class ProjectUpdateRequest(BaseModel):
@@ -42,6 +45,9 @@ class ProjectUpdateRequest(BaseModel):
     )
     startDate: Optional[datetime] = Field(None, description="Project start date")
     endDate: Optional[datetime] = Field(None, description="Project end date")
+    priority: Optional[int] = Field(
+        None, ge=0, description="Priority level (higher number = higher priority)"
+    )
 
 
 class ProjectResponse(BaseModel):
@@ -59,5 +65,6 @@ class ProjectResponse(BaseModel):
     links: Optional[Dict[str, str]] = Field(None, description="Project links")
     startDate: Optional[datetime] = Field(None, description="Project start date")
     endDate: Optional[datetime] = Field(None, description="Project end date")
+    priority: Optional[int] = Field(None, description="Priority level")
     created_at: datetime = Field(..., description="Project creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")

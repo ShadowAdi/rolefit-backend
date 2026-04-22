@@ -32,6 +32,7 @@ class PublicationGetResponse(BaseModel):
         None, description="Publication description or abstract"
     )
     url: Optional[str] = Field(None, description="URL to the publication")
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(
         ..., description="Publication record creation timestamp"
@@ -53,6 +54,7 @@ class PublicationUpdateResponse(BaseModel):
         None, description="Publication description or abstract"
     )
     url: Optional[str] = Field(None, description="URL to the publication")
+    priority: Optional[int] = Field(None, description="Priority level")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
 
@@ -65,6 +67,7 @@ class PublicationListResponse(BaseModel):
     title: str = Field(..., description="Publication title")
     publisher: str = Field(..., description="Publisher name")
     publication_date: datetime = Field(..., description="Publication date")
+    priority: Optional[int] = Field(None, description="Priority level")
     profileId: UUID = Field(..., description="Associated profile ID")
     created_at: datetime = Field(
         ..., description="Publication record creation timestamp"

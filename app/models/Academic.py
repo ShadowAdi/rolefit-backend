@@ -18,6 +18,7 @@ class Academic(Base):
     start_year = Column(Integer, nullable=True)
     end_month = Column(Integer, nullable=True)
     end_year = Column(Integer, nullable=True)
+    priority = Column(Integer, nullable=True, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
