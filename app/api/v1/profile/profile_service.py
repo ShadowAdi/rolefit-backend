@@ -207,6 +207,11 @@ class ProfileServiceClass:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="User does not exist",
                 )
+            all_profiles = db.query(Profile).all()
+            logger.debug(
+                f"All profiles in DB: {[(str(p.userId), str(p.id)) for p in all_profiles]}"
+            )
+            logger.debug(f"Looking for userId: {userId}, type: {type(userId)}")
 
             logger.debug(f"Retrieving profile for user: {userId}")
             user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
