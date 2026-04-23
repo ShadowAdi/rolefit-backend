@@ -53,11 +53,18 @@ class ProjectServiceClass:
                 logger.info(f"Validating project creation request for user: {userId}")
                 ProjectValidator.validate_title(payload.title)
                 ProjectValidator.validate_description(payload.description)
-                ProjectValidator.validate_tech_stack(payload.techStack)
-                ProjectValidator.validate_links(payload.links)
-                ProjectValidator.validate_start_date(payload.startDate)
-                ProjectValidator.validate_end_date(payload.endDate)
-                ProjectValidator.validate_date_range(payload.startDate, payload.endDate)
+                if payload.techStack is not None:
+                    ProjectValidator.validate_tech_stack(payload.techStack)
+                if payload.links is not None:
+                    ProjectValidator.validate_links(payload.links)
+                if payload.startDate is not None:
+                    ProjectValidator.validate_start_date(payload.startDate)
+                if payload.endDate is not None:
+                    ProjectValidator.validate_end_date(payload.endDate)
+                if payload.startDate is not None and payload.endDate is not None:
+                    ProjectValidator.validate_date_range(
+                        payload.startDate, payload.endDate
+                    )
             except ValueError as validation_error:
                 logger.warning(
                     f"Project validation failed for user {userId}: {str(validation_error)}",
@@ -394,7 +401,10 @@ class ProjectServiceClass:
                     ProjectValidator.validate_start_date(payload.startDate)
                 if payload.endDate is not None:
                     ProjectValidator.validate_end_date(payload.endDate)
-                ProjectValidator.validate_date_range(payload.startDate, payload.endDate)
+                if payload.startDate is not None and payload.endDate is not None:
+                    ProjectValidator.validate_date_range(
+                        payload.startDate, payload.endDate
+                    )
             except ValueError as validation_error:
                 logger.warning(
                     f"Project update validation failed for user {userId}: {str(validation_error)}",
