@@ -78,6 +78,8 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if profile already exists for user: {userId}")
+            # Expire session cache to ensure fresh data
+            db.expire_all()
             existing_profile = (
                 db.query(Profile).filter(Profile.userId == user.id).first()
             )
@@ -131,7 +133,7 @@ class ProfileServiceClass:
                 )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="User already has a profile. Update the existing profile instead.",
+                    detail="A profile for this user already exists. Please use the update endpoint (PATCH) to modify your existing profile.",
                 )
             logger.error(
                 f"Integrity error during profile creation for user {userId}: {str(e)}",
@@ -191,6 +193,7 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if user exists: {userId}")
+            db.expire_all()
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
@@ -300,6 +303,7 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if user exists: {userId}")
+            db.expire_all()
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
