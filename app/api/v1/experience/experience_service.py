@@ -12,7 +12,11 @@ from app.response.experience_responses import (
     ExperienceUpdateResponse,
 )
 from app.core.logger import logger
-from app.validators.experience_validators import ExperienceValidator
+from app.validators.experience_validators import (
+    ExperienceValidator,
+    ValidationException,
+)
+from app.core.validation_error import ValidationErrorField, ValidationErrorResponse
 
 
 class ExperienceServiceClass:
@@ -61,10 +65,10 @@ class ExperienceServiceClass:
                 ExperienceValidator.validate_employment_type(payload.employment_type)
                 ExperienceValidator.validate_location_type(payload.location_type)
                 ExperienceValidator.validate_location_details(payload.location_details)
-                ExperienceValidator.validate_month(payload.start_month)
-                ExperienceValidator.validate_year(payload.start_year)
-                ExperienceValidator.validate_month(payload.end_month)
-                ExperienceValidator.validate_year(payload.end_year)
+                ExperienceValidator.validate_month(payload.start_month, "start_month")
+                ExperienceValidator.validate_year(payload.start_year, "start_year")
+                ExperienceValidator.validate_month(payload.end_month, "end_month")
+                ExperienceValidator.validate_year(payload.end_year, "end_year")
                 ExperienceValidator.validate_date_range(
                     payload.start_month,
                     payload.start_year,
@@ -72,18 +76,29 @@ class ExperienceServiceClass:
                     payload.end_year,
                 )
                 logger.info(f"Payload validation successful for user {userId}")
-            except ValueError as validation_error:
+            except ValidationException as validation_error:
                 logger.warning(
                     f"Experience payload validation failed for user {userId}",
                     extra={
                         "userId": userId,
-                        "error": str(validation_error),
-                        "company": payload.company_name,
+                        "field": validation_error.field,
+                        "code": validation_error.code,
+                        "error": validation_error.message,
                     },
+                )
+                error_field = ValidationErrorField(
+                    field=validation_error.field,
+                    code=validation_error.code,
+                    message=validation_error.message,
+                    constraint=validation_error.constraint,
+                )
+                error_response = ValidationErrorResponse(
+                    message="Please fix the validation errors below",
+                    errors=[error_field],
                 )
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Validation error: {str(validation_error)}",
+                    detail=error_response.model_dump(),
                 )
 
             logger.info(f"Verifying user exists with ID: {userId}")
