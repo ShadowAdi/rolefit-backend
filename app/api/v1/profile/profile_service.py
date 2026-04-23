@@ -212,9 +212,15 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Retrieving profile for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
+            result = db.execute(
+                text(
+                    'SELECT id, "userId", full_name, headline, summary, resume_link, cover_letter_link, links, created_at, updated_at FROM "Profile" WHERE "userId" = :user_id'
+                ),
+                {"user_id": user.id},
+            )
+            row = result.first()
 
-            if not user_profile:
+            if not row:
                 logger.warning(
                     f"Profile retrieval failed: User profile not found",
                     extra={"userId": userId},
@@ -226,10 +232,24 @@ class ProfileServiceClass:
 
             logger.info(
                 f"Profile retrieved successfully for user: {userId}",
-                extra={"userId": userId, "profileId": str(user_profile.id)},
+                extra={"userId": userId, "profileId": str(row[0])},
             )
 
-            return ProfileGetResponse.model_validate(user_profile)
+            # Map row data to Profile object for response validation
+            profile_dict = {
+                "id": row[0],
+                "userId": row[1],
+                "full_name": row[2],
+                "headline": row[3],
+                "summary": row[4],
+                "resume_link": row[5],
+                "cover_letter_link": row[6],
+                "links": row[7],
+                "created_at": row[8],
+                "updated_at": row[9],
+            }
+
+            return ProfileGetResponse.model_validate(profile_dict)
 
         except HTTPException:
             raise
