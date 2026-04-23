@@ -10,6 +10,10 @@ class RoleTypeEnum(str, Enum):
     CONTRACT = "Contract"
 
 
+class JDInput(BaseModel):
+    payload: str
+
+
 class LocationTypeEnum(str, Enum):
     REMOTE = "Remote"
     HYBRID = "Hybrid"
