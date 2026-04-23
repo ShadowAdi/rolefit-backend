@@ -14,20 +14,14 @@ from app.api.v1.content import content_router
 
 v1_router = APIRouter()
 
-v1_router.include_router(health_router.router, prefix="/health", tags=["health"])
-v1_router.include_router(user_router.router, prefix="/user", tags=["user"])
-v1_router.include_router(auth_router.router, prefix="/auth", tags=["auth"])
-v1_router.include_router(profile_router.router, prefix="/profile", tags=["profile"])
-v1_router.include_router(project_router.router, prefix="/project", tags=["project"])
-v1_router.include_router(
-    experience_router.router, prefix="/experience", tags=["experience"]
-)
-v1_router.include_router(
-    academics_router.router, prefix="/academics", tags=["academics"]
-)
-v1_router.include_router(skill_router.router, prefix="/skills", tags=["skills"])
-v1_router.include_router(tool_router.router, prefix="/tools", tags=["tools"])
-v1_router.include_router(
-    jd_router.router, prefix="/job-descriptions", tags=["Job Descriptions"]
-)
-v1_router.include_router(content_router.router, prefix="/content", tags=["Content"])
+v1_router.include_router(health_router.router, prefix="/health")
+v1_router.include_router(user_router.router, prefix="/user")
+v1_router.include_router(auth_router.router, prefix="/auth")
+v1_router.include_router(profile_router.router, prefix="/profile")
+v1_router.include_router(project_router.router, prefix="/project")
+v1_router.include_router(experience_router.router, prefix="/experience")
+v1_router.include_router(academics_router.router, prefix="/academics")
+v1_router.include_router(skill_router.router, prefix="/skills")
+v1_router.include_router(tool_router.router, prefix="/tools")
+v1_router.include_router(jd_router.router, prefix="/job-descriptions")
+v1_router.include_router(content_router.router, prefix="/content")
