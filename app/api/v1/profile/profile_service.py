@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from sqlalchemy import text
 from fastapi import HTTPException, status
 from app.models.Profile import Profile
 from app.models.User import User
