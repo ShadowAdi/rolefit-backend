@@ -78,8 +78,8 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if profile already exists for user: {userId}")
-            # Expire session cache to ensure fresh data
-            db.expire_all()
+            # Clear session to force fresh database query
+            db.expunge_all()
             existing_profile = (
                 db.query(Profile).filter(Profile.userId == user.id).first()
             )
@@ -91,7 +91,7 @@ class ProfileServiceClass:
                 )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail="User already has a profile. Update the existing profile instead.",
+                    detail="A profile for this user already exists. Please use the update endpoint (PATCH) to modify your existing profile.",
                 )
 
             logger.info(
@@ -123,9 +123,13 @@ class ProfileServiceClass:
             raise
         except IntegrityError as e:
             db.rollback()
+            error_str = str(e.orig).lower()
+            # Check for various PostgreSQL unique constraint error messages
             if (
-                "uq_profile_user_id" in str(e.orig)
-                or "duplicate key" in str(e.orig).lower()
+                "uq_profile_user_id" in error_str
+                or "duplicate key" in error_str
+                or "unique" in error_str
+                or "constraint" in error_str
             ):
                 logger.warning(
                     f"Unique constraint violation: User already has a profile",
@@ -193,7 +197,7 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if user exists: {userId}")
-            db.expire_all()
+            db.expunge_all()
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
@@ -303,7 +307,7 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if user exists: {userId}")
-            db.expire_all()
+            db.expunge_all()
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
