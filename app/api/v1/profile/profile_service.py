@@ -79,16 +79,17 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if profile already exists for user: {userId}")
-            # Clear session to force fresh database query
-            db.expunge_all()
-            existing_profile = (
-                db.query(Profile).filter(Profile.userId == user.id).first()
+            # Use raw SQL to avoid session caching issues
+            result = db.execute(
+                text('SELECT id FROM "Profile" WHERE "userId" = :user_id'),
+                {"user_id": user.id},
             )
+            existing_profile_id = result.scalar()
 
-            if existing_profile:
+            if existing_profile_id:
                 logger.warning(
                     f"Profile creation failed: User already has a profile",
-                    extra={"userId": userId, "profileId": str(existing_profile.id)},
+                    extra={"userId": userId, "profileId": str(existing_profile_id)},
                 )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
