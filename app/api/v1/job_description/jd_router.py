@@ -10,6 +10,7 @@ from app.schema.JobDescription import (
 from app.api.v1.job_description.jd_service import JobDescriptionClass
 from app.core.logger import logger
 from typing import List
+from app.models.user import User
 
 router = APIRouter(prefix="", tags=["Job Descriptions"])
 
@@ -86,7 +87,7 @@ async def generate_job_description(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id")
+    user_id = current_user.id
     logger.info(f"Generating job description from raw JD for user: {user_id}")
     return jd_service.generate_jd(db, user_id, body.payload)
 
@@ -98,7 +99,7 @@ async def generate_job_description(
 async def delete_job_description(
     jd_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     user_id = current_user.get("user_id") or current_user.get("id")
     logger.info(f"Deleting job description {jd_id} for user: {user_id}")
