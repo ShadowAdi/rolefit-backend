@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Body
 from sqlalchemy.orm import Session
 from app.dependency.dependencies import get_db, get_current_user
 from app.schema.JobDescription import (
@@ -81,7 +81,7 @@ async def update_job_description(
     status_code=status.HTTP_201_CREATED,
 )
 async def generate_job_description(
-    payload: str,
+    payload: str = Body(...),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
