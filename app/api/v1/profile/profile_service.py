@@ -79,17 +79,15 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if profile already exists for user: {userId}")
-            # Use raw SQL to avoid session caching issues
-            result = db.execute(
-                text('SELECT id FROM "Profile" WHERE "userId" = :user_id'),
-                {"user_id": user.id},
+            # Use ORM query to ensure session consistency
+            existing_profile = (
+                db.query(Profile).filter(Profile.userId == user.id).first()
             )
-            existing_profile_id = result.scalar()
 
-            if existing_profile_id:
+            if existing_profile:
                 logger.warning(
                     f"Profile creation failed: User already has a profile",
-                    extra={"userId": userId, "profileId": str(existing_profile_id)},
+                    extra={"userId": userId, "profileId": str(existing_profile.id)},
                 )
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -199,7 +197,6 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if user exists: {userId}")
-            db.expunge_all()
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
@@ -212,15 +209,9 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Retrieving profile for user: {userId}")
-            result = db.execute(
-                text(
-                    'SELECT id, "userId", full_name, headline, summary, resume_link, cover_letter_link, links, created_at, updated_at FROM "Profile" WHERE "userId" = :user_id'
-                ),
-                {"user_id": user.id},
-            )
-            row = result.first()
+            user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
 
-            if not row:
+            if not user_profile:
                 logger.warning(
                     f"Profile retrieval failed: User profile not found",
                     extra={"userId": userId},
@@ -232,24 +223,10 @@ class ProfileServiceClass:
 
             logger.info(
                 f"Profile retrieved successfully for user: {userId}",
-                extra={"userId": userId, "profileId": str(row[0])},
+                extra={"userId": userId, "profileId": str(user_profile.id)},
             )
 
-            # Map row data to Profile object for response validation
-            profile_dict = {
-                "id": row[0],
-                "userId": row[1],
-                "full_name": row[2],
-                "headline": row[3],
-                "summary": row[4],
-                "resume_link": row[5],
-                "cover_letter_link": row[6],
-                "links": row[7],
-                "created_at": row[8],
-                "updated_at": row[9],
-            }
-
-            return ProfileGetResponse.model_validate(profile_dict)
+            return ProfileGetResponse.model_validate(user_profile)
 
         except HTTPException:
             raise
@@ -329,7 +306,6 @@ class ProfileServiceClass:
                 )
 
             logger.debug(f"Checking if user exists: {userId}")
-            db.expunge_all()
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
