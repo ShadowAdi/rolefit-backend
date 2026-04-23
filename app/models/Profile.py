@@ -13,9 +13,9 @@ class Profile(Base):
     userId = Column(UUID, ForeignKey("User.id"), nullable=False, unique=True)
     full_name = Column(String, nullable=False, index=True)
     summary = Column(String, nullable=True)
-    headline = Column(String, nullable=False)
+    headline = Column(String, nullable=True)
     resume_link = Column(String, nullable=False)
-    cover_letter_link = Column(String, nullable=False)
+    cover_letter_link = Column(String, nullable=True)
     links = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(

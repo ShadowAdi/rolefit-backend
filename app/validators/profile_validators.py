@@ -25,10 +25,13 @@ class ProfileValidator(BaseModel):
         return v.strip()
 
     @staticmethod
-    def validate_headline(v: str) -> str:
+    def validate_headline(v: Optional[str]) -> Optional[str]:
         """Validate professional headline format"""
-        if not v or not v.strip():
-            raise ValueError("Headline cannot be empty")
+        if v is None:
+            return None
+
+        if not v.strip():
+            return None
 
         if len(v) < 5:
             raise ValueError("Headline must be at least 5 characters long")
@@ -65,10 +68,13 @@ class ProfileValidator(BaseModel):
         return v.strip()
 
     @staticmethod
-    def validate_cover_letter_link(v: str) -> str:
+    def validate_cover_letter_link(v: Optional[str]) -> Optional[str]:
         """Validate cover letter link format"""
-        if not v or not v.strip():
-            raise ValueError("Cover letter link cannot be empty")
+        if v is None:
+            return None
+
+        if not v.strip():
+            return None
 
         url_pattern = r"^https?://[^\s/$.?#].[^\s]*$"
         if not re.match(url_pattern, v):

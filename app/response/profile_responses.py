@@ -12,9 +12,11 @@ class ProfileCreateResponse(BaseModel):
     id: UUID = Field(..., description="Profile unique identifier")
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., description="User full name")
-    headline: str = Field(..., description="Professional headline")
+    headline: Optional[str] = Field(None, description="Professional headline")
     resume_link: str = Field(..., description="Link to user's resume")
-    cover_letter_link: str = Field(..., description="Link to user's cover letter")
+    cover_letter_link: Optional[str] = Field(
+        None, description="Link to user's cover letter"
+    )
     created_at: datetime = Field(..., description="Profile creation timestamp")
 
 
@@ -26,10 +28,12 @@ class ProfileGetResponse(BaseModel):
     id: UUID = Field(..., description="Profile unique identifier")
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., description="User full name")
-    headline: str = Field(..., description="Professional headline")
+    headline: Optional[str] = Field(None, description="Professional headline")
     summary: Optional[str] = Field(None, description="Professional summary or bio")
     resume_link: str = Field(..., description="Link to user's resume")
-    cover_letter_link: str = Field(..., description="Link to user's cover letter")
+    cover_letter_link: Optional[str] = Field(
+        None, description="Link to user's cover letter"
+    )
     links: Optional[Dict[str, Any]] = Field(None, description="Social profile links")
     created_at: datetime = Field(..., description="Profile creation timestamp")
     updated_at: datetime = Field(..., description="Last profile update timestamp")
@@ -43,10 +47,12 @@ class ProfileUpdateResponse(BaseModel):
     id: UUID = Field(..., description="Profile unique identifier")
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., description="User full name")
-    headline: str = Field(..., description="Professional headline")
+    headline: Optional[str] = Field(None, description="Professional headline")
     summary: Optional[str] = Field(None, description="Professional summary or bio")
     resume_link: str = Field(..., description="Link to user's resume")
-    cover_letter_link: str = Field(..., description="Link to user's cover letter")
+    cover_letter_link: Optional[str] = Field(
+        None, description="Link to user's cover letter"
+    )
     links: Optional[Dict[str, Any]] = Field(None, description="Social profile links")
     updated_at: datetime = Field(..., description="Last profile update timestamp")
 
@@ -69,7 +75,9 @@ class ProfileListResponse(BaseModel):
     id: UUID = Field(..., description="Profile unique identifier")
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., description="User full name")
-    headline: str = Field(..., description="Professional headline")
+    headline: Optional[str] = Field(None, description="Professional headline")
     resume_link: str = Field(..., description="Link to user's resume")
-    cover_letter_link: str = Field(..., description="Link to user's cover letter")
+    cover_letter_link: Optional[str] = Field(
+        None, description="Link to user's cover letter"
+    )
     created_at: datetime = Field(..., description="Profile creation timestamp")
