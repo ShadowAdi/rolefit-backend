@@ -89,6 +89,7 @@ async def generate_job_description(
 ):
     userId = str(current_user.id)
     logger.info(f"Generating job description from raw JD for user: {current_user.id}")
+    print(f"User Id: {userId} and type is {type(userId)}")
     return jd_service.generate_jd(db, userId, body.payload)
 
 
