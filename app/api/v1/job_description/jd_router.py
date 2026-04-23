@@ -85,11 +85,11 @@ async def update_job_description(
 async def generate_job_description(
     body: JDInput,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    user_id = str(current_user.id)
-    logger.info(f"Generating job description from raw JD for user: {user_id}")
-    return jd_service.generate_jd(db, user_id, body.payload)
+    userId = str(current_user.id)
+    logger.info(f"Generating job description from raw JD for user: {current_user.id}")
+    return jd_service.generate_jd(db, userId, body.payload)
 
 
 @router.delete(
