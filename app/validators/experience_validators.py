@@ -272,6 +272,29 @@ class ExperienceValidator(BaseModel):
         return v
 
     @staticmethod
+    def validate_priority(v: Optional[int]) -> Optional[int]:
+        """Validate priority value"""
+        if v is None:
+            return None
+
+        if not isinstance(v, int):
+            raise ValidationException(
+                field="priority",
+                code="INVALID_TYPE",
+                message="Priority must be an integer",
+            )
+
+        if v < 0:
+            raise ValidationException(
+                field="priority",
+                code="INVALID_RANGE",
+                message="Priority must be greater than or equal to 0",
+                constraint="min_value: 0",
+            )
+
+        return v
+
+    @staticmethod
     def validate_date_range(
         start_month: Optional[int],
         start_year: Optional[int],

@@ -69,6 +69,7 @@ class ExperienceServiceClass:
                 ExperienceValidator.validate_year(payload.start_year, "start_year")
                 ExperienceValidator.validate_month(payload.end_month, "end_month")
                 ExperienceValidator.validate_year(payload.end_year, "end_year")
+                ExperienceValidator.validate_priority(payload.priority)
                 ExperienceValidator.validate_date_range(
                     payload.start_month,
                     payload.start_year,
@@ -147,6 +148,7 @@ class ExperienceServiceClass:
                 start_year=payload.start_year,
                 end_month=payload.end_month,
                 end_year=payload.end_year,
+                priority=payload.priority,
                 profileId=user_profile.id,
             )
 
@@ -570,13 +572,17 @@ class ExperienceServiceClass:
                         payload.location_details
                     )
                 if payload.start_month is not None:
-                    ExperienceValidator.validate_month(payload.start_month)
+                    ExperienceValidator.validate_month(
+                        payload.start_month, "start_month"
+                    )
                 if payload.start_year is not None:
-                    ExperienceValidator.validate_year(payload.start_year)
+                    ExperienceValidator.validate_year(payload.start_year, "start_year")
                 if payload.end_month is not None:
-                    ExperienceValidator.validate_month(payload.end_month)
+                    ExperienceValidator.validate_month(payload.end_month, "end_month")
                 if payload.end_year is not None:
-                    ExperienceValidator.validate_year(payload.end_year)
+                    ExperienceValidator.validate_year(payload.end_year, "end_year")
+                if payload.priority is not None:
+                    ExperienceValidator.validate_priority(payload.priority)
                 if any(
                     [
                         payload.start_month,
@@ -592,19 +598,30 @@ class ExperienceServiceClass:
                         payload.end_year,
                     )
                 logger.info(f"Payload validation successful for user {userId}")
-            except ValueError as validation_error:
+            except ValidationException as validation_error:
                 logger.warning(
                     f"Experience payload validation failed for user {userId}",
                     extra={
                         "userId": userId,
                         "experienceId": experienceId,
-                        "error": str(validation_error),
-                        "company": payload.company_name,
+                        "field": validation_error.field,
+                        "code": validation_error.code,
+                        "error": validation_error.message,
                     },
+                )
+                error_field = ValidationErrorField(
+                    field=validation_error.field,
+                    code=validation_error.code,
+                    message=validation_error.message,
+                    constraint=validation_error.constraint,
+                )
+                error_response = ValidationErrorResponse(
+                    message="Please fix the validation errors below",
+                    errors=[error_field],
                 )
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Validation error: {str(validation_error)}",
+                    detail=error_response.model_dump(),
                 )
 
             logger.info(f"Verifying user exists with ID: {userId}")
@@ -717,6 +734,10 @@ class ExperienceServiceClass:
             if payload.end_year is not None:
                 experience.end_year = payload.end_year
                 updated_fields["end_year"] = payload.end_year
+
+            if payload.priority is not None:
+                experience.priority = payload.priority
+                updated_fields["priority"] = payload.priority
 
             if not updated_fields:
                 logger.warning(
