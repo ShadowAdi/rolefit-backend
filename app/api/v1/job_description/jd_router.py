@@ -89,7 +89,7 @@ async def generate_job_description(
 ):
     user_id = current_user.id
     logger.info(f"Generating job description from raw JD for user: {user_id}")
-    return jd_service.generate_jd(db, user_id, body.payload)
+    return jd_service.generate_jd(db, str(user_id), body.payload)
 
 
 @router.delete(
