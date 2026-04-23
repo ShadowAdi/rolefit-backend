@@ -17,6 +17,7 @@ from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
 
 router = APIRouter(prefix="", tags=["Profile"])
+service = ProfileServiceClass()
 
 
 @router.post(
@@ -49,7 +50,6 @@ def create_profile(
             extra={"userId": str(current_user.id)},
         )
 
-        service = ProfileServiceClass()
         profile = service.create_profile(
             db=db, payload=data, userId=str(current_user.id)
         )
@@ -106,7 +106,6 @@ def get_profile(
             extra={"userId": str(current_user.id)},
         )
 
-        service = ProfileServiceClass()
         profile = service.get_profile(db=db, userId=str(current_user.id))
 
         logger.info(
@@ -164,7 +163,6 @@ def update_profile(
             extra={"userId": str(current_user.id)},
         )
 
-        service = ProfileServiceClass()
         profile = service.update_profile(
             db=db, payload=data, userId=str(current_user.id)
         )
@@ -221,7 +219,6 @@ def delete_profile(
             extra={"userId": str(current_user.id)},
         )
 
-        service = ProfileServiceClass()
         response = service.delete_profile(db=db, userId=str(current_user.id))
 
         logger.info(
