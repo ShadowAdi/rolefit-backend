@@ -10,7 +10,7 @@ from app.schema.JobDescription import (
 from app.api.v1.job_description.jd_service import JobDescriptionClass
 from app.core.logger import logger
 from typing import List
-from app.models.user import User
+from app.models.User import User
 
 router = APIRouter(prefix="", tags=["Job Descriptions"])
 
