@@ -7,7 +7,7 @@ from app.db.db import get_db
 from app.models.User import User
 from app.core.logger import logger
 
-bearer = HTTPBearer()
+bearer = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
