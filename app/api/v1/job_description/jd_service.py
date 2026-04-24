@@ -691,6 +691,7 @@ class JobDescriptionClass:
             parsed_data = parse_jd_with_ai(payload)
 
             print(f"this is the parsed response {parsed_data}")
+            return True
 
         except Exception as e:
             logger.error(f"Failed to test the jd: {e}")

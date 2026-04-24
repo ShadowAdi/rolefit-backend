@@ -95,7 +95,7 @@ async def generate_job_description(
 
 @router.get(
     "/test-ai",
-    status_code=status.HTTP_200_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 async def test_jd(
     db: Session = Depends(get_db),
