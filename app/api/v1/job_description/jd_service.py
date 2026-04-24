@@ -564,7 +564,7 @@ class JobDescriptionClass:
                     detail="Raw job description cannot be empty",
                 )
 
-            user = db.query(User).filter(User.id == UUID(userId)).first()
+            user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
                     "JD Generation failed: User not found",
