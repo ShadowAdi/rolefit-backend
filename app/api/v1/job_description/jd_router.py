@@ -97,14 +97,8 @@ async def generate_job_description(
     "/test-ai",
     status_code=status.HTTP_200_OK,
 )
-async def test_jd(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    userId = str(current_user.id)
-    logger.info(f"Generating job description from raw JD for user: {current_user.id}")
-    print(f"User Id: {userId} and type is {type(userId)}")
-    return jd_service.test_jd(db, userId)
+async def test_jd():
+    return jd_service.test_jd()
 
 
 @router.delete(
