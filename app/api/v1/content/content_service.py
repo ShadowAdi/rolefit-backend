@@ -139,7 +139,7 @@ class ContentServiceClass:
         except IntegrityError as e:
             db.rollback()
             logger.error(
-                f"Database integrity error during experience creation for user {userId}",
+                f"Database integrity error during resume content creation for user {userId}",
                 extra={
                     "userId": userId,
                     "error": str(e.orig),
@@ -148,13 +148,13 @@ class ContentServiceClass:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database constraint violation occurred. This experience may already exist.",
+                detail="Database constraint violation occurred.",
             )
 
         except SQLAlchemyError as e:
             db.rollback()
             logger.error(
-                f"Database error during experience creation for user {userId}",
+                f"Database error during resume content creation for user {userId}",
                 extra={
                     "userId": userId,
                     "error": str(e),
@@ -163,13 +163,13 @@ class ContentServiceClass:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred while creating experience.",
+                detail="Database error occurred while  resume content creation.",
             )
 
         except Exception as e:
             db.rollback()
             logger.error(
-                f"Unexpected error during experience creation for user {userId}",
+                f"Unexpected error during resume creation for user {userId}",
                 extra={
                     "userId": userId,
                     "error": str(e),
@@ -179,5 +179,5 @@ class ContentServiceClass:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An unexpected error occurred while creating the experience.",
+                detail="An unexpected error occurred while creating the resume content.",
             )
