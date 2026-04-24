@@ -90,8 +90,9 @@ Tools: {', '.join([t.get('name', '') for t in tools])}"""
 
     sections_str = "\n\n".join(sections)
 
-    # Build the main prompt
-    prompt = f"""You are a professional resume writer. Generate a clean, ATS-friendly, ONE-PAGE resume in plain text format.
+    prompt = f"""You are a professional resume writer.
+
+Your task is to generate a clean, ATS-friendly, ONE-PAGE resume in plain text format that will be directly used for PDF rendering.
 
 TARGET JOB:
 Role: {jd.get('role_name', 'Position')}
@@ -99,39 +100,106 @@ Company: {jd.get('company', 'Company')}
 Key Skills: {', '.join(jd.get('tech_stack', [])[:8])}
 Required Skills: {', '.join(jd.get('required_skills', [])[:8])}
 
-USER DATA TO USE:
+====================
+MANDATORY DATA USAGE
+====================
+- Use ALL relevant user data (experience, projects, education, achievements, publications)
+- Do NOT ignore any section unless space constraints require trimming
+- Prioritize content relevant to the job description
+
+====================
+DYNAMIC SECTION RULES
+====================
+- Include EDUCATION if provided
+- Include PUBLICATIONS if:
+  - job description contains AI/ML/Deep Learning/Data Science
+  - OR user has publications
+- Include PROJECTS if user has less than 2 years experience
+- Include PROFESSIONAL SUMMARY only if:
+  - user has < 3 years experience
+  - OR additional context is needed
+- Skip summary if experience is strong
+
+====================
+CONTENT ENHANCEMENT
+====================
+- Expand short inputs (1–2 lines) into strong, professional bullet points
+- Add measurable impact where possible (%, scale, performance)
+- Keep content realistic (DO NOT hallucinate)
+- Use concise, high-impact language
+
+====================
+SKILLS FORMAT
+====================
+Group skills into categories:
+Languages:
+Frameworks & Libraries:
+Backend & APIs:
+Databases & ORMs:
+DevOps & Tools:
+
+====================
+BULLET RULES
+====================
+- Start with strong action verbs (Built, Engineered, Designed, Optimized)
+- Each bullet must show impact or outcome
+- One line per bullet
+- Avoid generic phrases like "worked on"
+
+====================
+HEADER FORMAT
+====================
+Name
+Role / Title
+Email | GitHub | Portfolio | LinkedIn
+
+(No emojis, no markdown symbols)
+
+====================
+PDF RENDERING RULES (CRITICAL)
+====================
+- Output must be clean plain text (NO markdown, NO symbols like **, [], etc.)
+- Use consistent spacing between sections (one blank line only)
+- Do NOT use tabs or irregular spacing
+- Do NOT include emojis or special characters
+- Keep line lengths reasonable (avoid very long lines)
+- Ensure formatting is consistent so it can be directly converted to PDF
+- Section headers must be in UPPERCASE
+
+====================
+SECTION ORDER
+====================
+Header
+Professional Summary (if needed)
+Skills & Technologies
+Professional Experience
+Projects
+Achievements & Certifications
+Publications (if applicable)
+Education
+
+====================
+CONTENT FOCUS
+====================
+- Match resume content with job description keywords
+- Highlight relevant technologies from tech_stack and required_skills
+- Remove generic or filler content
+- Keep everything concise to fit ONE PAGE
+
+====================
+OUTPUT RULES
+====================
+- Start with: "[Full Name] - Resume"
+- Output ONLY the final resume text
+- Do NOT include explanations
+
+====================
+USER DATA
+====================
 {sections_str}
 
-STRICT FORMATTING RULES:
-1. **ONE PAGE MAXIMUM** - Fit everything on a single page
-2. **Bullet Points**: Use 1-3 bullets per position/project (max 2 for projects)
-3. **No Lorem Ipsum** - Use actual data provided
-4. **Action Verbs**: Start each bullet with strong action verbs (Developed, Built, Led, Designed, etc.)
-5. **Quantify Achievements**: Include metrics where possible (e.g., "Improved performance by 40%")
-6. **ATS Compatible**: 
-   - No tables, images, or special formatting
-   - Use standard section headers
-   - Clean plain text only
-7. **Section Order** (if space allows):
-   - Header (Name, Headline, Email, Links)
-   - Professional Summary (2-3 lines max, optional if space tight)
-   - Skills & Technologies
-   - Professional Experience (top 3 only)
-   - Projects (top 3 only, 1-2 bullets each)
-   - Achievements & Certifications (top 3 only)
-   - Publications (if space available)
-   - Education (at bottom if from tier 3/non-top college)
-
-8. **Content Focus**:
-   - Prioritize experiences and projects matching the JD keywords
-   - Highlight technical skills from tech_stack and required_skills
-   - Remove generic descriptions - be specific
-   - Use concise language to fit one page
-
-9. **Resume Name Format**:
-   Start with: "[Full Name] - Resume"
-
-GENERATE THE COMPLETE RESUME TEXT NOW. Output ONLY the resume text, no explanations."""
+GENERATE THE FINAL RESUME NOW.
+"""
 
     return prompt
 
