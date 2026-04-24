@@ -11,3 +11,15 @@ class CreateGeneratedDocumnet(BaseModel):
     jobId: str = Field(None)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GeneratedDocumnetResponse(BaseModel):
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    resume_text: str
+    userId: str
+    jobId: str
+    created_at: datetime
+    updated_at: datetime
