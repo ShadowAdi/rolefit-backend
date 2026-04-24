@@ -27,9 +27,9 @@ async def create_job_description(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id")
-    logger.info(f"Creating job description for user: {user_id}")
-    return jd_service.create_jd(db, user_id, payload)
+    user_id = current_user.id
+    logger.info(f"Creating job description for user: {str(user_id)}")
+    return jd_service.create_jd(db, str(user_id), payload)
 
 
 @router.get(
@@ -42,9 +42,9 @@ async def get_job_description(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id")
+    user_id = current_user.id
     logger.info(f"Retrieving job description {jd_id} for user: {user_id}")
-    return jd_service.get_jd(db, jd_id, user_id)
+    return jd_service.get_jd(db, jd_id, str(user_id))
 
 
 @router.get(
@@ -56,9 +56,9 @@ async def get_all_job_descriptions(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id")
-    logger.info(f"Retrieving all job descriptions for user: {user_id}")
-    return jd_service.get_all_jds(db, user_id)
+    user_id = current_user.id
+    logger.info(f"Retrieving all job descriptions for user: {str(user_id)}")
+    return jd_service.get_all_jds(db, str(user_id))
 
 
 @router.patch(
@@ -72,9 +72,9 @@ async def update_job_description(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id")
-    logger.info(f"Updating job description {jd_id} for user: {user_id}")
-    return jd_service.update_jd(db, jd_id, user_id, payload)
+    user_id = current_user.id
+    logger.info(f"Updating job description {jd_id} for user: {str(user_id)}")
+    return jd_service.update_jd(db, jd_id, str(user_id), payload)
 
 
 @router.post(
@@ -87,17 +87,21 @@ async def generate_job_description(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    userId = str(current_user.id)
+    user_id = current_user.id
     logger.info(f"Generating job description from raw JD for user: {current_user.id}")
-    print(f"User Id: {userId} and type is {type(userId)}")
-    return jd_service.generate_jd(db, userId, body.payload)
+    print(f"User Id: {str(user_id)} and type is {type(user_id)}")
+    return jd_service.generate_jd(db, str(user_id), body.payload)
 
 
 @router.get(
     "/test-ai",
     status_code=status.HTTP_200_OK,
 )
-async def test_jd():
+async def test_jd(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
     return jd_service.test_jd()
 
 
@@ -110,6 +114,6 @@ async def delete_job_description(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id")
+    user_id = current_user.id
     logger.info(f"Deleting job description {jd_id} for user: {user_id}")
-    return jd_service.delete_jd(db, jd_id, user_id)
+    return jd_service.delete_jd(db, jd_id, str(user_id))
