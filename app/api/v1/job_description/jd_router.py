@@ -93,6 +93,20 @@ async def generate_job_description(
     return jd_service.generate_jd(db, userId, body.payload)
 
 
+@router.get(
+    "/test-ai",
+    status_code=status.HTTP_200_CREATED,
+)
+async def test_jd(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    userId = str(current_user.id)
+    logger.info(f"Generating job description from raw JD for user: {current_user.id}")
+    print(f"User Id: {userId} and type is {type(userId)}")
+    return jd_service.test_jd(db, userId)
+
+
 @router.delete(
     "/{jd_id}",
     status_code=status.HTTP_204_NO_CONTENT,
