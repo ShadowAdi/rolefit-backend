@@ -1,17 +1,17 @@
+import re
 import requests
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException, status
-import json
 from app.models.JobDescription import JobDescription
 from app.models.User import User
 from app.core.logger import logger
-from uuid import UUID
 from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
 from app.utils.sarvam_const import MAX_TOKENS, RESUME_GEN_TIMEOUT, SARVAM_API_URL
 from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
-import re
+from app.models.GeneratedDocument import GeneratedDocumment
+from app.response.GenerateDocument_responses import GenerateDocCreateResponse
 
 
 class ContentServiceClass:
@@ -72,8 +72,6 @@ class ContentServiceClass:
 
             prompt = build_resume_prompt(job_profile_response)
 
-            print(f"This is the prompt for resume: \n\n {prompt} \n\n")
-
             payload = {
                 "model": "sarvam-m",
                 "messages": [{"role": "user", "content": prompt}],
@@ -104,8 +102,6 @@ class ContentServiceClass:
                 response_data["choices"][0].get("message", {}).get("content", "")
             )
 
-            print("this is the message content come a")
-
             if not message_content:
                 logger.error(
                     "Invalid API response: No message content",
@@ -113,24 +109,29 @@ class ContentServiceClass:
                 )
                 raise ValueError("No content in API response")
 
-            print(f"this is the message content come after {message_content}")
-
             clean = re.sub(
                 r"<think>.*?</think>", "", message_content, flags=re.DOTALL
             ).strip()
-
-            print(f"this is the clean after content {clean}")
 
             logger.debug(
                 f"Successfully generated resume text",
                 extra={"userId": userId, "jobId": jobId},
             )
 
-            return {
-                "resume_text": clean,
-                "userId": userId,
-                "jobId": jobId,
-            }
+            if not clean:
+                logger.error(f"Failed to parse the clean resume documnet")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Failed to generate resume content",
+                )
+
+            genDoc = GeneratedDocumment(userId=userId, jobId=jobId, resume_text=clean)
+
+            db.add(genDoc)
+            db.commit()
+            db.refresh(genDoc)
+
+            return GenerateDocCreateResponse.model_validate(genDoc)
 
         except HTTPException:
             raise
