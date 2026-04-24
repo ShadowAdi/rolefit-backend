@@ -9,8 +9,8 @@ class GenerateDocCreateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
-    userId: str
-    jobId: str
+    userId: UUID
+    jobId: UUID
     resume_text: str
     created_at: datetime
 
