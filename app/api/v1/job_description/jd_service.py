@@ -564,12 +564,7 @@ class JobDescriptionClass:
                     detail="Raw job description cannot be empty",
                 )
 
-            try:
-                user_uuid = UUID(userId)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid UUID format")
-
-            user = db.query(User).filter(User.id == user_uuid).first()
+            user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(
                     "JD Generation failed: User not found",
@@ -593,8 +588,16 @@ class JobDescriptionClass:
                 role_type=parsed_data.get("role_type"),
                 location=parsed_data.get("location"),
                 location_city=parsed_data.get("location_city"),
-                salary_min=parsed_data.get("salary_min"),
-                salary_max=parsed_data.get("salary_max"),
+                salary_min=(
+                    str(parsed_data["salary_min"])
+                    if parsed_data.get("salary_min") is not None
+                    else None
+                ),
+                salary_max=(
+                    str(parsed_data["salary_max"])
+                    if parsed_data.get("salary_max") is not None
+                    else None
+                ),
                 salary_currency=parsed_data.get("salary_currency"),
                 duration=parsed_data.get("duration"),
                 tech_stack=parsed_data.get("tech_stack", []),
@@ -627,15 +630,6 @@ class JobDescriptionClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error parsing AI response. Please try again.",
             )
-        except ValueError as e:
-            logger.warning(
-                f"Invalid UUID format for JD generation {userId}",
-                extra={"userId": userId, "error": str(e)},
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid User ID format {userId}",
-            )
         except requests.exceptions.RequestException as e:
             logger.error(
                 f"API request error during JD generation for user {userId}: {str(e)}",
@@ -645,6 +639,16 @@ class JobDescriptionClass:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Failed to parse job description. Please try again later.",
+            )
+
+        except ValueError as e:
+            logger.warning(
+                f"Invalid UUID format for JD generation {userId}",
+                extra={"userId": userId, "error": str(e)},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid User ID format {userId}",
             )
 
         except Exception as e:
