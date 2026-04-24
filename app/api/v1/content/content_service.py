@@ -11,6 +11,7 @@ from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
 from app.utils.sarvam_const import MAX_TOKENS, RESUME_GEN_TIMEOUT, SARVAM_API_URL
 from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
+import re
 
 
 class ContentServiceClass:
@@ -47,8 +48,8 @@ class ContentServiceClass:
             jd = (
                 db.query(JobDescription)
                 .filter(
-                    JobDescription.id == UUID(jobId),
-                    JobDescription.userId == UUID(userId),
+                    JobDescription.id == jobId,
+                    JobDescription.userId == userId,
                 )
                 .first()
             )
@@ -69,8 +70,9 @@ class ContentServiceClass:
 
             headers = sarvam_api_key_headers()
 
-            # Build the resume generation prompt using filtered user data
             prompt = build_resume_prompt(job_profile_response)
+
+            print(f"This is the prompt for resume: \n\n {prompt} \n\n")
 
             payload = {
                 "model": "sarvam-m",
@@ -102,6 +104,8 @@ class ContentServiceClass:
                 response_data["choices"][0].get("message", {}).get("content", "")
             )
 
+            print("this is the message content come a")
+
             if not message_content:
                 logger.error(
                     "Invalid API response: No message content",
@@ -109,7 +113,13 @@ class ContentServiceClass:
                 )
                 raise ValueError("No content in API response")
 
-            parsed_json = json.loads(message_content)
+            print(f"this is the message content come after {message_content}")
+
+            clean = re.sub(
+                r"<think>.*?</think>", "", message_content, flags=re.DOTALL
+            ).strip()
+
+            print(f"this is the clean after content {clean}")
 
             logger.debug(
                 f"Successfully generated resume text",
@@ -117,7 +127,7 @@ class ContentServiceClass:
             )
 
             return {
-                "resume_text": message_content.strip(),
+                "resume_text": clean,
                 "userId": userId,
                 "jobId": jobId,
             }

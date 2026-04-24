@@ -19,6 +19,6 @@ async def generate_content(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user_id = current_user.get("user_id") or current_user.get("id")
+    user_id = current_user.id
     logger.info(f"Creating job description for user: {user_id}")
-    return content_service.generate_content(userId=user_id, jobId=jobId, db=db)
+    return content_service.generate_content(userId=str(user_id), jobId=jobId, db=db)
