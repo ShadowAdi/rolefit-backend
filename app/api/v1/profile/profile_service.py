@@ -16,6 +16,7 @@ from app.response.profile_responses import (
 )
 from app.core.logger import logger
 from app.validators.profile_validators import ProfileValidator
+from app.helpers.jd_parser import parse_jd_with_ai
 
 
 class ProfileServiceClass:
@@ -230,6 +231,12 @@ class ProfileServiceClass:
                 f"Profile retrieved successfully for user: {userId}",
                 extra={"userId": userId, "profileId": str(user_profile.id)},
             )
+
+            payload = "Junior Software Engineer $60k – $70k About the job About the role: We're building TrickCV.com , an AI-powered Chrome extension that tailors your CV to any job description in one click. Live product, real traction, growing fast. Looking for a junior engineer to help us scale. What you'll work on: Chrome extension development and improvements Backend APIs and automation pipelines AI model integrations Shipping fast with direct founder collaboration What we're looking for: 1+ years experience in JavaScript or Python Comfortable working independently and remotely Interest in AI or productivity tools is a big plus Chrome extension or LLM experience is a bonus — not required  What we offer:  Fully remote, flexible hours Direct impact — small team, your work ships immediately Equity discussion possible for the right person Competitive salary for early stage Visit us : trickcv.com"
+
+            parsed_data = parse_jd_with_ai(payload)
+
+            print(f"this is the parsed response {parsed_data}")
 
             return ProfileGetResponse.model_validate(user_profile)
 

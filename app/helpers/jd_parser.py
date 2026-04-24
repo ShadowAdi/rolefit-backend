@@ -82,13 +82,13 @@ Job Description:
         raise ValueError("No content in API response")
 
     clean = message_content.strip()
-    if clean.startswith("```"):
-        clean = re.sub(r"^```(?:json)?\s*", "", clean)
-        clean = re.sub(r"\s*```$", "", clean).strip()
 
+    match = re.search(r"\{.*\}", clean, flags=re.DOTALL)
+    if not match:
+        raise ValueError("No JSON object found in AI response")
+
+    parsed_json = json.loads(match.group())
     print(f"after cleaning {clean}")
-
-    parsed_json = json.loads(clean)
     logger.debug("Successfully parsed JD with AI", extra={"parsed_data": parsed_json})
 
     logger.debug(
