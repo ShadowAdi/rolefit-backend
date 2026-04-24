@@ -7,6 +7,9 @@ from app.utils.sarvam_const import MAX_TOKENS, JD_PARSE_TIMEOUT, SARVAM_API_URL
 
 
 def parse_jd_with_ai(raw_jd: str) -> dict:
+    print("parse_jd_with_ai CALLED")
+
+    logger.debug("Entered parse_jd_with_ai function")
 
     prompt = f"""Parse the following job description and extract structured data. Return ONLY valid JSON with these fields (use null for missing values):
 {{
@@ -45,6 +48,9 @@ Job Description:
 
     logger.debug(f"Calling Sarvam AI API for JD parsing")
 
+    print("Calling Sarvam API...")
+    logger.debug("Calling Sarvam AI API for JD parsing")
+
     response = requests.post(
         SARVAM_API_URL,
         json=payload,
@@ -55,6 +61,9 @@ Job Description:
     response.raise_for_status()
 
     response_data = response.json()
+
+    print("Response received")
+    logger.debug(f"API response: {response_data}")
 
     if "choices" not in response_data or len(response_data["choices"]) == 0:
         logger.error(
@@ -74,8 +83,11 @@ Job Description:
 
     clean = message_content.strip()
     if clean.startswith("```"):
-        clean = re.sub(r"```(?:json)?\n?", "", clean).strip().rstrip("```").strip()
+        clean = re.sub(r"^```(?:json)?\s*", "", clean)
+        clean = re.sub(r"\s*```$", "", clean).strip()
+
     parsed_json = json.loads(clean)
+    logger.debug("Successfully parsed JD with AI", extra={"parsed_data": parsed_json})
 
     logger.debug(
         f"Successfully parsed JD with AI",
