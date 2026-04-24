@@ -12,6 +12,7 @@ from app.utils.sarvam_const import MAX_TOKENS, RESUME_GEN_TIMEOUT, SARVAM_API_UR
 from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.response.GenerateDocument_responses import GenerateDocCreateResponse
+from uuid import UUID
 
 
 class ContentServiceClass:
@@ -125,7 +126,9 @@ class ContentServiceClass:
                     detail="Failed to generate resume content",
                 )
 
-            genDoc = GeneratedDocumment(userId=userId, jobId=jobId, resume_text=clean)
+            genDoc = GeneratedDocumment(
+                userId=UUID(userId), jobId=UUID(jobId), resume_text=clean
+            )
 
             db.add(genDoc)
             db.commit()
