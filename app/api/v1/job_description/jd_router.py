@@ -102,7 +102,7 @@ async def test_jd(
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
-    return jd_service.test_jd()
+    return jd_service.test_jd(db, str(user_id))
 
 
 @router.delete(
