@@ -657,3 +657,41 @@ class JobDescriptionClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while generating job description",
             )
+
+    def test_jd(self, db: Session, userId: str):
+        try:
+            if not userId:
+                logger.error(
+                    "JD generation failed: Missing user ID", extra={"userId": userId}
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User ID is required",
+                )
+
+            payload = "Junior Software Engineer $60k – $70k About the job About the role: We're building TrickCV.com , an AI-powered Chrome extension that tailors your CV to any job description in one click. Live product, real traction, growing fast. Looking for a junior engineer to help us scale. What you'll work on: Chrome extension development and improvements Backend APIs and automation pipelines AI model integrations Shipping fast with direct founder collaboration What we're looking for: 1+ years experience in JavaScript or Python Comfortable working independently and remotely Interest in AI or productivity tools is a big plus Chrome extension or LLM experience is a bonus — not required  What we offer:  Fully remote, flexible hours Direct impact — small team, your work ships immediately Equity discussion possible for the right person Competitive salary for early stage Visit us : trickcv.com"
+
+            try:
+                user_uuid = UUID(userId)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid UUID format",
+                )
+
+            user = db.query(User).filter(User.id == user_uuid).first()
+            if not user:
+                logger.warning(
+                    "JD Generation failed: User not found", extra={"userId": userId}
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="User does not exist"
+                )
+
+            parsed_data = parse_jd_with_ai(payload)
+
+            print(f"this is the parsed response {parsed_data}")
+
+        except Exception as e:
+            logger.error(f"Failed to test the jd: {e}")
+            raise HTTPException("Failed to test the jd", 500)

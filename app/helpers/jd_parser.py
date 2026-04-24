@@ -62,7 +62,7 @@ Job Description:
 
     response_data = response.json()
 
-    print("Response received")
+    print(f"Response received {response_data}")
     logger.debug(f"API response: {response_data}")
 
     if "choices" not in response_data or len(response_data["choices"]) == 0:
@@ -85,6 +85,8 @@ Job Description:
     if clean.startswith("```"):
         clean = re.sub(r"^```(?:json)?\s*", "", clean)
         clean = re.sub(r"\s*```$", "", clean).strip()
+
+    print(f"after cleaning {clean}")
 
     parsed_json = json.loads(clean)
     logger.debug("Successfully parsed JD with AI", extra={"parsed_data": parsed_json})
