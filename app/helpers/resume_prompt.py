@@ -1,21 +1,12 @@
 """
-Helper module to generate the resume generation prompt for AI.
-Handles intelligent section ordering and formatting instructions.
+Resume generation prompt builder.
+Produces a structured JSON schema instead of plain text,
+so the PDF renderer can work with typed data instead of
+trying to parse free-form text.
 """
 
 
 def build_resume_prompt(user_data: dict) -> str:
-    """
-    Build a strict prompt for generating a professional one-page resume.
-
-    Args:
-        user_data: Dictionary containing user profile, experiences, projects, etc.
-                   (output from filter_jd)
-
-    Returns:
-        A detailed prompt string for the AI to generate resume text
-    """
-
     profile = user_data.get("profile", {})
     experiences = user_data.get("experiences", [])
     projects = user_data.get("projects", [])
@@ -25,280 +16,223 @@ def build_resume_prompt(user_data: dict) -> str:
     publications = user_data.get("publications", [])
     achievements = user_data.get("achievements", [])
     jd = user_data.get("job_description", {})
+    email = user_data.get("user", {}).get("email", "")
 
-    # Build sections in order (user controls section placement via priority)
-    sections = []
+    years_experience = _estimate_years(experiences)
 
-    # 1. Header with contact info
-    sections.append(
-        f"""HEADER SECTION:
-Name: {profile.get('full_name', 'Name')}
-Headline: {profile.get('headline', '')}
-Email: {user_data.get('user', {}).get('email', '')}
-Links: {profile.get('links', 'N/A')}"""
+    include_summary = years_experience < 3
+    include_projects = years_experience < 2 or bool(projects)
+    include_publications = bool(publications) or _is_ml_role(jd)
+
+    sections_data = _build_sections_string(
+        profile,
+        email,
+        experiences,
+        projects,
+        academics,
+        skills,
+        tools,
+        publications,
+        achievements,
+        include_summary,
+        include_projects,
+        include_publications,
     )
 
-    # 2. Professional Summary (if available)
-    if profile.get("summary"):
-        sections.append(
-            f"""PROFESSIONAL SUMMARY:
-{profile.get('summary')}"""
-        )
+    prompt = f"""You are an expert resume writer and ATS optimization specialist.
 
-    # 3. Skills and Tools (all of them)
-    if skills or tools:
-        sections.append(
-            f"""SKILLS & TECHNOLOGIES:
-Skills: {', '.join([s.get('name', '') for s in skills])}
-Tools: {', '.join([t.get('name', '') for t in tools])}"""
-        )
+Your task: transform the raw user data below into a polished, one-page resume.
+Output MUST be valid JSON matching the exact schema shown. No markdown, no prose, no extra keys.
 
-    # 4. Relevant Experiences (all filtered experiences, already prioritized)
-    if experiences:
-        sections.append(
-            f"""PROFESSIONAL EXPERIENCE:
-{format_experiences(experiences)}"""
-        )
+=== TARGET JOB ===
+Role: {jd.get('role_name', '')}
+Company: {jd.get('company', '')}
+Tech Stack: {', '.join(jd.get('tech_stack', [])[:10])}
+Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
 
-    # 5. Projects (all filtered projects, already prioritized, 1-3 bullets each)
-    if projects:
-        sections.append(
-            f"""PROJECTS:
-{format_projects(projects)}"""
-        )
+=== WRITING RULES ===
+1. Bullet points: start with a strong past-tense action verb (Built, Engineered, Reduced, Shipped, Designed, Automated, Migrated, Optimized, Led, Implemented).
+2. Every bullet must contain ONE measurable outcome or scale signal (%, users, ms, requests/sec, lines of code, team size). If raw data lacks a number, add a realistic one that fits the context — do NOT hallucinate company names or technologies.
+3. Each bullet is ONE concise line. No sub-bullets.
+4. Match keywords from tech_stack and required_skills into experience/project bullets naturally.
+5. Remove filler phrases: "worked on", "responsible for", "helped with", "assisted in".
+6. Skills section: group into exactly these categories (omit a category if empty):
+   Languages | Frameworks & Libraries | Databases & ORMs | DevOps & Cloud | Other Tools
 
-    # 6. Achievements (all filtered achievements, already prioritized)
-    if achievements:
-        sections.append(
-            f"""ACHIEVEMENTS & CERTIFICATIONS:
-{format_achievements(achievements)}"""
-        )
+=== CONTENT SELECTION RULES ===
+- Include summary: {include_summary} (only for < 3 years experience or career changers)
+- Include projects: {include_projects}
+- Include publications: {include_publications}
+- Max experience bullets per role: 4
+- Max project bullets: 2 per project, max 3 projects total
+- If space is tight, trim oldest/least-relevant experience first
 
-    # 7. Publications (if any)
-    if publications:
-        sections.append(
-            f"""PUBLICATIONS:
-{format_publications(publications)}"""
-        )
+=== OUTPUT JSON SCHEMA ===
+Return ONLY this JSON object, no wrapping text:
 
-    # 8. Education (user controls placement via priority in database)
-    if academics:
-        sections.append(
-            f"""EDUCATION:
-{format_education(academics)}"""
-        )
+{{
+  "header": {{
+    "name": "string",
+    "title": "string",
+    "email": "string",
+    "phone": "string",
+    "location": "string",
+    "links": ["string"]
+  }},
+  "summary": "string or null",
+  "skills": [
+    {{"category": "string", "items": ["string"]}}
+  ],
+  "experience": [
+    {{
+      "role": "string",
+      "company": "string",
+      "location": "string",
+      "start": "string",
+      "end": "string",
+      "bullets": ["string"]
+    }}
+  ],
+  "projects": [
+    {{
+      "title": "string",
+      "tech": "string",
+      "bullets": ["string"],
+      "links": ["string"]
+    }}
+  ],
+  "achievements": ["string"],
+  "publications": [
+    {{
+      "title": "string",
+      "publisher": "string",
+      "year": "string"
+    }}
+  ],
+  "education": [
+    {{
+      "degree": "string",
+      "institution": "string",
+      "location": "string",
+      "year": "string"
+    }}
+  ]
+}}
 
-    sections_str = "\n\n".join(sections)
+=== RAW USER DATA ===
+{sections_data}
 
-    prompt = f"""You are a professional resume writer.
-
-Your task is to generate a clean, ATS-friendly, ONE-PAGE resume in plain text format that will be directly used for PDF rendering.
-
-TARGET JOB:
-Role: {jd.get('role_name', 'Position')}
-Company: {jd.get('company', 'Company')}
-Key Skills: {', '.join(jd.get('tech_stack', [])[:8])}
-Required Skills: {', '.join(jd.get('required_skills', [])[:8])}
-
-====================
-MANDATORY DATA USAGE
-====================
-- Use ALL relevant user data (experience, projects, education, achievements, publications)
-- Do NOT ignore any section unless space constraints require trimming
-- Prioritize content relevant to the job description
-
-====================
-DYNAMIC SECTION RULES
-====================
-- Include EDUCATION if provided
-- Include PUBLICATIONS if:
-  - job description contains AI/ML/Deep Learning/Data Science
-  - OR user has publications
-- Include PROJECTS if user has less than 2 years experience
-- Include PROFESSIONAL SUMMARY only if:
-  - user has < 3 years experience
-  - OR additional context is needed
-- Skip summary if experience is strong
-
-====================
-CONTENT ENHANCEMENT
-====================
-- Expand short inputs (1–2 lines) into strong, professional bullet points
-- Add measurable impact where possible (%, scale, performance)
-- Keep content realistic (DO NOT hallucinate)
-- Use concise, high-impact language
-
-====================
-SKILLS FORMAT
-====================
-Group skills into categories:
-Languages:
-Frameworks & Libraries:
-Backend & APIs:
-Databases & ORMs:
-DevOps & Tools:
-
-====================
-BULLET RULES
-====================
-- Start with strong action verbs (Built, Engineered, Designed, Optimized)
-- Each bullet must show impact or outcome
-- One line per bullet
-- Avoid generic phrases like "worked on"
-
-====================
-HEADER FORMAT
-====================
-Name
-Role / Title
-Email | GitHub | Portfolio | LinkedIn
-
-(No emojis, no markdown symbols)
-
-====================
-PDF RENDERING RULES (CRITICAL)
-====================
-- Output must be clean plain text (NO markdown, NO symbols like **, [], etc.)
-- Use consistent spacing between sections (one blank line only)
-- Do NOT use tabs or irregular spacing
-- Do NOT include emojis or special characters
-- Keep line lengths reasonable (avoid very long lines)
-- Ensure formatting is consistent so it can be directly converted to PDF
-- Section headers must be in UPPERCASE
-
-====================
-SECTION ORDER
-====================
-Header
-Professional Summary (if needed)
-Skills & Technologies
-Professional Experience
-Projects
-Achievements & Certifications
-Publications (if applicable)
-Education
-
-====================
-CONTENT FOCUS
-====================
-- Match resume content with job description keywords
-- Highlight relevant technologies from tech_stack and required_skills
-- Remove generic or filler content
-- Keep everything concise to fit ONE PAGE
-
-====================
-OUTPUT RULES
-====================
-- Start with: "[Full Name] - Resume"
-- Output ONLY the final resume text
-- Do NOT include explanations
-
-====================
-USER DATA
-====================
-{sections_str}
-
-GENERATE THE FINAL RESUME NOW.
+Return ONLY the JSON. No explanation. No markdown fences.
 """
-
     return prompt
 
 
-def format_experiences(experiences: list) -> str:
-    """Format professional experiences for the prompt."""
-    if not experiences:
-        return ""
+# ── helpers ──────────────────────────────────────────────────────────────────
 
-    formatted = []
+
+def _estimate_years(experiences: list) -> float:
+    """Rough year count from experience list."""
+    total = 0
     for exp in experiences:
-        company = exp.get("company_name", "Company")
-        role = exp.get("role", "Role")
-        dates = f"{exp.get('start_year', '')}" + (
-            f"-{exp.get('end_year', '')}" if exp.get("end_year") else "-Present"
-        )
-        location = exp.get("location_details", "")
-        description = exp.get("description", "")
-        tech_stack = exp.get("techStack", [])
-
-        tech_str = f" | Tech: {', '.join(tech_stack[:5])}" if tech_stack else ""
-        location_str = f" | {location}" if location else ""
-
-        formatted.append(
-            f"{role} at {company} ({dates}){location_str}{tech_str}\n{description}"
-        )
-
-    return "\n\n".join(formatted)
+        start = int(exp.get("start_year", 0) or 0)
+        end = int(exp.get("end_year", 0) or 2025)
+        if start:
+            total += max(0, end - start)
+    return total
 
 
-def format_projects(projects: list) -> str:
-    """Format projects with 1-2 bullet points each."""
-    if not projects:
-        return ""
-
-    formatted = []
-    for proj in projects:  # Send all filtered projects
-        title = proj.get("title", "Project")
-        description = proj.get("description", "")
-        tech_stack = proj.get("techStack", [])
-        links = proj.get("links", {})
-
-        tech_str = f" | Tech: {', '.join(tech_stack[:4])}" if tech_stack else ""
-
-        formatted.append(f"{title}{tech_str}\n• {description}")
-
-    return "\n\n".join(formatted)
+def _is_ml_role(jd: dict) -> bool:
+    ml_keywords = {
+        "ml",
+        "machine learning",
+        "deep learning",
+        "ai",
+        "data science",
+        "nlp",
+        "llm",
+    }
+    text = (jd.get("role_name", "") + " " + " ".join(jd.get("tech_stack", []))).lower()
+    return any(kw in text for kw in ml_keywords)
 
 
-def format_achievements(achievements: list) -> str:
-    """Format achievements."""
-    if not achievements:
-        return ""
+def _build_sections_string(
+    profile,
+    email,
+    experiences,
+    projects,
+    academics,
+    skills,
+    tools,
+    publications,
+    achievements,
+    include_summary,
+    include_projects,
+    include_publications,
+) -> str:
+    parts = []
 
-    formatted = []
-    for ach in achievements:  # Send all filtered achievements
-        title = ach.get("title", "Achievement")
-        achievement_type = ach.get("achievement_type", "")
-        year = ach.get("end_year", "")
+    parts.append(
+        f"""HEADER:
+Name: {profile.get('full_name', '')}
+Title: {profile.get('headline', '')}
+Email: {email}
+Phone: {profile.get('phone', '')}
+Location: {profile.get('location', '')}
+Links: {profile.get('links', '')}"""
+    )
 
-        type_str = f" - {achievement_type}" if achievement_type else ""
-        year_str = f" ({year})" if year else ""
+    if include_summary and profile.get("summary"):
+        parts.append(f"SUMMARY:\n{profile['summary']}")
 
-        formatted.append(f"• {title}{type_str}{year_str}")
+    all_skills = [s.get("name", "") for s in skills] + [
+        t.get("name", "") for t in tools
+    ]
+    if all_skills:
+        parts.append(f"SKILLS (raw, group and clean these):\n{', '.join(all_skills)}")
 
-    return "\n".join(formatted)
+    if experiences:
+        exp_lines = []
+        for e in experiences:
+            end = e.get("end_year") or "Present"
+            tech = ", ".join(e.get("techStack", [])[:6])
+            exp_lines.append(
+                f"- {e.get('role')} @ {e.get('company_name')} "
+                f"({e.get('start_year')}–{end}) | {e.get('location_details', '')}\n"
+                f"  Tech: {tech}\n"
+                f"  Description: {e.get('description', '')}"
+            )
+        parts.append("EXPERIENCE:\n" + "\n\n".join(exp_lines))
 
+    if include_projects and projects:
+        proj_lines = []
+        for p in projects[:4]:
+            tech = ", ".join(p.get("techStack", [])[:5])
+            proj_lines.append(
+                f"- {p.get('title')} | Tech: {tech}\n"
+                f"  {p.get('description', '')}\n"
+                f"  Links: {p.get('links', '')}"
+            )
+        parts.append("PROJECTS:\n" + "\n\n".join(proj_lines))
 
-def format_education(academics: list) -> str:
-    """Format education."""
-    if not academics:
-        return ""
+    if achievements:
+        ach_lines = [
+            f"- {a.get('title')} ({a.get('achievement_type', '')} {a.get('end_year', '')})"
+            for a in achievements
+        ]
+        parts.append("ACHIEVEMENTS:\n" + "\n".join(ach_lines))
 
-    formatted = []
-    for acad in academics:
-        degree = acad.get("degree_name", "Degree")
-        college = acad.get("college_name", "College")
-        year = acad.get("end_year", "")
+    if include_publications and publications:
+        pub_lines = [
+            f"- {p.get('title')} | {p.get('publisher', '')} ({p.get('publication_date', '')})"
+            for p in publications
+        ]
+        parts.append("PUBLICATIONS:\n" + "\n".join(pub_lines))
 
-        year_str = f" ({year})" if year else ""
-        formatted.append(f"{degree} from {college}{year_str}")
+    if academics:
+        edu_lines = [
+            f"- {a.get('degree_name')} | {a.get('college_name')} ({a.get('end_year', '')})"
+            for a in academics
+        ]
+        parts.append("EDUCATION:\n" + "\n".join(edu_lines))
 
-    return "\n".join(formatted)
-
-
-def format_publications(publications: list) -> str:
-    """Format publications."""
-    if not publications:
-        return ""
-
-    formatted = []
-    for pub in publications:  # Send all filtered publications
-        title = pub.get("title", "Publication")
-        publisher = pub.get("publisher", "")
-        year = pub.get("publication_date", "")
-
-        publisher_str = f" | {publisher}" if publisher else ""
-        year_str = f" ({year})" if year else ""
-
-        formatted.append(f"• {title}{publisher_str}{year_str}")
-
-    return "\n".join(formatted)
+    return "\n\n".join(parts)
