@@ -131,31 +131,37 @@ class ContentServiceClass:
                 )
                 raise ValueError("No content in API response")
 
-            clean = re.sub(
-                r"<think>.*?</think>", "", message_content, flags=re.DOTALL
-            ).strip()
+            try:
+                clean_json = _extract_clean_json(message_content)
+            except (ValueError, json.JSONDecodeError) as e:
+                logger.error(
+                    f"AI returned invalid JSON for user={userId} job={jobId}: {e}",
+                    extra={"raw_response": message_content[:500]},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=(
+                        "The AI returned an unexpected format. "
+                        "Please try generating again."
+                    ),
+                )
 
             logger.debug(
                 f"Successfully generated resume text",
                 extra={"userId": userId, "jobId": jobId},
             )
 
-            if not clean:
-                logger.error(f"Failed to parse the clean resume documnet")
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Failed to generate resume content",
-                )
-
-            genDoc = GeneratedDocumment(
-                userId=UUID(userId), jobId=UUID(jobId), resume_text=clean
+            gen_doc = GeneratedDocumment(
+                userId=UUID(userId),
+                jobId=UUID(jobId),
+                resume_text=clean_json,
             )
 
-            db.add(genDoc)
+            db.add(gen_doc)
             db.commit()
-            db.refresh(genDoc)
+            db.refresh(gen_doc)
 
-            return GenerateDocCreateResponse.model_validate(genDoc)
+            return GenerateDocCreateResponse.model_validate(gen_doc)
 
         except HTTPException:
             raise
