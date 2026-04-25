@@ -1,6 +1,16 @@
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
 from app.core.resume_colors import BLACK, ACCENT, SUBTEXT, RULE, WHITE
+from reportlab.platypus import (
+    Paragraph,
+    HRFlowable,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import letter
 
 
 def build_styles() -> dict[str, ParagraphStyle]:
@@ -63,3 +73,15 @@ def build_styles() -> dict[str, ParagraphStyle]:
         "summary": s("summary", fontSize=9.5, leading=13, spaceAfter=4),
         "pub": s("pub", fontSize=9.5, leading=13, spaceAfter=2),
     }
+
+
+def section_header(text: str, styles: dict) -> list:
+    return [
+        Paragraph(text.upper(), styles["section_header"]),
+        HRFlowable(width="100%", thickness=0.5, color=RULE, spaceAfter=4),
+    ]
+
+
+def header_para(text: str, styles: dict) -> Paragraph:
+    safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return Paragraph(f"• {safe}", styles["bullet"])
