@@ -20,25 +20,29 @@ from app.response.GenerateDocument_responses import GenerateDocCreateResponse
 from uuid import UUID
 
 
-def _extract_clean_json(raw: str) -> str:
-    print(f"AI Output: ", raw)
-    text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+import re, json
 
-    if text.startswith("```"):
-        lines = text.splitlines()
-        text = "\n".join(lines[1:-1]).strip()
 
-    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
-    if not match:
-        raise ValueError("No JSON object found in AI response")
+def _extract_clean_json(text: str) -> dict:
+    print(f"AI OUTPUT: {text}")
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
-    candidate = match.group()
+    text = re.sub(r"^```(?:json)?\s*", "", text).strip()
+    text = re.sub(r"\s*```$", "", text).strip()
 
-    candidate = match.group()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
 
-    json.loads(candidate)
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
 
-    return candidate
+    raise ValueError("Could not extract valid JSON from model output")
 
 
 class ContentServiceClass:
