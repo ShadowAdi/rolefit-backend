@@ -45,7 +45,6 @@ def build_styles() -> dict[str, ParagraphStyle]:
             textColor=ACCENT,
             spaceBefore=8,
             spaceAfter=2,
-            textTransform="uppercase",
         ),
         "role": s("role", fontName="Helvetica-Bold", fontSize=10, textColor=BLACK),
         "company_meta": s("company_meta", fontSize=9, textColor=SUBTEXT, spaceAfter=2),
@@ -61,7 +60,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
             "skill_cat", fontName="Helvetica-Bold", fontSize=9, textColor=SUBTEXT
         ),
         "skill_items": s("skill_items", fontSize=9, leading=12),
-        "summary": s("summary", fontSize=9.5, leading=13, spaceAfter=4),
+        "summary": s("summary", fontSize=9.5, leading=14, spaceAfter=4),
         "pub": s("pub", fontSize=9.5, leading=13, spaceAfter=2),
     }
 
