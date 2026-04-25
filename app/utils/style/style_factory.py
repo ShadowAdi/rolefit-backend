@@ -17,7 +17,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
             spaceBefore=0,
         )
         defaults.update(kw)
-        return ParagraphStyle(name=name, parent=base["normal"], **defaults)
+        return ParagraphStyle(name=name, parent=base["Normal"], **defaults)
 
     return {
         "name": s(
