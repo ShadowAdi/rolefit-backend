@@ -9,7 +9,11 @@ from app.models.User import User
 from app.core.logger import logger
 from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
-from app.utils.sarvam_const import MAX_TOKENS, RESUME_GEN_TIMEOUT, SARVAM_API_URL
+from app.utils.sarvam_const import (
+    RESUME_GEN_MAX_TOKENS,
+    RESUME_GEN_TIMEOUT,
+    SARVAM_API_URL,
+)
 from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.response.GenerateDocument_responses import GenerateDocCreateResponse
@@ -98,7 +102,7 @@ class ContentServiceClass:
             payload = {
                 "model": "sarvam-m",
                 "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": MAX_TOKENS,
+                "max_tokens": RESUME_GEN_MAX_TOKENS,
             }
 
             logger.debug(f"Calling Sarvam AI API for resume generation")
