@@ -176,7 +176,7 @@ class ContentServiceClass:
             gen_doc = GeneratedDocumment(
                 userId=UUID(userId),
                 jobId=UUID(jobId),
-                resume_text=clean_json,
+                resume_text=json.dumps(clean_json),
             )
 
             db.add(gen_doc)
