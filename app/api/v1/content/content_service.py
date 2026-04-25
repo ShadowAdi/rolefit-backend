@@ -1,5 +1,4 @@
 import re
-import requests
 import json
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
@@ -9,32 +8,39 @@ from app.models.User import User
 from app.core.logger import logger
 from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
-from app.utils.sarvam_const import (
-    RESUME_GEN_MAX_TOKENS,
-    RESUME_GEN_TIMEOUT,
-    SARVAM_API_URL,
-)
-from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.response.GenerateDocument_responses import GenerateDocCreateResponse
+from app.helpers.grok_api_key_headers import grok_api_key_headers
 from uuid import UUID
+from groq import Groq
 
-
-import re, json
+# --- Sarvam imports (commented out) ---
+# import requests
+# from app.utils.sarvam_const import (
+#     RESUME_GEN_MAX_TOKENS,
+#     RESUME_GEN_TIMEOUT,
+#     SARVAM_API_URL,
+# )
+# from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 
 
 def _extract_clean_json(text: str) -> dict:
     print(f"AI OUTPUT: {text}")
+
+    # Strip <think> blocks (reasoning models)
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
+    # Strip markdown fences
     text = re.sub(r"^```(?:json)?\s*", "", text).strip()
     text = re.sub(r"\s*```$", "", text).strip()
 
+    # Try direct parse
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
+    # Fallback: find first {...} block
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
         try:
@@ -53,7 +59,7 @@ class ContentServiceClass:
         db: Session,
     ):
         try:
-            logger.info(f"Starting experience creation process for user: {userId}")
+            logger.info(f"Starting resume generation for user: {userId}")
 
             if not userId or not jobId:
                 logger.error("Failed to generate content. No user id and job id")
@@ -63,18 +69,14 @@ class ContentServiceClass:
                 )
 
             user = db.query(User).filter(User.id == userId).first()
-
             if not user:
-                logger.warning(
-                    f"Generate Content Failed: User not found",
-                    extra={"userId": userId},
-                )
+                logger.warning(f"User not found: {userId}")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="User does not exist. Invalid user ID.",
                 )
 
-            logger.info(f"User verified successfully: {userId}")
+            logger.info(f"User verified: {userId}")
 
             jd = (
                 db.query(JobDescription)
@@ -86,10 +88,7 @@ class ContentServiceClass:
             )
 
             if not jd:
-                logger.warning(
-                    f"JD not found",
-                    extra={"userId": userId, "jd_id": jobId},
-                )
+                logger.warning(f"JD not found for user={userId} job={jobId}")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Job description not found",
@@ -99,58 +98,69 @@ class ContentServiceClass:
                 jobId=str(jd.id), userId=str(user.id), db=db
             )
 
-            headers = sarvam_api_key_headers()
-
             prompt = build_resume_prompt(job_profile_response)
 
-            payload = {
-                "model": "sarvam-m",
-                "messages": [
+            # --- Sarvam API call (commented out) ---
+            # headers = sarvam_api_key_headers()
+            # payload = {
+            #     "model": "sarvam-m",
+            #     "messages": [
+            #         {
+            #             "role": "system",
+            #             "content": "/no_think You are a JSON-only resume writer...",
+            #         },
+            #         {"role": "user", "content": prompt},
+            #     ],
+            #     "max_tokens": RESUME_GEN_MAX_TOKENS,
+            # }
+            # response = requests.post(
+            #     SARVAM_API_URL,
+            #     json=payload,
+            #     headers=headers,
+            #     timeout=RESUME_GEN_TIMEOUT,
+            # )
+            # response.raise_for_status()
+            # response_data = response.json()
+            # message_content = (
+            #     response_data["choices"][0].get("message", {}).get("content", "")
+            # )
+
+            # --- Groq API call ---
+            logger.debug("Calling Groq API for resume generation")
+
+            api_key = grok_api_key_headers()
+            groq_client = Groq(api_key=api_key)
+
+            chat_completion = groq_client.chat.completions.create(
+                messages=[
                     {
                         "role": "system",
-                        "content": "/no_think You are a JSON-only resume writer...",
+                        "content": (
+                            "You are a JSON-only resume writer. "
+                            "Output ONLY valid JSON. No markdown, no explanation, no extra text."
+                        ),
                     },
-                    {"role": "user", "content": prompt},
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    },
                 ],
-                "max_tokens": RESUME_GEN_MAX_TOKENS,
-            }
-
-            logger.debug(f"Calling Sarvam AI API for resume generation")
-
-            response = requests.post(
-                SARVAM_API_URL,
-                json=payload,
-                headers=headers,
-                timeout=RESUME_GEN_TIMEOUT,
+                model="llama-3.3-70b-versatile",
+                max_tokens=4000,
+                temperature=0.3,  # lower = more deterministic JSON output
             )
 
-            response.raise_for_status()
-
-            response_data = response.json()
-
-            if "choices" not in response_data or len(response_data["choices"]) == 0:
-                logger.error(
-                    "Invalid API response: No choices in response",
-                    extra={"response": response_data},
-                )
-                raise ValueError("Invalid response from AI API")
-
-            message_content = (
-                response_data["choices"][0].get("message", {}).get("content", "")
-            )
+            message_content = chat_completion.choices[0].message.content
 
             if not message_content:
-                logger.error(
-                    "Invalid API response: No message content",
-                    extra={"response": response_data},
-                )
-                raise ValueError("No content in API response")
+                logger.error("Groq returned empty content")
+                raise ValueError("No content in Groq API response")
 
             try:
                 clean_json = _extract_clean_json(message_content)
             except (ValueError, json.JSONDecodeError) as e:
                 logger.error(
-                    f"AI returned invalid JSON for user={userId} job={jobId}: {e}",
+                    f"Groq returned invalid JSON for user={userId} job={jobId}: {e}",
                     extra={"raw_response": message_content[:500]},
                 )
                 raise HTTPException(
@@ -161,10 +171,7 @@ class ContentServiceClass:
                     ),
                 )
 
-            logger.debug(
-                f"Successfully generated resume text",
-                extra={"userId": userId, "jobId": jobId},
-            )
+            logger.debug(f"Resume JSON generated successfully for user={userId}")
 
             gen_doc = GeneratedDocumment(
                 userId=UUID(userId),
@@ -184,11 +191,8 @@ class ContentServiceClass:
         except IntegrityError as e:
             db.rollback()
             logger.error(
-                f"Database integrity error during resume content creation for user {userId}",
-                extra={
-                    "userId": userId,
-                    "error": str(e.orig),
-                },
+                f"DB integrity error for user={userId}",
+                extra={"error": str(e.orig)},
                 exc_info=True,
             )
             raise HTTPException(
@@ -199,27 +203,20 @@ class ContentServiceClass:
         except SQLAlchemyError as e:
             db.rollback()
             logger.error(
-                f"Database error during resume content creation for user {userId}",
-                extra={
-                    "userId": userId,
-                    "error": str(e),
-                },
+                f"DB error for user={userId}",
+                extra={"error": str(e)},
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred while  resume content creation.",
+                detail="Database error occurred while creating resume content.",
             )
 
         except Exception as e:
             db.rollback()
             logger.error(
-                f"Unexpected error during resume creation for user {userId}",
-                extra={
-                    "userId": userId,
-                    "error": str(e),
-                    "errorType": type(e).__name__,
-                },
+                f"Unexpected error for user={userId}",
+                extra={"error": str(e), "errorType": type(e).__name__},
                 exc_info=True,
             )
             raise HTTPException(

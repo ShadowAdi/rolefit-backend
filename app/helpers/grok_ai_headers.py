@@ -19,7 +19,7 @@ def grok_api_key_headers() -> dict:
             logger.error("GROK_AI_API_KEY is empty or invalid")
             raise AppError("GROK_AI_API_KEY must be a non-empty string")
 
-        logger.info("Sarvam AI headers created successfully")
+        logger.info("Grok AI headers created successfully")
         return GROK_AI_API_KEY
 
     except AppError:
