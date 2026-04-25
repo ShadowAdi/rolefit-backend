@@ -1,5 +1,5 @@
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from app.core.resume_colors import BLACK, ACCENT, SUBTEXT, RULE
 from reportlab.platypus import Paragraph, HRFlowable
 
@@ -62,6 +62,13 @@ def build_styles() -> dict[str, ParagraphStyle]:
         "skill_items": s("skill_items", fontSize=9, leading=12),
         "summary": s("summary", fontSize=9.5, leading=14, spaceAfter=4),
         "pub": s("pub", fontSize=9.5, leading=13, spaceAfter=2),
+        "project_link": s(
+            "project_link",
+            fontSize=9,
+            textColor=ACCENT,
+            alignment=TA_RIGHT,
+            spaceAfter=1,
+        ),
     }
 
 

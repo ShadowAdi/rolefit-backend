@@ -20,12 +20,6 @@ from reportlab.lib.styles import ParagraphStyle
 def _render_project_links(
     links: list[str], role_style: ParagraphStyle
 ) -> Paragraph | None:
-    """
-    Parse "Label::URL" strings and render them as inline hyperlinks.
-    e.g. ["GitHub::https://...", "Live::https://..."]
-    → displays: GitHub  Live   (each word is a blue clickable link)
-    Falls back to plain label text if URL is missing.
-    """
     if not links:
         return None
 
@@ -40,7 +34,13 @@ def _render_project_links(
         else:
             parts.append(f'<font color="#4a6cf7">{entry.strip()}</font>')
 
-    return Paragraph("  ".join(parts), role_style)
+    right_style = ParagraphStyle(
+        "proj_links_right",
+        parent=role_style,
+        alignment=TA_RIGHT,
+        fontSize=9,
+    )
+    return Paragraph("  ".join(parts), right_style)
 
 
 def build_pdf(data: ResumeData) -> bytes:
