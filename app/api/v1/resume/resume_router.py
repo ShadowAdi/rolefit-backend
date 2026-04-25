@@ -15,7 +15,7 @@ from app.core.logger import logger
 router = APIRouter(prefix="", tags=["Resume PDF"])
 
 
-def _get_verifified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
+def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
     doc = db.query(GeneratedDocumment).filter(GeneratedDocumment.id == docId).first()
     if not doc:
         raise HTTPException(
@@ -63,3 +63,54 @@ def _stream_pdf(pdf_bytes: bytes, filename: str, inline: bool) -> StreamingRespo
             "Content-Length": str(len(pdf_bytes)),
         },
     )
+
+
+@router.get("/{docId}/download")
+async def download_resume_pdf(
+    docId: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Download the resume as a PDF file."""
+    user_id = str(current_user.id)
+    logger.info(f"PDF download requested | user={user_id} doc={docId}")
+
+    doc = _get_verified_doc(docId, user_id, db)
+    resume_data = _parse_resume_text(doc.resume_text)
+
+    try:
+        pdf_bytes = build_pdf(resume_data)
+    except Exception as e:
+        logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate PDF. Please try again.",
+        )
+
+    name_slug = resume_data.header.name.replace(" ", "_").lower()
+    return _stream_pdf(pdf_bytes, f"{name_slug}_resume.pdf", inline=False)
+
+
+@router.get("/{docId}/preview")
+async def preview_resume_pdf(
+    docId: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Preview the resume PDF inline in the browser."""
+    user_id = str(current_user.id)
+    logger.info(f"PDF preview requested | user={user_id} doc={docId}")
+
+    doc = _get_verified_doc(docId, user_id, db)
+    resume_data = _parse_resume_text(doc.resume_text)
+
+    try:
+        pdf_bytes = build_pdf(resume_data)
+    except Exception as e:
+        logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate PDF. Please try again.",
+        )
+
+    return _stream_pdf(pdf_bytes, "resume_preview.pdf", inline=True)
