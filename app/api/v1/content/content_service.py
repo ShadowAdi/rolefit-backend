@@ -101,7 +101,13 @@ class ContentServiceClass:
 
             payload = {
                 "model": "sarvam-m",
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "/no_think You are a JSON-only resume writer...",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
                 "max_tokens": RESUME_GEN_MAX_TOKENS,
             }
 
