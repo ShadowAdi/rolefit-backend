@@ -131,11 +131,10 @@ Return ONLY the JSON. No explanation. No markdown fences.
 
 
 def _estimate_years(experiences: list) -> float:
-    """Rough year count from experience list."""
     total = 0
     for exp in experiences:
         start = int(exp.get("start_year", 0) or 0)
-        end = int(exp.get("end_year", 0) or 2025)
+        end = int(exp.get("end_year", 0) or 0)
         if start:
             total += max(0, end - start)
     return total
@@ -151,7 +150,8 @@ def _is_ml_role(jd: dict) -> bool:
         "nlp",
         "llm",
     }
-    text = (jd.get("role_name", "") + " " + " ".join(jd.get("tech_stack", []))).lower()
+
+    text = jd.get("role_name", "") + " " + " ".join(jd.get("tech_stack", [])).lower()
     return any(kw in text for kw in ml_keywords)
 
 
