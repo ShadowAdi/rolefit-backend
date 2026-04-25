@@ -1,5 +1,6 @@
 import re
 import requests
+import json
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException, status
@@ -13,6 +14,26 @@ from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.response.GenerateDocument_responses import GenerateDocCreateResponse
 from uuid import UUID
+
+
+def _extract_clean_json(raw: str) -> str:
+    text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+
+    if text.startswith("```"):
+        lines = text.splitlines()
+        text = "\n".join(lines[1:-1]).strip()
+
+    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    if not match:
+        raise ValueError("No JSON object found in AI response")
+
+    candidate = match.group()
+
+    candidate = match.group()
+
+    json.loads(candidate)
+
+    return candidate
 
 
 class ContentServiceClass:
