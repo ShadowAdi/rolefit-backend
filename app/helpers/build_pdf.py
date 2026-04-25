@@ -58,7 +58,7 @@ def build_pdf(data: ResumeData) -> bytes:
             if not grp.items:
                 continue
             row = [
-                Paragraph(grp.category, +":", styles["skill_category"]),
+                Paragraph(grp.category + ":", styles["skill_category"]),
                 Paragraph(", ".join(grp.items), styles["skill_items"]),
             ]
             t = Table([row], colWidths=[1.5 * inch, 5.9 * inch])
@@ -134,7 +134,7 @@ def build_pdf(data: ResumeData) -> bytes:
 
     if data.publications:
         story += section_header("Publications", styles)
-        for pub in data.achievements:
+        for pub in data.publications:
             line = pub.title
             if pub.publisher:
                 line += f" — {pub.publisher}"
