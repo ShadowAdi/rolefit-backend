@@ -8,7 +8,7 @@ from app.models.JobDescription import JobDescription
 from app.models.User import User
 from app.core.logger import logger
 from app.helpers.filter_jd import filter_jd
-from app.helpers.resume_prompt_compact import build_resume_prompt_compact
+from app.helpers.resume_prompt import build_resume_prompt
 from app.utils.sarvam_const import (
     RESUME_GEN_MAX_TOKENS,
     RESUME_GEN_TIMEOUT,
@@ -101,7 +101,7 @@ class ContentServiceClass:
 
             headers = sarvam_api_key_headers()
 
-            prompt = build_resume_prompt_compact(job_profile_response)
+            prompt = build_resume_prompt(job_profile_response)
 
             payload = {
                 "model": "sarvam-m",
