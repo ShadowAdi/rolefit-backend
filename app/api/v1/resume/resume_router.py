@@ -30,3 +30,24 @@ def _get_verifified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumm
         )
 
     return doc
+
+
+def _parse_resume_text(resume_text: str) -> ResumeData:
+    try:
+        raw = resume_text.strip()
+        if raw.startswith("```"):
+            lines = raw.splitlines()
+            raw = "\n".join(lines[1:-1]).strip()
+
+        parsed = json.loads(raw)
+        return ResumeData(**parsed)
+
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.error(f"Failed to parse resume_text as JSON: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "The stored resume content is not valid JSON. "
+                "Please regenerate the document."
+            ),
+        )
