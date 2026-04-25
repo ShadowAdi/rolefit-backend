@@ -78,7 +78,6 @@ def build_pdf(data: ResumeData) -> bytes:
         story += section_header("Professional Experience", styles)
         for exp in data.experience:
             date_str = f"{exp.start} - {exp.end}" if exp.start else exp.end
-            meta = " | ".join(filter(None, [exp.company, exp.location, date_str]))
 
             header_row = [
                 Paragraph(exp.role, styles["role"]),
@@ -116,9 +115,8 @@ def build_pdf(data: ResumeData) -> bytes:
         for proj in data.projects:
             title_line = proj.title
             if proj.links:
-                title_line += (
-                    "  <font color='#4a6cf7'>" + "  ".join(proj.links) + "</font>"
-                )
+                safe_links = "  ".join(lk.replace("&", "&amp;") for lk in proj.links)
+                title_line += f"  <font color='#4a6cf7'>{safe_links}</font>"
             story.append(Paragraph(title_line, styles["role"]))
             if proj.tech:
                 story.append(Paragraph(f"Tech: {proj.tech}", styles["company_meta"]))
