@@ -10,7 +10,7 @@ from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.response.GenerateDocument_responses import GenerateDocCreateResponse
-from app.helpers.grok_api_key_headers import grok_api_key_headers
+from app.helpers.grok_ai_headers import grok_api_key_headers
 from uuid import UUID
 from groq import Groq
 
