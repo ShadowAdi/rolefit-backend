@@ -127,9 +127,6 @@ Return ONLY the JSON. No explanation. No markdown fences.
     return prompt
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
-
-
 def _estimate_years(experiences: list) -> float:
     total = 0
     for exp in experiences:
@@ -170,15 +167,14 @@ def _build_sections_string(
     include_publications,
 ) -> str:
     parts = []
-
     parts.append(
         f"""HEADER:
-Name: {profile.get('full_name', '')}
-Title: {profile.get('headline', '')}
-Email: {email}
-Phone: {profile.get('phone', '')}
-Location: {profile.get('location', '')}
-Links: {profile.get('links', '')}"""
+        Name: {profile.get('full_name', '')}
+        Title: {profile.get('headline', '')}
+        Email: {email}
+        Phone: {profile.get('phone', '')}
+        Location: {profile.get('location', '')}
+        Links: {profile.get('links', '')}"""
     )
 
     if include_summary and profile.get("summary"):
