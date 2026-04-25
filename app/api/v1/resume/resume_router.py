@@ -51,3 +51,15 @@ def _parse_resume_text(resume_text: str) -> ResumeData:
                 "Please regenerate the document."
             ),
         )
+
+
+def _stream_pdf(pdf_bytes: bytes, filename: str, inline: bool) -> StreamingResponse:
+    disposition = "inline" if inline else "attachment"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'{disposition}; filename="{filename}"',
+            "Content-Length": str(len(pdf_bytes)),
+        },
+    )
