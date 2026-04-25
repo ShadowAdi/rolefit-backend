@@ -17,6 +17,7 @@ from uuid import UUID
 
 
 def _extract_clean_json(raw: str) -> str:
+    print(f"AI Output: ", raw)
     text = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
 
     if text.startswith("```"):
