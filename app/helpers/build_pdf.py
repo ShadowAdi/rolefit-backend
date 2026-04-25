@@ -11,10 +11,36 @@ from reportlab.platypus import (
 )
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
-from app.core.resume_colors import BLACK, ACCENT, SUBTEXT, RULE, WHITE
+from reportlab.lib.enums import TA_RIGHT
+from app.core.resume_colors import BLACK, ACCENT, SUBTEXT, RULE
 from app.utils.style.style_factory import build_styles, section_header, bullet_para
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.styles import ParagraphStyle
+
+
+def _render_project_links(
+    links: list[str], role_style: ParagraphStyle
+) -> Paragraph | None:
+    """
+    Parse "Label::URL" strings and render them as inline hyperlinks.
+    e.g. ["GitHub::https://...", "Live::https://..."]
+    → displays: GitHub  Live   (each word is a blue clickable link)
+    Falls back to plain label text if URL is missing.
+    """
+    if not links:
+        return None
+
+    parts = []
+    for entry in links:
+        if "::" in entry:
+            label, url = entry.split("::", 1)
+            url = url.strip().replace("&", "&amp;")
+            parts.append(
+                f'<link href="{url}"><font color="#4a6cf7">{label.strip()}</font></link>'
+            )
+        else:
+            parts.append(f'<font color="#4a6cf7">{entry.strip()}</font>')
+
+    return Paragraph("  ".join(parts), role_style)
 
 
 def build_pdf(data: ResumeData) -> bytes:
@@ -37,9 +63,9 @@ def build_pdf(data: ResumeData) -> bytes:
     story.append(Paragraph(h.name, styles["name"]))
     if h.title:
         story.append(Paragraph(h.title, styles["title"]))
+
     contact_parts = [p for p in [h.email, h.phone, h.location] if p]
     contact_parts += h.links
-
     if contact_parts:
         safe_parts = [p.replace("&", "&amp;") for p in contact_parts]
         story.append(Paragraph(" | ".join(safe_parts), styles["contact"]))
@@ -51,6 +77,7 @@ def build_pdf(data: ResumeData) -> bytes:
     if data.summary:
         story += section_header("Summary", styles)
         story.append(Paragraph(data.summary, styles["summary"]))
+        story.append(Spacer(1, 4))
 
     if data.skills:
         story += section_header("Skills & Technologies", styles)
@@ -61,7 +88,7 @@ def build_pdf(data: ResumeData) -> bytes:
                 Paragraph(grp.category + ":", styles["skill_category"]),
                 Paragraph(", ".join(grp.items), styles["skill_items"]),
             ]
-            t = Table([row], colWidths=[1.5 * inch, 5.9 * inch])
+            t = Table([row], colWidths=[1.6 * inch, 5.8 * inch])
             t.setStyle(
                 TableStyle(
                     [
@@ -77,7 +104,7 @@ def build_pdf(data: ResumeData) -> bytes:
     if data.experience:
         story += section_header("Professional Experience", styles)
         for exp in data.experience:
-            date_str = f"{exp.start} - {exp.end}" if exp.start else exp.end
+            date_str = f"{exp.start} – {exp.end}" if exp.start else (exp.end or "")
 
             header_row = [
                 Paragraph(exp.role, styles["role"]),
@@ -113,13 +140,30 @@ def build_pdf(data: ResumeData) -> bytes:
     if data.projects:
         story += section_header("Projects", styles)
         for proj in data.projects:
-            title_line = proj.title
-            if proj.links:
-                safe_links = "  ".join(lk.replace("&", "&amp;") for lk in proj.links)
-                title_line += f"  <font color='#4a6cf7'>{safe_links}</font>"
-            story.append(Paragraph(title_line, styles["role"]))
-            if proj.tech:
+            story.append(Paragraph(proj.title, styles["role"]))
+
+            link_para = _render_project_links(proj.links, styles["company_meta"])
+            if proj.tech and link_para:
+                row = [
+                    Paragraph(f"Tech: {proj.tech}", styles["company_meta"]),
+                    link_para,
+                ]
+                t = Table([row], colWidths=[5.0 * inch, 2.5 * inch])
+                t.setStyle(
+                    TableStyle(
+                        [
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+                            ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ]
+                    )
+                )
+                story.append(t)
+            elif proj.tech:
                 story.append(Paragraph(f"Tech: {proj.tech}", styles["company_meta"]))
+            elif link_para:
+                story.append(link_para)
+
             for b in proj.bullets:
                 story.append(bullet_para(b, styles))
             story.append(Spacer(1, 4))
@@ -147,7 +191,7 @@ def build_pdf(data: ResumeData) -> bytes:
             row = [
                 Paragraph(f"<b>{edu.degree}</b>, {edu.institution}", styles["role"]),
                 Paragraph(
-                    edu.year,
+                    edu.year or "",
                     ParagraphStyle(
                         "edu_year",
                         parent=styles["company_meta"],
