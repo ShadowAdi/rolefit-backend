@@ -20,8 +20,8 @@ class SectionHeaderFlowable(Flowable):
     FONT = "Helvetica-Bold"
     FONT_SIZE = 10
     RULE_THICKNESS = 0.5
-    SPACE_BEFORE = 3  # pts above the whole block
-    SPACE_AFTER = 4  # pts below the rule before next element
+    SPACE_BEFORE = 10  # pts above the whole block
+    SPACE_AFTER = 6  # pts below the rule before next element
     GAP = 2  # pts between baseline and rule
 
     def __init__(self, text: str, accent_color):
@@ -83,9 +83,14 @@ def build_styles() -> dict[str, ParagraphStyle]:
             leading=22,
             textColor=ACCENT,
             alignment=TA_CENTER,
+            spaceAfter=4,
         ),
         "title": s(
-            "title", fontSize=12, textColor=SUBTEXT, alignment=TA_CENTER, spaceAfter=1
+            "title",
+            fontSize=12,
+            textColor=SUBTEXT,
+            alignment=TA_CENTER,
+            spaceAfter=4,
         ),
         "contact": s(
             "contact",
@@ -93,7 +98,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
             leading=11,
             textColor=SUBTEXT,
             alignment=TA_CENTER,
-            spaceAfter=3,
+            spaceAfter=8,
         ),
         "role": s(
             "role", fontName="Helvetica-Bold", fontSize=9.5, leading=12, textColor=BLACK
@@ -117,7 +122,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
             textColor=SUBTEXT,
         ),
         "skill_items": s("skill_items", fontSize=8.5, leading=11),
-        "summary": s("summary", fontSize=10, leading=12, spaceAfter=2),
+        "summary": s("summary", fontSize=10, leading=12, spaceAfter=6),
         "pub": s("pub", fontSize=9, leading=12, spaceAfter=1),
         "edu_desc": s(
             "edu_desc", fontSize=9.5, leading=11, textColor=DARK_GRAY, spaceAfter=1
@@ -128,7 +133,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
             leading=11,
             textColor=TECH_COLOR,
             fontName="Helvetica-Oblique",
-            spaceAfter=1,
+            spaceAfter=2,
         ),
     }
 

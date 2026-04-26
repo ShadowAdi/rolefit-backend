@@ -224,13 +224,12 @@ def build_pdf(data: ResumeData) -> bytes:
                 TableStyle(
                     [
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                        ("TOPPADDING", (0, 0), (-1, -1), 1),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+                        ("TOPPADDING", (0, 0), (-1, -1), 2),
                     ]
                 )
             )
             story.append(t)
-        story.append(Spacer(1, 2))
 
     if data.experience:
         story += section_header("Professional Experience", styles)
@@ -270,7 +269,6 @@ def build_pdf(data: ResumeData) -> bytes:
 
             for b in exp.bullets:
                 story.append(Paragraph(f"• {_apply_bold(b, bold)}", styles["bullet"]))
-            story.append(Spacer(1, 4))
 
     if data.projects:
         story += section_header("Projects", styles)
@@ -307,7 +305,6 @@ def build_pdf(data: ResumeData) -> bytes:
         story += section_header("Achievements & Certifications", styles)
         for ach in data.achievements:
             story.append(Paragraph(f"• {_apply_bold(ach, bold)}", styles["bullet"]))
-        story.append(Spacer(1, 2))
 
     if data.publications:
         story += section_header("Publications", styles)
@@ -318,7 +315,6 @@ def build_pdf(data: ResumeData) -> bytes:
             if pub.year:
                 line += f" ({pub.year})"
             story.append(Paragraph(f"• {_apply_bold(line, bold)}", styles["pub"]))
-        story.append(Spacer(1, 2))
 
     if data.education:
         story += section_header("Education", styles)
