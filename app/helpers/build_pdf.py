@@ -206,21 +206,9 @@ def build_pdf(data: ResumeData) -> bytes:
     if contact_text_parts:
         story.append(Paragraph(" | ".join(contact_text_parts), styles["contact"]))
 
-    story.append(
-        HRFlowable(
-            width="100%",
-            thickness=1,
-            color=ACCENT,
-            spaceBefore=4,
-            spaceAfter=8,
-            hAlign="CENTER",
-        )
-    )
-
     if data.summary:
         story += section_header("Summary", styles)
         story.append(Paragraph(_apply_bold(data.summary, bold), styles["summary"]))
-        story.append(Spacer(2, 4))
 
     if data.skills:
         story += section_header("Skills & Technologies", styles)

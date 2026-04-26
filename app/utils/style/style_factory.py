@@ -20,9 +20,9 @@ class SectionHeaderFlowable(Flowable):
     FONT = "Helvetica-Bold"
     FONT_SIZE = 10
     RULE_THICKNESS = 0.5
-    SPACE_BEFORE = 5  # pts above the whole block
+    SPACE_BEFORE = 3  # pts above the whole block
     SPACE_AFTER = 4  # pts below the rule before next element
-    GAP = 3  # pts between baseline and rule
+    GAP = 2  # pts between baseline and rule
 
     def __init__(self, text: str, accent_color):
         super().__init__()
@@ -32,8 +32,8 @@ class SectionHeaderFlowable(Flowable):
         self._height = (
             self.SPACE_BEFORE
             + self.FONT_SIZE
-            + self.GAP
-            + self.RULE_THICKNESS
+            # + self.GAP
+            # + self.RULE_THICKNESS
             + self.SPACE_AFTER
         )
 
@@ -55,9 +55,9 @@ class SectionHeaderFlowable(Flowable):
         c.drawString(0, text_y, self.text)
 
         # Draw single hairline rule across full width
-        c.setStrokeColor(self.accent)
-        c.setLineWidth(self.RULE_THICKNESS)
-        c.line(0, rule_y, w, rule_y)
+        # c.setStrokeColor(self.accent)
+        # c.setLineWidth(self.RULE_THICKNESS)
+        # c.line(0, rule_y, w, rule_y)
 
 
 def build_styles() -> dict[str, ParagraphStyle]:
