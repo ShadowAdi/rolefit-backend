@@ -45,7 +45,7 @@ def _render_project_links(
 
 def build_pdf(data: ResumeData) -> bytes:
     buff = io.BytesIO()
-    M = 0.50 * inch  # slightly tighter margins
+    M = 0.50 * inch
 
     doc = SimpleDocTemplate(
         buff,
@@ -59,7 +59,6 @@ def build_pdf(data: ResumeData) -> bytes:
     styles = build_styles()
     story = []
 
-    # ── HEADER ────────────────────────────────────────────────────────────────
     h = data.header
     story.append(Paragraph(h.name, styles["name"]))
     if h.title:
@@ -75,13 +74,11 @@ def build_pdf(data: ResumeData) -> bytes:
         HRFlowable(width="100%", thickness=1, color=ACCENT, spaceBefore=3, spaceAfter=4)
     )
 
-    # ── SUMMARY ───────────────────────────────────────────────────────────────
     if data.summary:
         story += section_header("Summary", styles)
         story.append(Paragraph(data.summary, styles["summary"]))
         story.append(Spacer(1, 2))
 
-    # ── SKILLS ────────────────────────────────────────────────────────────────
     if data.skills:
         story += section_header("Skills & Technologies", styles)
         for grp in data.skills:
@@ -104,45 +101,47 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(t)
         story.append(Spacer(1, 2))
 
-    # ── EXPERIENCE ────────────────────────────────────────────────────────────
     if data.experience:
         story += section_header("Professional Experience", styles)
         for exp in data.experience:
             date_str = f"{exp.start} – {exp.end}" if exp.start else (exp.end or "")
 
+            company_display = f" · {exp.company}" if exp.company else ""
+            role_with_company = Paragraph(
+                f"{exp.role}<font color='#888888' size='9'>{company_display}</font>",
+                styles["role"],
+            )
+
             header_row = [
-                Paragraph(exp.role, styles["role"]),
+                role_with_company,
                 Paragraph(
                     date_str,
                     ParagraphStyle(
                         "date",
                         parent=styles["company_meta"],
                         alignment=TA_RIGHT,
-                        fontSize=8.5,
+                        fontSize=9,
                     ),
                 ),
             ]
-            t = Table([header_row], colWidths=[4.5 * inch, 2.9 * inch])
+            t = Table([header_row], colWidths=[4.5 * inch, 3.0 * inch])
             t.setStyle(
                 TableStyle(
                     [
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
                     ]
                 )
             )
             story.append(t)
 
-            company_line = " | ".join(filter(None, [exp.company, exp.location]))
-            if company_line:
-                story.append(Paragraph(company_line, styles["company_meta"]))
+            if exp.location:
+                story.append(Paragraph(exp.location, styles["company_meta"]))
 
             for b in exp.bullets:
                 story.append(bullet_para(b, styles))
-            story.append(Spacer(1, 3))  # was 5
+            story.append(Spacer(1, 4))
 
-    # ── PROJECTS ──────────────────────────────────────────────────────────────
     if data.projects:
         story += section_header("Projects", styles)
         for proj in data.projects:
@@ -174,14 +173,12 @@ def build_pdf(data: ResumeData) -> bytes:
                 story.append(bullet_para(b, styles))
             story.append(Spacer(1, 3))  # was 4
 
-    # ── ACHIEVEMENTS ──────────────────────────────────────────────────────────
     if data.achievements:
         story += section_header("Achievements & Certifications", styles)
         for ach in data.achievements:
             story.append(bullet_para(ach, styles))
         story.append(Spacer(1, 2))
 
-    # ── PUBLICATIONS ──────────────────────────────────────────────────────────
     if data.publications:
         story += section_header("Publications", styles)
         for pub in data.publications:
@@ -193,11 +190,9 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(Paragraph(f"• {line}", styles["pub"]))
         story.append(Spacer(1, 2))
 
-    # ── EDUCATION ─────────────────────────────────────────────────────────────
     if data.education:
         story += section_header("Education", styles)
         for edu in data.education:
-            # Degree + year on same line
             row = [
                 Paragraph(f"<b>{edu.degree}</b>, {edu.institution}", styles["role"]),
                 Paragraph(
