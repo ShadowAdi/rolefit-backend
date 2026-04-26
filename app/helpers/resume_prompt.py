@@ -55,108 +55,6 @@ def _label_links(links) -> list[str]:
     return labelled
 
 
-def build_resume_prompt(user_data: dict) -> str:
-    profile = user_data.get("profile", {})
-    experiences = user_data.get("experiences", [])
-    projects = user_data.get("projects", [])
-    academics = user_data.get("academics", [])
-    skills = user_data.get("skills", [])
-    tools = user_data.get("tools", [])
-    publications = user_data.get("publications", [])
-    achievements = user_data.get("achievements", [])
-    jd = user_data.get("job_description", {})
-    email = user_data.get("user", {}).get("email", "")
-
-    years_experience = _estimate_years(experiences)
-    include_projects = years_experience < 2 or bool(projects)
-    include_publications = bool(publications) or _is_ml_role(jd)
-
-    sections_data = _build_sections_string(
-        profile,
-        email,
-        experiences,
-        projects,
-        academics,
-        skills,
-        tools,
-        publications,
-        achievements,
-        include_projects,
-        include_publications,
-    )
-
-    prompt = f"""You are an expert resume writer and ATS optimization specialist.
-
-CRITICAL: Output MUST fit ONE PAGE. Violating the content limits below causes overflow. Follow them exactly.
-
-Output MUST be valid JSON matching the schema. No markdown, no prose, no extra keys.
-
-=== TARGET JOB ===
-Role: {jd.get('role_name', '')}
-Company: {jd.get('company', '')}
-Tech Stack: {', '.join(jd.get('tech_stack', [])[:10])}
-Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
-
-=== ONE-PAGE CONTENT LIMITS (HARD) ===
-- Summary: EXACTLY 2 sentences. No more.
-- Experience: MAX 3 bullets per role. Each bullet MAX 12 words. One line only.
-- Projects: MAX 2 projects. MAX 2 bullets each. Each bullet MAX 12 words.
-- Achievements: ONLY include if genuinely different from experience bullets. If they repeat experience content, return empty array [].
-- Skills: List items only — no explanations.
-- Education description: ONE short line only if relevant coursework exists, otherwise empty string "".
-
-=== WRITING RULES ===
-1. Start bullets with action verbs: Built, Engineered, Reduced, Shipped, Optimized, Automated, Led.
-2. Include ONE metric per bullet (%, users, ms). If missing, add a realistic one.
-3. No sub-bullets. No filler: "worked on", "responsible for".
-4. Match keywords from tech_stack and required_skills naturally.
-
-=== SKILLS RULES ===
-- Include ALL skills and tools provided — do NOT drop any.
-- Categories: Languages | Frameworks & Libraries | Databases & ORMs | DevOps & Cloud | Other Tools
-- Skip role names: "frontend", "backend", "full stack", "ui designer", "infra", "system design".
-- Normalize: nodejs→Node.js, nextjs→Next.js, netjs→NestJS, golang→Go, postgres→PostgreSQL, cpp→C++, tailwind css→Tailwind CSS.
-
-=== SUMMARY RULES ===
-- EXACTLY 2 sentences. First: years of experience + core stack. Second: what they bring to this role.
-- Never return null. Tailor to target job keywords.
-
-=== EXPERIENCE RULES ===
-- Dates are pre-formatted "Mon YYYY" — use exactly.
-- location field: "Remote · Internship" format (location_type · employment_type).
-- MAX 3 bullets per role, each MAX 12 words.
-
-=== PROJECT RULES ===
-- MAX 2 projects total.
-- Links are "Label::URL" strings — copy exactly.
-- MAX 2 bullets per project, each MAX 12 words.
-
-=== EDUCATION RULES ===
-- Expand: BCA → Bachelor of Computer Applications (BCA).
-- description field: one short line of relevant coursework if provided, else "".
-
-=== OUTPUT JSON SCHEMA ===
-Return ONLY this JSON — no wrapping text, no markdown fences:
-
-{{
-  "header": {{"name": "string", "title": "string", "email": "string", "phone": "string", "location": "string", "links": ["string"]}},
-  "summary": "string",
-  "skills": [{{"category": "string", "items": ["string"]}}],
-  "experience": [{{"role": "string", "company": "string", "location": "string", "start": "string", "end": "string", "bullets": ["string"]}}],
-  "projects": [{{"title": "string", "tech": "string", "bullets": ["string"], "links": ["string"]}}],
-  "achievements": ["string"],
-  "publications": [{{"title": "string", "publisher": "string", "year": "string"}}],
-  "education": [{{"degree": "string", "institution": "string", "location": "string", "year": "string", "description": "string"}}]
-}}
-
-=== RAW USER DATA ===
-{sections_data}
-
-Return ONLY the JSON. No explanation. No markdown fences.
-"""
-    return prompt
-
-
 def _estimate_years(experiences: list) -> float:
     total = 0
     for exp in experiences:
@@ -181,6 +79,141 @@ def _is_ml_role(jd: dict) -> bool:
     return any(kw in text for kw in ml_keywords)
 
 
+def build_resume_prompt(user_data: dict) -> str:
+    profile = user_data.get("profile", {})
+    experiences = user_data.get("experiences", [])
+    projects = user_data.get("projects", [])  # only what user actually added
+    academics = user_data.get("academics", [])
+    skills = user_data.get("skills", [])
+    tools = user_data.get("tools", [])
+    publications = user_data.get("publications", [])
+    achievements = user_data.get("achievements", [])
+    jd = user_data.get("job_description", {})
+    email = user_data.get("user", {}).get("email", "")
+
+    years_experience = _estimate_years(experiences)
+    has_projects = bool(projects)
+    has_achievements = bool(achievements)
+    include_publications = bool(publications) or _is_ml_role(jd)
+
+    # Layout strategy based on experience level
+    # Senior (3+ yrs): skills + experience only, no projects needed
+    # Mid (1-3 yrs): experience + projects if user added them
+    # Junior (<1 yr): everything including projects
+    is_senior = years_experience >= 3
+    include_projects = has_projects and not is_senior
+    include_summary = not is_senior  # senior profiles: no summary, more space for exp
+
+    sections_data = _build_sections_string(
+        profile,
+        email,
+        experiences,
+        projects,
+        academics,
+        skills,
+        tools,
+        publications,
+        achievements,
+        include_projects,
+        include_publications,
+        has_achievements,
+    )
+
+    # Dynamic content limits based on experience
+    exp_bullet_limit = 3 if not is_senior else 4
+    proj_section = (
+        "- Projects: MAX 2 projects (ONLY from user-provided projects). MAX 2 bullets each. Each bullet MAX 12 words."
+        if include_projects
+        else "- Projects: Return empty array [] — candidate has sufficient experience."
+    )
+    summary_section = (
+        "- Summary: EXACTLY 2 sentences. First: years + core stack. Second: value for this role."
+        if include_summary
+        else '- Summary: Return empty string "" — not needed for senior profiles.'
+    )
+    achievements_section = (
+        f"- Achievements: Use ONLY the {len(achievements)} achievement(s) provided by user. Do NOT invent any."
+        if has_achievements
+        else "- Achievements: Return empty array [] — user has not added any achievements."
+    )
+
+    prompt = f"""You are an expert resume writer and ATS optimization specialist.
+
+CRITICAL: Output MUST fit ONE PAGE. Follow content limits exactly.
+Output MUST be valid JSON. No markdown, no prose, no extra keys.
+
+=== TARGET JOB ===
+Role: {jd.get('role_name', '')}
+Company: {jd.get('company', '')}
+Tech Stack: {', '.join(jd.get('tech_stack', [])[:10])}
+Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
+
+=== ONE-PAGE CONTENT LIMITS (HARD) ===
+{summary_section}
+- Experience: MAX {exp_bullet_limit} bullets per role. Each bullet MAX 15 words. One line only.
+{proj_section}
+{achievements_section}
+- Skills: List items only — no explanations.
+- Education: Always include a 1-sentence description of what the candidate studied, even if not provided. Infer from degree name (e.g. BCA → computer science fundamentals, data structures, web development; BA Arts → literature, communication, humanities).
+
+=== WRITING RULES ===
+1. Start bullets with action verbs: Built, Engineered, Reduced, Shipped, Optimized, Automated, Led.
+2. Include ONE metric per bullet (%, users, ms). If missing, add a realistic one.
+3. No sub-bullets. No filler phrases.
+4. Match keywords from tech_stack and required_skills naturally.
+
+=== SKILLS RULES ===
+- Include ALL skills and tools provided — do NOT drop any.
+- Categories: Languages | Frameworks & Libraries | Databases & ORMs | DevOps & Cloud | Other Tools
+- Skip role-name entries: "frontend", "backend", "full stack", "ui designer", "infra", "system design".
+- Normalize: nodejs→Node.js, nextjs→Next.js, netjs→NestJS, golang→Go, postgres→PostgreSQL, cpp→C++, tailwind css→Tailwind CSS.
+
+=== EXPERIENCE RULES ===
+- Dates are pre-formatted "Mon YYYY" — use exactly as given.
+- "location" field format: employment type only — e.g. "Internship", "Full-time", "Contract", "Part-time". No location details.
+- "company" field: just the company name.
+- MAX {exp_bullet_limit} bullets per role, each MAX 15 words.
+
+=== PROJECT RULES ===
+- ONLY include projects the user explicitly provided. Never invent or infer projects.
+- If user provided 0 projects, return projects as empty array [].
+- Links are "Label::URL" strings — copy exactly, do not modify.
+- MAX 2 bullets per project, each MAX 15 words.
+
+=== ACHIEVEMENTS RULES ===
+- ONLY use achievements explicitly provided by the user (hackathons won, competitions, awards, certifications they listed).
+- NEVER generate achievements from experience bullets or project descriptions.
+- If user provided 0 achievements, return empty array [].
+
+=== EDUCATION RULES ===
+- Expand degree abbreviations: BCA → Bachelor of Computer Applications (BCA), MBA → Master of Business Administration (MBA).
+- "description" field: Write 1 sentence about what the degree covers. Infer from degree name if user didn't provide details.
+  Examples: BCA → "Studied computer science fundamentals, data structures, algorithms, and web development."
+            BA English → "Studied English literature, communication, writing, and humanities."
+            B.Tech CSE → "Studied software engineering, algorithms, operating systems, and computer networks."
+
+=== OUTPUT JSON SCHEMA ===
+Return ONLY this JSON — no wrapping text, no markdown fences:
+
+{{
+  "header": {{"name": "string", "title": "string", "email": "string", "phone": "string", "location": "string", "links": ["string"]}},
+  "summary": "string",
+  "skills": [{{"category": "string", "items": ["string"]}}],
+  "experience": [{{"role": "string", "company": "string", "location": "string", "start": "string", "end": "string", "bullets": ["string"]}}],
+  "projects": [{{"title": "string", "tech": "string", "bullets": ["string"], "links": ["string"]}}],
+  "achievements": ["string"],
+  "publications": [{{"title": "string", "publisher": "string", "year": "string"}}],
+  "education": [{{"degree": "string", "institution": "string", "location": "string", "year": "string", "description": "string"}}]
+}}
+
+=== RAW USER DATA ===
+{sections_data}
+
+Return ONLY the JSON. No explanation. No markdown fences.
+"""
+    return prompt
+
+
 def _build_sections_string(
     profile,
     email,
@@ -193,6 +226,7 @@ def _build_sections_string(
     achievements,
     include_projects,
     include_publications,
+    has_achievements,
 ) -> str:
     parts = []
 
@@ -245,13 +279,10 @@ def _build_sections_string(
             )
             tech = ", ".join((e.get("techStack") or [])[:6])
             emp_type = e.get("employment_type", "")
-            loc_type = e.get("location_type", "")
-            loc_detail = e.get("location_details") or loc_type or ""
 
             exp_lines.append(
                 f"- Role: {e.get('role')}\n"
                 f"  Company: {e.get('company_name')}\n"
-                f"  Location Type: {loc_detail}\n"
                 f"  Employment Type: {emp_type}\n"
                 f"  Start: {start_str}\n"
                 f"  End: {end_str}\n"
@@ -260,6 +291,7 @@ def _build_sections_string(
             )
         parts.append("EXPERIENCE:\n" + "\n\n".join(exp_lines))
 
+    # Only pass user-added projects
     if include_projects and projects:
         proj_lines = []
         for p in projects[:3]:
@@ -271,14 +303,29 @@ def _build_sections_string(
                 f"  Description: {p.get('description', '')}\n"
                 f"  Links: {', '.join(labelled)}"
             )
-        parts.append("PROJECTS:\n" + "\n\n".join(proj_lines))
+        parts.append(
+            f"PROJECTS (user added {len(projects)} project(s) — use only these):\n"
+            + "\n\n".join(proj_lines)
+        )
+    else:
+        parts.append(
+            "PROJECTS: User has not added any projects. Return empty array []."
+        )
 
-    if achievements:
+    # Only pass user-added achievements
+    if has_achievements and achievements:
         ach_lines = [
             f"- {a.get('title')} ({a.get('achievement_type', '')} {a.get('end_year', '')})"
             for a in achievements
         ]
-        parts.append("ACHIEVEMENTS:\n" + "\n".join(ach_lines))
+        parts.append(
+            f"ACHIEVEMENTS (user added {len(achievements)} — use only these):\n"
+            + "\n".join(ach_lines)
+        )
+    else:
+        parts.append(
+            "ACHIEVEMENTS: User has not added any achievements. Return empty array []."
+        )
 
     if include_publications and publications:
         pub_lines = [
@@ -297,7 +344,7 @@ def _build_sections_string(
                 f"- Degree: {a.get('degree_name')}\n"
                 f"  Institution: {a.get('college_name')}\n"
                 f"  Period: {period}\n"
-                f"  Description: {a.get('description') or ''}"
+                f"  Description: {a.get('description') or 'Not provided — infer from degree name.'}"
             )
         parts.append("EDUCATION:\n" + "\n\n".join(edu_lines))
 
