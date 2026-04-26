@@ -18,37 +18,124 @@ from app.utils.style.style_factory import build_styles, section_header, bullet_p
 from reportlab.lib.styles import ParagraphStyle
 
 
-_BOLD_PATTERNS = re.compile(
+# ---------------------------------------------------------------------------
+# Base bold patterns — metrics and universal tech terms
+# ---------------------------------------------------------------------------
+_BASE_BOLD = re.compile(
     r"\b("
+    # numeric metrics
     r"\d[\d,\.]*\s*%|"
     r"\d[\d,\.]*\+?\s*(?:users|ms|seconds?|minutes?|hours?|days?|months?|requests?|"
     r"records?|events?|transactions?|calls?|endpoints?|services?|nodes?|instances?)|"
+    # strong action verbs
     r"Built|Engineered|Developed|Designed|Implemented|Optimized|Reduced|Increased|"
     r"Improved|Automated|Shipped|Led|Architected|Deployed|Migrated|Integrated|"
     r"Launched|Scaled|Delivered|Established|Created|Streamlined|"
+    # infra / cloud
     r"REST(?:ful)?|GraphQL|gRPC|Microservices?|CI/CD|Docker|Kubernetes|AWS|GCP|Azure|"
-    r"PostgreSQL|MongoDB|Redis|Kafka|RabbitMQ|Elasticsearch|"
-    r"React|Next\.js|NestJS|Node\.js|FastAPI|Django|Spring Boot|"
-    r"TypeScript|JavaScript|Python|Go|Golang|Rust|Java|"
-    r"LLM|GPT|ML|AI|NLP|RAG|fine.tun(?:ing|ed)"
-    r")\b",
+    # databases
+    r"PostgreSQL|MongoDB|Redis|Kafka|RabbitMQ|Elasticsearch|TypeORM|Prisma|"
+    # frameworks
+    r"React|Next\.js|NestJS|Node\.js|FastAPI|Django|Spring Boot|Express|"
+    # languages
+    r"TypeScript|JavaScript|Python|Go|Golang|Rust|Java|C\+\+|"
+    # AI / ML
+    r"LLM|GPT|ML|AI|NLP|RAG|fine.tun(?:ing|ed)" r")\b",
     re.IGNORECASE,
 )
 
 
-def _bold_keywords(text: str) -> str:
-    """Wrap recognisable keywords/metrics in <b> tags for paragraph content."""
+def _make_bold_pattern(extra_terms: list[str]) -> re.Pattern:
+    """Build a combined pattern that also bolds job-specific terms."""
+    if not extra_terms:
+        return _BASE_BOLD
+    # Escape each term for regex, longest first to avoid partial matches
+    escaped = sorted(
+        [re.escape(t) for t in extra_terms if t and len(t) > 2],
+        key=len,
+        reverse=True,
+    )
+    extra_pat = "|".join(escaped)
+    combined = _BASE_BOLD.pattern.rstrip(r"\b)") + "|" + extra_pat + r")\b"
+    return re.compile(combined, re.IGNORECASE)
+
+
+def _apply_bold(text: str, pattern: re.Pattern) -> str:
+    """HTML-escape text then wrap matched keywords in <b> tags."""
     safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return pattern.sub(lambda m: f"<b>{m.group(0)}</b>", safe)
 
-    def replacer(m: re.Match) -> str:
-        return f"<b>{m.group(0)}</b>"
 
-    return _BOLD_PATTERNS.sub(replacer, safe)
+# ---------------------------------------------------------------------------
+# Header link helpers
+# ---------------------------------------------------------------------------
+
+_LINK_LABELS = {
+    "github.com": "GitHub",
+    "linkedin.com": "LinkedIn",
+    "linkedin.in": "LinkedIn",
+    "shadowadi.github.io": "Portfolio",  # catch personal portfolio subdomains
+    "vercel.app": "Portfolio",
+    "netlify.app": "Portfolio",
+    "gmail.com": "Gmail",
+    "mail.google.com": "Gmail",
+    "twitter.com": "Twitter",
+    "x.com": "Twitter",
+    "behance.net": "Behance",
+    "dribbble.com": "Dribbble",
+    "medium.com": "Medium",
+    "dev.to": "Dev.to",
+    "leetcode.com": "LeetCode",
+    "hackerrank.com": "HackerRank",
+    "kaggle.com": "Kaggle",
+    "stackoverflow.com": "Stack Overflow",
+}
+
+
+def _label_for_url(url: str) -> str:
+    """Return a short human label for a URL based on its domain."""
+    # strip scheme
+    clean = re.sub(r"^https?://", "", url).lstrip("www.")
+    domain = clean.split("/")[0].lower()
+    # exact match
+    if domain in _LINK_LABELS:
+        return _LINK_LABELS[domain]
+    # subdomain match (e.g. shadowadi.github.io)
+    for key, label in _LINK_LABELS.items():
+        if domain.endswith(key):
+            return label
+    # fallback: capitalise first segment of domain
+    return domain.split(".")[0].capitalize()
+
+
+def _format_header_links(raw_links: list[str], accent_hex: str = "#4a6cf7") -> str:
+    """
+    Convert a list of URLs into short labelled hyperlinks separated by ' | '.
+    e.g. ["https://github.com/foo", "https://shadowadi.github.io/port/"]
+      →  '<link href="...">GitHub</link> | <link href="...">Portfolio</link>'
+    """
+    parts = []
+    seen_labels: dict[str, int] = {}
+    for url in raw_links:
+        if not url:
+            continue
+        url_escaped = url.replace("&", "&amp;")
+        label = _label_for_url(url)
+        # deduplicate: Portfolio 1, Portfolio 2 …
+        if label in seen_labels:
+            seen_labels[label] += 1
+            label = f"{label} {seen_labels[label]}"
+        else:
+            seen_labels[label] = 1
+        parts.append(
+            f'<link href="{url_escaped}"><font color="{accent_hex}">{label}</font></link>'
+        )
+    return " | ".join(parts)
 
 
 def _render_project_links(
     links: list[str], base_style: ParagraphStyle
-) -> Paragraph | None:
+) -> "Paragraph | None":
     """Parse 'Label::URL' strings into inline blue hyperlinks."""
     if not links:
         return None
@@ -72,6 +159,11 @@ def _render_project_links(
     return Paragraph("  ".join(parts), link_style)
 
 
+# ---------------------------------------------------------------------------
+# Main builder
+# ---------------------------------------------------------------------------
+
+
 def build_pdf(data: ResumeData) -> bytes:
     buff = io.BytesIO()
     M = 0.50 * inch
@@ -88,44 +180,80 @@ def build_pdf(data: ResumeData) -> bytes:
     styles = build_styles()
     story = []
 
+    # ------------------------------------------------------------------
+    # Collect job-specific terms to bold (company being applied to +
+    # tech stack from the job description stored on data if available)
+    # ------------------------------------------------------------------
+    extra_bold_terms: list[str] = []
+    if hasattr(data, "job_description") and data.job_description:
+        jd = data.job_description
+        if hasattr(jd, "company") and jd.company:
+            extra_bold_terms.append(jd.company)
+        if hasattr(jd, "tech_stack") and jd.tech_stack:
+            extra_bold_terms.extend(jd.tech_stack)
+        if hasattr(jd, "role_name") and jd.role_name:
+            extra_bold_terms.append(jd.role_name)
+
+    bold = _make_bold_pattern(extra_bold_terms)
+
+    # ------------------------------------------------------------------
+    # Header — name / title / contact (compact, with short linked labels)
+    # ------------------------------------------------------------------
     h = data.header
     story.append(Paragraph(h.name, styles["name"]))
     if h.title:
         story.append(Paragraph(h.title, styles["title"]))
 
-    contact_parts = [p for p in [h.email, h.phone, h.location] if p]
-    contact_parts += h.links
-    if contact_parts:
-        safe_parts = [p.replace("&", "&amp;") for p in contact_parts]
-        story.append(Paragraph(" | ".join(safe_parts), styles["contact"]))
+    # Build contact line: email | phone | location | GitHub | LinkedIn | …
+    contact_text_parts: list[str] = []
 
+    # Plain text fields (email, phone, location)
+    for field in [h.email, h.phone, h.location]:
+        if field:
+            contact_text_parts.append(field.replace("&", "&amp;"))
+
+    # URL links → short labelled hyperlinks
+    if h.links:
+        link_str = _format_header_links(h.links)
+        if link_str:
+            contact_text_parts.append(link_str)
+
+    if contact_text_parts:
+        story.append(Paragraph(" | ".join(contact_text_parts), styles["contact"]))
+
+    # Single accent rule — drawn by canvas, not HRFlowable, so no border artefact
     story.append(
         HRFlowable(
             width="100%",
             thickness=1,
             color=ACCENT,
-            spaceBefore=3,
-            spaceAfter=5,
+            spaceBefore=2,
+            spaceAfter=4,
+            hAlign="CENTER",
         )
     )
 
+    # ------------------------------------------------------------------
+    # Summary
+    # ------------------------------------------------------------------
     if data.summary:
         story += section_header("Summary", styles)
-        story.append(Paragraph(_bold_keywords(data.summary), styles["summary"]))
+        story.append(Paragraph(_apply_bold(data.summary, bold), styles["summary"]))
         story.append(Spacer(1, 2))
 
+    # ------------------------------------------------------------------
+    # Skills & Technologies
+    # ------------------------------------------------------------------
     if data.skills:
         story += section_header("Skills & Technologies", styles)
         for grp in data.skills:
             if not grp.items:
                 continue
-
-            items_str = ", ".join(grp.items)
             row = [
                 Paragraph(grp.category + ":", styles["skill_category"]),
-                Paragraph(items_str, styles["skill_items"]),
+                Paragraph(", ".join(grp.items), styles["skill_items"]),
             ]
-
+            # 1.65" keeps "Frameworks & Libraries:" on one line
             t = Table([row], colWidths=[1.65 * inch, 5.70 * inch])
             t.setStyle(
                 TableStyle(
@@ -139,20 +267,24 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(t)
         story.append(Spacer(1, 2))
 
+    # ------------------------------------------------------------------
+    # Professional Experience
+    # ------------------------------------------------------------------
     if data.experience:
         story += section_header("Professional Experience", styles)
         for exp in data.experience:
             date_str = f"{exp.start} – {exp.end}" if exp.start else (exp.end or "")
-
             company_display = f" · {exp.company}" if exp.company else ""
             emp_display = f", {exp.emp_type}" if exp.emp_type else ""
-            role_with_company = Paragraph(
-                f"{exp.role}<font color='#242323' size='9'>{company_display}</font>"
-                f" <font color='#888888' size='9'>{emp_display}</font>",
+
+            role_para = Paragraph(
+                f"{exp.role}"
+                f"<font color='#242323' size='9'>{company_display}</font>"
+                f"<font color='#888888' size='9'>{emp_display}</font>",
                 styles["role"],
             )
             header_row = [
-                role_with_company,
+                role_para,
                 Paragraph(
                     date_str,
                     ParagraphStyle(
@@ -175,20 +307,16 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(t)
 
             for b in exp.bullets:
-                safe = b.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                story.append(
-                    Paragraph(
-                        f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
-                        styles["bullet"],
-                    )
-                )
+                story.append(Paragraph(f"• {_apply_bold(b, bold)}", styles["bullet"]))
             story.append(Spacer(1, 4))
 
+    # ------------------------------------------------------------------
+    # Projects
+    # ------------------------------------------------------------------
     if data.projects:
         story += section_header("Projects", styles)
         for proj in data.projects:
             story.append(Paragraph(proj.title, styles["role"]))
-
             link_para = _render_project_links(proj.links, styles["company_meta"])
 
             if proj.tech and link_para:
@@ -213,27 +341,21 @@ def build_pdf(data: ResumeData) -> bytes:
                 story.append(link_para)
 
             for b in proj.bullets:
-                safe = b.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                story.append(
-                    Paragraph(
-                        f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
-                        styles["bullet"],
-                    )
-                )
+                story.append(Paragraph(f"• {_apply_bold(b, bold)}", styles["bullet"]))
             story.append(Spacer(1, 3))
 
+    # ------------------------------------------------------------------
+    # Achievements & Certifications
+    # ------------------------------------------------------------------
     if data.achievements:
         story += section_header("Achievements & Certifications", styles)
         for ach in data.achievements:
-            safe = ach.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            story.append(
-                Paragraph(
-                    f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
-                    styles["bullet"],
-                )
-            )
+            story.append(Paragraph(f"• {_apply_bold(ach, bold)}", styles["bullet"]))
         story.append(Spacer(1, 2))
 
+    # ------------------------------------------------------------------
+    # Publications
+    # ------------------------------------------------------------------
     if data.publications:
         story += section_header("Publications", styles)
         for pub in data.publications:
@@ -242,15 +364,12 @@ def build_pdf(data: ResumeData) -> bytes:
                 line += f" — {pub.publisher}"
             if pub.year:
                 line += f" ({pub.year})"
-            safe = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            story.append(
-                Paragraph(
-                    f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
-                    styles["pub"],
-                )
-            )
+            story.append(Paragraph(f"• {_apply_bold(line, bold)}", styles["pub"]))
         story.append(Spacer(1, 2))
 
+    # ------------------------------------------------------------------
+    # Education
+    # ------------------------------------------------------------------
     if data.education:
         story += section_header("Education", styles)
         for edu in data.education:
