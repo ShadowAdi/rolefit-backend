@@ -106,12 +106,12 @@ def build_pdf(data: ResumeData) -> bytes:
         for exp in data.experience:
             date_str = f"{exp.start} – {exp.end}" if exp.start else (exp.end or "")
 
+            # Role · Company on left, date on right
             company_display = f" · {exp.company}" if exp.company else ""
             role_with_company = Paragraph(
                 f"{exp.role}<font color='#888888' size='9'>{company_display}</font>",
                 styles["role"],
             )
-
             header_row = [
                 role_with_company,
                 Paragraph(
@@ -134,6 +134,9 @@ def build_pdf(data: ResumeData) -> bytes:
                 )
             )
             story.append(t)
+
+            if exp.emp_type:
+                story.append(Paragraph(exp.emp_type, styles["company_meta"]))
 
             for b in exp.bullets:
                 story.append(bullet_para(b, styles))

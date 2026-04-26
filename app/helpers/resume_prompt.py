@@ -170,8 +170,8 @@ Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
 
 === EXPERIENCE RULES ===
 - Dates are pre-formatted "Mon YYYY" — use exactly as given.
-- "location" field format: employment type only — e.g. "Internship", "Full-time", "Contract", "Part-time". No location details.
-- "company" field: just the company name.
+- "emp_type" field: employment type only — e.g. "Internship", "Full-time", "Contract", "Part-time". Nothing else.
+- "company" field: just the company name. No location, no remote/onsite info.
 - MAX {exp_bullet_limit} bullets per role, each MAX 15 words.
 
 === PROJECT RULES ===
@@ -199,7 +199,7 @@ Return ONLY this JSON — no wrapping text, no markdown fences:
   "header": {{"name": "string", "title": "string", "email": "string", "phone": "string", "location": "string", "links": ["string"]}},
   "summary": "string",
   "skills": [{{"category": "string", "items": ["string"]}}],
-  "experience": [{{"role": "string", "company": "string", "location": "string", "start": "string", "end": "string", "bullets": ["string"]}}],
+    "experience": [{{"role": "string", "company": "string", "emp_type": "string", "start": "string", "end": "string", "bullets": ["string"]}}],
   "projects": [{{"title": "string", "tech": "string", "bullets": ["string"], "links": ["string"]}}],
   "achievements": ["string"],
   "publications": [{{"title": "string", "publisher": "string", "year": "string"}}],
@@ -293,7 +293,7 @@ def _build_sections_string(
 
     if include_projects and projects:
         proj_lines = []
-        for p in projects[:3]:
+        for p in projects[:2]:
             tech = ", ".join((p.get("techStack") or [])[:5])
             labelled = _label_links(p.get("links"))
             proj_lines.append(
@@ -302,14 +302,14 @@ def _build_sections_string(
                 f"  Description: {p.get('description', '')}\n"
                 f"  Links: {', '.join(labelled)}"
             )
+        titles = [p.get("title") for p in projects[:2]]
         parts.append(
-            f"PROJECTS (user added {len(projects)} project(s) — use only these):\n"
+            f"PROJECTS: User has exactly {len(projects[:2])} project(s). "
+            f"Use ONLY these titles: {titles}. Do not add any others.\n\n"
             + "\n\n".join(proj_lines)
         )
     else:
-        parts.append(
-            "PROJECTS: User has not added any projects. Return empty array []."
-        )
+        parts.append('PROJECTS: "projects": []')
 
     if has_achievements and achievements:
         ach_lines = [
@@ -317,13 +317,11 @@ def _build_sections_string(
             for a in achievements
         ]
         parts.append(
-            f"ACHIEVEMENTS (user added {len(achievements)} — use only these):\n"
-            + "\n".join(ach_lines)
+            f"ACHIEVEMENTS: User has exactly {len(achievements)} achievement(s). "
+            f"Use only these:\n" + "\n".join(ach_lines)
         )
     else:
-        parts.append(
-            "ACHIEVEMENTS: User has not added any achievements. Return empty array []."
-        )
+        parts.append('ACHIEVEMENTS: "achievements": []')
 
     if include_publications and publications:
         pub_lines = [
