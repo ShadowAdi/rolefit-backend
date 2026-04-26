@@ -10,7 +10,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
     def s(name, **kw) -> ParagraphStyle:
         defaults = dict(
             fontName="Helvetica",
-            fontSize=9,
+            fontSize=9.5,
             leading=10,
             textColor=BLACK,
             spaceAfter=0,
@@ -23,17 +23,17 @@ def build_styles() -> dict[str, ParagraphStyle]:
         "name": s(
             "name",
             fontName="Helvetica-Bold",
-            fontSize=16,
+            fontSize=18,
             leading=22,
             textColor=ACCENT,
             alignment=TA_CENTER,
         ),
         "title": s(
-            "title", fontSize=10, textColor=SUBTEXT, alignment=TA_CENTER, spaceAfter=1
+            "title", fontSize=12, textColor=SUBTEXT, alignment=TA_CENTER, spaceAfter=1
         ),
         "contact": s(
             "contact",
-            fontSize=8,
+            fontSize=10,
             leading=10,
             textColor=SUBTEXT,
             alignment=TA_CENTER,
@@ -42,7 +42,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
         "section_header": s(
             "section_header",
             fontName="Helvetica-Bold",
-            fontSize=9,
+            fontSize=10,
             leading=11,
             textColor=ACCENT,
             spaceBefore=4,  # was 8
@@ -56,7 +56,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
         ),
         "bullet": s(
             "bullet",
-            fontSize=8,
+            fontSize=10,
             leading=12,
             leftIndent=10,
             firstLineIndent=-10,
@@ -65,15 +65,15 @@ def build_styles() -> dict[str, ParagraphStyle]:
         "skill_category": s(
             "skill_cat",
             fontName="Helvetica-Bold",
-            fontSize=8.5,
+            fontSize=9.5,
             leading=11,
             textColor=SUBTEXT,
         ),
         "skill_items": s("skill_items", fontSize=8.5, leading=11),
-        "summary": s("summary", fontSize=9, leading=12, spaceAfter=2),
+        "summary": s("summary", fontSize=10, leading=12, spaceAfter=2),
         "pub": s("pub", fontSize=9, leading=12, spaceAfter=1),
         "edu_desc": s(
-            "edu_desc", fontSize=8.5, leading=11, textColor=SUBTEXT, spaceAfter=1
+            "edu_desc", fontSize=9.5, leading=11, textColor=SUBTEXT, spaceAfter=1
         ),
     }
 

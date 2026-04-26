@@ -120,7 +120,7 @@ def build_pdf(data: ResumeData) -> bytes:
                         "date",
                         parent=styles["company_meta"],
                         alignment=TA_RIGHT,
-                        fontSize=9,
+                        fontSize=10,
                     ),
                 ),
             ]
