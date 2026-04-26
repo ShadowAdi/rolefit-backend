@@ -22,3 +22,16 @@ async def generate_content(
     user_id = current_user.id
     logger.info(f"Creating job description for user: {user_id}")
     return content_service.generate_content(userId=str(user_id), jobId=jobId, db=db)
+
+
+@router.get(
+    "/{jobId}",
+    status_code=status.HTTP_201_CREATED,
+)
+async def get_all_content(
+    jobId: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    return content_service.get_all_contents(userId=str(user_id), jobId=jobId, db=db)
