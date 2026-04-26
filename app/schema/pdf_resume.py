@@ -1,3 +1,8 @@
+"""
+Pydantic schema for the resume JSON produced by the AI.
+This is the contract between content_service (AI output) and build_pdf (PDF renderer).
+"""
+
 from pydantic import BaseModel
 
 
@@ -42,6 +47,7 @@ class Education(BaseModel):
     institution: str
     location: str = ""
     year: str = ""
+    description: str = ""
 
 
 class ResumeData(BaseModel):

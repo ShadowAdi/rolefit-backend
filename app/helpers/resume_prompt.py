@@ -20,7 +20,6 @@ MONTH_MAP = {
 
 
 def _fmt_date(month, year, fallback: str = "Present") -> str:
-    """Convert month int + year int to 'Nov 2025' style string."""
     if year and month:
         return f"{MONTH_MAP.get(int(month), '')} {year}"
     if year:
@@ -29,14 +28,8 @@ def _fmt_date(month, year, fallback: str = "Present") -> str:
 
 
 def _label_links(links) -> list[str]:
-    """
-    Convert raw link dict or list into labelled strings.
-    e.g. {"github": "https://..."} -> ["GitHub::https://..."]
-    The PDF renderer uses the label as display text and URL as href.
-    """
     if not links:
         return []
-
     label_map = {
         "github": "GitHub",
         "live": "Live",
@@ -48,7 +41,6 @@ def _label_links(links) -> list[str]:
         "arxiv": "arXiv",
     }
     labelled = []
-
     if isinstance(links, dict):
         for key, url in links.items():
             if url:
@@ -60,7 +52,6 @@ def _label_links(links) -> list[str]:
             if url:
                 label = default_labels[i] if i < len(default_labels) else "Link"
                 labelled.append(f"{label}::{url}")
-
     return labelled
 
 
@@ -96,8 +87,9 @@ def build_resume_prompt(user_data: dict) -> str:
 
     prompt = f"""You are an expert resume writer and ATS optimization specialist.
 
-Your task: transform the raw user data below into a polished, one-page resume.
-Output MUST be valid JSON matching the exact schema shown. No markdown, no prose, no extra keys.
+CRITICAL: Output MUST fit ONE PAGE. Violating the content limits below causes overflow. Follow them exactly.
+
+Output MUST be valid JSON matching the schema. No markdown, no prose, no extra keys.
 
 === TARGET JOB ===
 Role: {jd.get('role_name', '')}
@@ -105,96 +97,56 @@ Company: {jd.get('company', '')}
 Tech Stack: {', '.join(jd.get('tech_stack', [])[:10])}
 Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
 
+=== ONE-PAGE CONTENT LIMITS (HARD) ===
+- Summary: EXACTLY 2 sentences. No more.
+- Experience: MAX 3 bullets per role. Each bullet MAX 12 words. One line only.
+- Projects: MAX 2 projects. MAX 2 bullets each. Each bullet MAX 12 words.
+- Achievements: ONLY include if genuinely different from experience bullets. If they repeat experience content, return empty array [].
+- Skills: List items only — no explanations.
+- Education description: ONE short line only if relevant coursework exists, otherwise empty string "".
+
 === WRITING RULES ===
-1. Bullet points: start with a strong past-tense action verb (Built, Engineered, Reduced, Shipped, Designed, Automated, Migrated, Optimized, Led, Implemented).
-2. Every bullet must contain ONE measurable outcome or scale signal (%, users, ms, requests/sec). If raw data lacks a number, add a realistic one — do NOT hallucinate company names or technologies.
-3. Each bullet is ONE concise line. No sub-bullets.
-4. Naturally weave in keywords from tech_stack and required_skills.
-5. Remove filler phrases: "worked on", "responsible for", "helped with".
+1. Start bullets with action verbs: Built, Engineered, Reduced, Shipped, Optimized, Automated, Led.
+2. Include ONE metric per bullet (%, users, ms). If missing, add a realistic one.
+3. No sub-bullets. No filler: "worked on", "responsible for".
+4. Match keywords from tech_stack and required_skills naturally.
 
-=== SKILLS RULES (CRITICAL) ===
-- Include ALL provided skills and tools — do NOT drop any.
-- Group them into these exact categories (omit a category only if truly empty):
-  Languages | Frameworks & Libraries | Databases & ORMs | DevOps & Cloud | Other Tools
-- Role names like "frontend", "backend", "full stack", "ui designer", "infra" are NOT skills — skip them.
-- Normalize capitalisation: "nodejs" → "Node.js", "nextjs" → "Next.js", "netjs" → "NestJS", "reactjs" → "React", "tailwind css" → "Tailwind CSS", "golang" → "Go", "postgres" → "PostgreSQL".
-- "c" → "C", "cpp" → "C++".
+=== SKILLS RULES ===
+- Include ALL skills and tools provided — do NOT drop any.
+- Categories: Languages | Frameworks & Libraries | Databases & ORMs | DevOps & Cloud | Other Tools
+- Skip role names: "frontend", "backend", "full stack", "ui designer", "infra", "system design".
+- Normalize: nodejs→Node.js, nextjs→Next.js, netjs→NestJS, golang→Go, postgres→PostgreSQL, cpp→C++, tailwind css→Tailwind CSS.
 
-=== SUMMARY RULES (CRITICAL) ===
-- ALWAYS write a 3–4 sentence professional summary. Never return null.
-- If the candidate has limited experience: sell their potential — highlight tech breadth, shipped projects, and fast learning velocity.
-- Open with years of experience and core stack. Close with a sentence about what they bring to this specific role.
-- Tailor keywords to match the target job's tech_stack and required_skills.
+=== SUMMARY RULES ===
+- EXACTLY 2 sentences. First: years of experience + core stack. Second: what they bring to this role.
+- Never return null. Tailor to target job keywords.
 
 === EXPERIENCE RULES ===
-- Dates are provided as pre-formatted "Mon YYYY" strings — use them exactly.
-- The "location" field in JSON must follow this format: "Remote · Internship" or "On-site · Full-time" (location_type · employment_type).
-- Max 4 bullets per role.
+- Dates are pre-formatted "Mon YYYY" — use exactly.
+- location field: "Remote · Internship" format (location_type · employment_type).
+- MAX 3 bullets per role, each MAX 12 words.
 
-=== PROJECT LINK RULES ===
-- Links are provided as "Label::URL" strings (e.g. "GitHub::https://...").
-- Copy them exactly into the links array — do not modify them.
+=== PROJECT RULES ===
+- MAX 2 projects total.
+- Links are "Label::URL" strings — copy exactly.
+- MAX 2 bullets per project, each MAX 12 words.
 
 === EDUCATION RULES ===
-- Expand abbreviated degree names: "BCA" → "Bachelor of Computer Applications (BCA)".
-- Use the institution's full official name.
-
-=== CONTENT SELECTION ===
-- Include projects: {include_projects}
-- Include publications: {include_publications}
-- Max 3 projects, 2 bullets each
-- Trim oldest/least-relevant experience first if space is tight
+- Expand: BCA → Bachelor of Computer Applications (BCA).
+- description field: one short line of relevant coursework if provided, else "".
 
 === OUTPUT JSON SCHEMA ===
-Return ONLY this JSON object — no wrapping text, no markdown fences:
+Return ONLY this JSON — no wrapping text, no markdown fences:
 
 {{
-  "header": {{
-    "name": "string",
-    "title": "string",
-    "email": "string",
-    "phone": "string",
-    "location": "string",
-    "links": ["string"]
-  }},
+  "header": {{"name": "string", "title": "string", "email": "string", "phone": "string", "location": "string", "links": ["string"]}},
   "summary": "string",
-  "skills": [
-    {{"category": "string", "items": ["string"]}}
-  ],
-  "experience": [
-    {{
-      "role": "string",
-      "company": "string",
-      "location": "string",
-      "start": "string",
-      "end": "string",
-      "bullets": ["string"]
-    }}
-  ],
-  "projects": [
-    {{
-      "title": "string",
-      "tech": "string",
-      "bullets": ["string"],
-      "links": ["string"]
-    }}
-  ],
+  "skills": [{{"category": "string", "items": ["string"]}}],
+  "experience": [{{"role": "string", "company": "string", "location": "string", "start": "string", "end": "string", "bullets": ["string"]}}],
+  "projects": [{{"title": "string", "tech": "string", "bullets": ["string"], "links": ["string"]}}],
   "achievements": ["string"],
-  "publications": [
-    {{
-      "title": "string",
-      "publisher": "string",
-      "year": "string"
-    }}
-  ],
-  "education": [
-    {{
-      "degree": "string",
-      "institution": "string",
-      "location": "string",
-      "year": "string"
-    }}
-  ]
+  "publications": [{{"title": "string", "publisher": "string", "year": "string"}}],
+  "education": [{{"degree": "string", "institution": "string", "location": "string", "year": "string", "description": "string"}}]
 }}
 
 === RAW USER DATA ===
@@ -246,7 +198,6 @@ def _build_sections_string(
 
     profile_links = profile.get("links") or {}
     phone = profile.get("phone", "")
-
     header_links = []
     if isinstance(profile_links, dict):
         phone = phone or profile_links.get("phone", "")
@@ -266,26 +217,23 @@ def _build_sections_string(
         f"Links: {', '.join(header_links)}"
     )
 
-    existing_summary = profile.get("summary", "")
-    if existing_summary:
+    existing = profile.get("summary", "")
+    if existing:
         parts.append(
-            f"EXISTING SUMMARY (improve, expand to 3-4 sentences, tailor to target role):\n"
-            f"{existing_summary}"
+            f"EXISTING SUMMARY (condense to 2 sentences, tailor to role):\n{existing}"
         )
     else:
         parts.append(
-            "SUMMARY INSTRUCTION: No existing summary provided. "
-            "Write a strong 3-4 sentence summary from scratch using the experience and projects below. "
-            "Sell the candidate's potential and match the target role."
+            "SUMMARY: No existing summary. Write exactly 2 sentences from experience below."
         )
 
     skill_names = [s.get("name", "") for s in skills if s.get("name")]
     tool_names = [t.get("name", "") for t in tools if t.get("name")]
     if skill_names or tool_names:
         parts.append(
-            f"SKILLS (include ALL — do not omit any):\n"
-            f"Skill entries: {', '.join(skill_names)}\n"
-            f"Tool entries: {', '.join(tool_names)}"
+            f"SKILLS (include ALL, do not drop any):\n"
+            f"Skills: {', '.join(skill_names)}\n"
+            f"Tools: {', '.join(tool_names)}"
         )
 
     if experiences:
@@ -314,7 +262,7 @@ def _build_sections_string(
 
     if include_projects and projects:
         proj_lines = []
-        for p in projects[:4]:
+        for p in projects[:3]:
             tech = ", ".join((p.get("techStack") or [])[:5])
             labelled = _label_links(p.get("links"))
             proj_lines.append(
@@ -349,7 +297,7 @@ def _build_sections_string(
                 f"- Degree: {a.get('degree_name')}\n"
                 f"  Institution: {a.get('college_name')}\n"
                 f"  Period: {period}\n"
-                f"  Description: {a.get('description') or 'N/A'}"
+                f"  Description: {a.get('description') or ''}"
             )
         parts.append("EDUCATION:\n" + "\n\n".join(edu_lines))
 

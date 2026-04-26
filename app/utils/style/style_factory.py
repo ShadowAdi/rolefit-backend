@@ -10,8 +10,8 @@ def build_styles() -> dict[str, ParagraphStyle]:
     def s(name, **kw) -> ParagraphStyle:
         defaults = dict(
             fontName="Helvetica",
-            fontSize=10,
-            leading=13,
+            fontSize=9,
+            leading=10,
             textColor=BLACK,
             spaceAfter=0,
             spaceBefore=0,
@@ -23,51 +23,57 @@ def build_styles() -> dict[str, ParagraphStyle]:
         "name": s(
             "name",
             fontName="Helvetica-Bold",
-            fontSize=20,
-            leading=24,
+            fontSize=16,
+            leading=22,
             textColor=ACCENT,
             alignment=TA_CENTER,
         ),
         "title": s(
-            "title", fontSize=11, textColor=SUBTEXT, alignment=TA_CENTER, spaceAfter=2
+            "title", fontSize=10, textColor=SUBTEXT, alignment=TA_CENTER, spaceAfter=1
         ),
         "contact": s(
             "contact",
-            fontSize=8.5,
+            fontSize=8,
+            leading=10,
             textColor=SUBTEXT,
             alignment=TA_CENTER,
-            spaceAfter=4,
+            spaceAfter=2,
         ),
         "section_header": s(
             "section_header",
             fontName="Helvetica-Bold",
-            fontSize=9.5,
+            fontSize=9,
+            leading=11,
             textColor=ACCENT,
-            spaceBefore=8,
-            spaceAfter=2,
+            spaceBefore=4,  # was 8
+            spaceAfter=1,  # was 2
         ),
-        "role": s("role", fontName="Helvetica-Bold", fontSize=10, textColor=BLACK),
-        "company_meta": s("company_meta", fontSize=9, textColor=SUBTEXT, spaceAfter=2),
+        "role": s(
+            "role", fontName="Helvetica-Bold", fontSize=9.5, leading=12, textColor=BLACK
+        ),
+        "company_meta": s(
+            "company_meta", fontSize=8.5, leading=11, textColor=SUBTEXT, spaceAfter=1
+        ),
         "bullet": s(
             "bullet",
-            fontSize=9.5,
-            leading=13,
+            fontSize=8,
+            leading=12,
             leftIndent=10,
             firstLineIndent=-10,
             spaceAfter=1,
         ),
         "skill_category": s(
-            "skill_cat", fontName="Helvetica-Bold", fontSize=9, textColor=SUBTEXT
+            "skill_cat",
+            fontName="Helvetica-Bold",
+            fontSize=8.5,
+            leading=11,
+            textColor=SUBTEXT,
         ),
-        "skill_items": s("skill_items", fontSize=9, leading=12),
-        "summary": s("summary", fontSize=9.5, leading=14, spaceAfter=4),
-        "pub": s("pub", fontSize=9.5, leading=13, spaceAfter=2),
-        "project_link": s(
-            "project_link",
-            fontSize=9,
-            textColor=ACCENT,
-            alignment=TA_RIGHT,
-            spaceAfter=1,
+        "skill_items": s("skill_items", fontSize=8.5, leading=11),
+        "summary": s("summary", fontSize=9, leading=12, spaceAfter=2),
+        "pub": s("pub", fontSize=9, leading=12, spaceAfter=1),
+        "edu_desc": s(
+            "edu_desc", fontSize=8.5, leading=11, textColor=SUBTEXT, spaceAfter=1
         ),
     }
 
@@ -75,7 +81,7 @@ def build_styles() -> dict[str, ParagraphStyle]:
 def section_header(text: str, styles: dict) -> list:
     return [
         Paragraph(text.upper(), styles["section_header"]),
-        HRFlowable(width="100%", thickness=0.5, color=RULE, spaceAfter=4),
+        HRFlowable(width="100%", thickness=0.5, color=RULE, spaceAfter=3),
     ]
 
 
