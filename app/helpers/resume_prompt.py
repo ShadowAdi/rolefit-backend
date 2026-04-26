@@ -122,12 +122,12 @@ def build_resume_prompt(user_data: dict) -> str:
     # Dynamic content limits based on experience
     exp_bullet_limit = 3 if not is_senior else 4
     proj_section = (
-        "- Projects: MAX 2 projects (ONLY from user-provided projects). MAX 2 bullets each. Each bullet MAX 12 words."
+        "- Projects: MAX 2 projects (ONLY from user-provided projects). MAX 2 bullets each. Each bullet MIN 10 words MAX 25 words."
         if include_projects
         else "- Projects: Return empty array [] — candidate has sufficient experience."
     )
     summary_section = (
-        "- Summary: EXACTLY 2 sentences. First: years + core stack. Second: value for this role."
+        "- Summary: EXACTLY 2-3 sentences. First: years + core stack. Second: value for this role."
         if include_summary
         else '- Summary: Return empty string "" — not needed for senior profiles.'
     )
@@ -150,7 +150,7 @@ Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
 
 === ONE-PAGE CONTENT LIMITS (HARD) ===
 {summary_section}
-- Experience: MAX {exp_bullet_limit} bullets per role. Each bullet MAX 15 words. One line only.
+- Experience: MAX {exp_bullet_limit} bullets per role. Each bullet MIN 10 words MAX 25 words. One line only.
 {proj_section}
 {achievements_section}
 - Skills: List items only — no explanations.
@@ -172,13 +172,13 @@ Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
 - Dates are pre-formatted "Mon YYYY" — use exactly as given.
 - "emp_type" field: employment type only — e.g. "Internship", "Full-time", "Contract", "Part-time". Nothing else.
 - "company" field: just the company name. No location, no remote/onsite info.
-- MAX {exp_bullet_limit} bullets per role, each MAX 15 words.
+- MAX {exp_bullet_limit} bullets per role, each MIN 10 words and MAX 25 words.
 
 === PROJECT RULES ===
 - ONLY include projects the user explicitly provided. Never invent or infer projects.
 - If user provided 0 projects, return projects as empty array [].
 - Links are "Label::URL" strings — copy exactly, do not modify.
-- MAX 2 bullets per project, each MAX 15 words.
+- MAX 2 bullets per project, each MIN 10 words and MAX 25 words.
 
 === ACHIEVEMENTS RULES ===
 - ONLY use achievements explicitly provided by the user (hackathons won, competitions, awards, certifications they listed).
