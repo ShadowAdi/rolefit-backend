@@ -201,27 +201,23 @@ def build_pdf(data: ResumeData) -> bytes:
                         "edu_year",
                         parent=styles["company_meta"],
                         alignment=TA_RIGHT,
-                        fontSize=8.5,
+                        fontSize=9,
                     ),
                 ),
             ]
-            t = Table([row], colWidths=[5.4 * inch, 2.0 * inch])
+            t = Table([row], colWidths=[5.5 * inch, 2.0 * inch])
             t.setStyle(
                 TableStyle(
                     [
                         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
-                        ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                     ]
                 )
             )
             story.append(t)
-
             if edu.location:
                 story.append(Paragraph(edu.location, styles["company_meta"]))
-
-            # Education description — render if AI provided it
-            if edu.description:
+            if hasattr(edu, "description") and edu.description:
                 story.append(Paragraph(edu.description, styles["edu_desc"]))
 
     doc.build(story)
