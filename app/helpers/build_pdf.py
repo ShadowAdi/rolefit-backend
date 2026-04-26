@@ -159,11 +159,6 @@ def _render_project_links(
     return Paragraph("  ".join(parts), link_style)
 
 
-# ---------------------------------------------------------------------------
-# Main builder
-# ---------------------------------------------------------------------------
-
-
 def build_pdf(data: ResumeData) -> bytes:
     buff = io.BytesIO()
     M = 0.50 * inch
@@ -180,10 +175,6 @@ def build_pdf(data: ResumeData) -> bytes:
     styles = build_styles()
     story = []
 
-    # ------------------------------------------------------------------
-    # Collect job-specific terms to bold (company being applied to +
-    # tech stack from the job description stored on data if available)
-    # ------------------------------------------------------------------
     extra_bold_terms: list[str] = []
     if hasattr(data, "job_description") and data.job_description:
         jd = data.job_description
@@ -196,23 +187,17 @@ def build_pdf(data: ResumeData) -> bytes:
 
     bold = _make_bold_pattern(extra_bold_terms)
 
-    # ------------------------------------------------------------------
-    # Header — name / title / contact (compact, with short linked labels)
-    # ------------------------------------------------------------------
     h = data.header
     story.append(Paragraph(h.name, styles["name"]))
     if h.title:
         story.append(Paragraph(h.title, styles["title"]))
 
-    # Build contact line: email | phone | location | GitHub | LinkedIn | …
     contact_text_parts: list[str] = []
 
-    # Plain text fields (email, phone, location)
     for field in [h.email, h.phone, h.location]:
         if field:
             contact_text_parts.append(field.replace("&", "&amp;"))
 
-    # URL links → short labelled hyperlinks
     if h.links:
         link_str = _format_header_links(h.links)
         if link_str:
@@ -221,29 +206,22 @@ def build_pdf(data: ResumeData) -> bytes:
     if contact_text_parts:
         story.append(Paragraph(" | ".join(contact_text_parts), styles["contact"]))
 
-    # Single accent rule — drawn by canvas, not HRFlowable, so no border artefact
     story.append(
         HRFlowable(
             width="100%",
             thickness=1,
             color=ACCENT,
-            spaceBefore=2,
-            spaceAfter=4,
+            spaceBefore=4,
+            spaceAfter=8,
             hAlign="CENTER",
         )
     )
 
-    # ------------------------------------------------------------------
-    # Summary
-    # ------------------------------------------------------------------
     if data.summary:
         story += section_header("Summary", styles)
         story.append(Paragraph(_apply_bold(data.summary, bold), styles["summary"]))
-        story.append(Spacer(1, 2))
+        story.append(Spacer(2, 4))
 
-    # ------------------------------------------------------------------
-    # Skills & Technologies
-    # ------------------------------------------------------------------
     if data.skills:
         story += section_header("Skills & Technologies", styles)
         for grp in data.skills:
@@ -253,7 +231,6 @@ def build_pdf(data: ResumeData) -> bytes:
                 Paragraph(grp.category + ":", styles["skill_category"]),
                 Paragraph(", ".join(grp.items), styles["skill_items"]),
             ]
-            # 1.65" keeps "Frameworks & Libraries:" on one line
             t = Table([row], colWidths=[1.65 * inch, 5.70 * inch])
             t.setStyle(
                 TableStyle(
@@ -267,9 +244,6 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(t)
         story.append(Spacer(1, 2))
 
-    # ------------------------------------------------------------------
-    # Professional Experience
-    # ------------------------------------------------------------------
     if data.experience:
         story += section_header("Professional Experience", styles)
         for exp in data.experience:
@@ -310,9 +284,6 @@ def build_pdf(data: ResumeData) -> bytes:
                 story.append(Paragraph(f"• {_apply_bold(b, bold)}", styles["bullet"]))
             story.append(Spacer(1, 4))
 
-    # ------------------------------------------------------------------
-    # Projects
-    # ------------------------------------------------------------------
     if data.projects:
         story += section_header("Projects", styles)
         for proj in data.projects:
@@ -344,18 +315,12 @@ def build_pdf(data: ResumeData) -> bytes:
                 story.append(Paragraph(f"• {_apply_bold(b, bold)}", styles["bullet"]))
             story.append(Spacer(1, 3))
 
-    # ------------------------------------------------------------------
-    # Achievements & Certifications
-    # ------------------------------------------------------------------
     if data.achievements:
         story += section_header("Achievements & Certifications", styles)
         for ach in data.achievements:
             story.append(Paragraph(f"• {_apply_bold(ach, bold)}", styles["bullet"]))
         story.append(Spacer(1, 2))
 
-    # ------------------------------------------------------------------
-    # Publications
-    # ------------------------------------------------------------------
     if data.publications:
         story += section_header("Publications", styles)
         for pub in data.publications:
@@ -367,9 +332,6 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(Paragraph(f"• {_apply_bold(line, bold)}", styles["pub"]))
         story.append(Spacer(1, 2))
 
-    # ------------------------------------------------------------------
-    # Education
-    # ------------------------------------------------------------------
     if data.education:
         story += section_header("Education", styles)
         for edu in data.education:
