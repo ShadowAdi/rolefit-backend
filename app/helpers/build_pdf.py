@@ -1,4 +1,5 @@
 import io
+import re
 from app.schema.pdf_resume import ResumeData
 
 from reportlab.platypus import (
@@ -15,6 +16,34 @@ from reportlab.lib.enums import TA_RIGHT
 from app.core.resume_colors import BLACK, ACCENT, SUBTEXT, RULE
 from app.utils.style.style_factory import build_styles, section_header, bullet_para
 from reportlab.lib.styles import ParagraphStyle
+
+
+_BOLD_PATTERNS = re.compile(
+    r"\b("
+    r"\d[\d,\.]*\s*%|"
+    r"\d[\d,\.]*\+?\s*(?:users|ms|seconds?|minutes?|hours?|days?|months?|requests?|"
+    r"records?|events?|transactions?|calls?|endpoints?|services?|nodes?|instances?)|"
+    r"Built|Engineered|Developed|Designed|Implemented|Optimized|Reduced|Increased|"
+    r"Improved|Automated|Shipped|Led|Architected|Deployed|Migrated|Integrated|"
+    r"Launched|Scaled|Delivered|Established|Created|Streamlined|"
+    r"REST(?:ful)?|GraphQL|gRPC|Microservices?|CI/CD|Docker|Kubernetes|AWS|GCP|Azure|"
+    r"PostgreSQL|MongoDB|Redis|Kafka|RabbitMQ|Elasticsearch|"
+    r"React|Next\.js|NestJS|Node\.js|FastAPI|Django|Spring Boot|"
+    r"TypeScript|JavaScript|Python|Go|Golang|Rust|Java|"
+    r"LLM|GPT|ML|AI|NLP|RAG|fine.tun(?:ing|ed)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _bold_keywords(text: str) -> str:
+    """Wrap recognisable keywords/metrics in <b> tags for paragraph content."""
+    safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    def replacer(m: re.Match) -> str:
+        return f"<b>{m.group(0)}</b>"
+
+    return _BOLD_PATTERNS.sub(replacer, safe)
 
 
 def _render_project_links(
@@ -71,12 +100,18 @@ def build_pdf(data: ResumeData) -> bytes:
         story.append(Paragraph(" | ".join(safe_parts), styles["contact"]))
 
     story.append(
-        HRFlowable(width="100%", thickness=1, color=ACCENT, spaceBefore=3, spaceAfter=4)
+        HRFlowable(
+            width="100%",
+            thickness=1,
+            color=ACCENT,
+            spaceBefore=3,
+            spaceAfter=5,
+        )
     )
 
     if data.summary:
         story += section_header("Summary", styles)
-        story.append(Paragraph(data.summary, styles["summary"]))
+        story.append(Paragraph(_bold_keywords(data.summary), styles["summary"]))
         story.append(Spacer(1, 2))
 
     if data.skills:
@@ -84,11 +119,14 @@ def build_pdf(data: ResumeData) -> bytes:
         for grp in data.skills:
             if not grp.items:
                 continue
+
+            items_str = ", ".join(grp.items)
             row = [
                 Paragraph(grp.category + ":", styles["skill_category"]),
-                Paragraph(", ".join(grp.items), styles["skill_items"]),
+                Paragraph(items_str, styles["skill_items"]),
             ]
-            t = Table([row], colWidths=[1.45 * inch, 5.9 * inch])
+
+            t = Table([row], colWidths=[1.65 * inch, 5.70 * inch])
             t.setStyle(
                 TableStyle(
                     [
@@ -109,7 +147,8 @@ def build_pdf(data: ResumeData) -> bytes:
             company_display = f" · {exp.company}" if exp.company else ""
             emp_display = f", {exp.emp_type}" if exp.emp_type else ""
             role_with_company = Paragraph(
-                f"{exp.role}<font color='#242323' size='9'>{company_display}</font> <font color='#888888' size='9'>{emp_display}</font>",
+                f"{exp.role}<font color='#242323' size='9'>{company_display}</font>"
+                f" <font color='#888888' size='9'>{emp_display}</font>",
                 styles["role"],
             )
             header_row = [
@@ -136,7 +175,13 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(t)
 
             for b in exp.bullets:
-                story.append(bullet_para(b, styles))
+                safe = b.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                story.append(
+                    Paragraph(
+                        f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
+                        styles["bullet"],
+                    )
+                )
             story.append(Spacer(1, 4))
 
     if data.projects:
@@ -145,9 +190,10 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(Paragraph(proj.title, styles["role"]))
 
             link_para = _render_project_links(proj.links, styles["company_meta"])
+
             if proj.tech and link_para:
                 row = [
-                    Paragraph(f"Tech: {proj.tech}", styles["company_meta"]),
+                    Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]),
                     link_para,
                 ]
                 t = Table([row], colWidths=[4.9 * inch, 2.5 * inch])
@@ -162,18 +208,30 @@ def build_pdf(data: ResumeData) -> bytes:
                 )
                 story.append(t)
             elif proj.tech:
-                story.append(Paragraph(f"Tech: {proj.tech}", styles["company_meta"]))
+                story.append(Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]))
             elif link_para:
                 story.append(link_para)
 
             for b in proj.bullets:
-                story.append(bullet_para(b, styles))
-            story.append(Spacer(1, 3))  # was 4
+                safe = b.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                story.append(
+                    Paragraph(
+                        f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
+                        styles["bullet"],
+                    )
+                )
+            story.append(Spacer(1, 3))
 
     if data.achievements:
         story += section_header("Achievements & Certifications", styles)
         for ach in data.achievements:
-            story.append(bullet_para(ach, styles))
+            safe = ach.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            story.append(
+                Paragraph(
+                    f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
+                    styles["bullet"],
+                )
+            )
         story.append(Spacer(1, 2))
 
     if data.publications:
@@ -184,7 +242,13 @@ def build_pdf(data: ResumeData) -> bytes:
                 line += f" — {pub.publisher}"
             if pub.year:
                 line += f" ({pub.year})"
-            story.append(Paragraph(f"• {line}", styles["pub"]))
+            safe = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            story.append(
+                Paragraph(
+                    f"• {_BOLD_PATTERNS.sub(lambda m: f'<b>{m.group(0)}</b>', safe)}",
+                    styles["pub"],
+                )
+            )
         story.append(Spacer(1, 2))
 
     if data.education:
@@ -215,7 +279,12 @@ def build_pdf(data: ResumeData) -> bytes:
             if edu.location:
                 story.append(Paragraph(edu.location, styles["company_meta"]))
             if hasattr(edu, "description") and edu.description:
-                story.append(Paragraph(edu.description, styles["edu_desc"]))
+                safe = (
+                    edu.description.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                )
+                story.append(Paragraph(safe, styles["edu_desc"]))
 
     doc.build(story)
     buff.seek(0)
