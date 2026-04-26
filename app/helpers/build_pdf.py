@@ -135,9 +135,6 @@ def build_pdf(data: ResumeData) -> bytes:
             )
             story.append(t)
 
-            if exp.location:
-                story.append(Paragraph(exp.location, styles["company_meta"]))
-
             for b in exp.bullets:
                 story.append(bullet_para(b, styles))
             story.append(Spacer(1, 4))

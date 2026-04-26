@@ -291,7 +291,6 @@ def _build_sections_string(
             )
         parts.append("EXPERIENCE:\n" + "\n\n".join(exp_lines))
 
-    # Only pass user-added projects
     if include_projects and projects:
         proj_lines = []
         for p in projects[:3]:
@@ -312,7 +311,6 @@ def _build_sections_string(
             "PROJECTS: User has not added any projects. Return empty array []."
         )
 
-    # Only pass user-added achievements
     if has_achievements and achievements:
         ach_lines = [
             f"- {a.get('title')} ({a.get('achievement_type', '')} {a.get('end_year', '')})"

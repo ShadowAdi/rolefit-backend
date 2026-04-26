@@ -26,6 +26,7 @@ class Experience(BaseModel):
     location: str = ""
     start: str = ""
     end: str = ""
+    emp_type: str = ""
     bullets: list[str] = []
 
 
