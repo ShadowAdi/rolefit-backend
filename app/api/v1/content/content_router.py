@@ -26,7 +26,7 @@ async def generate_content(
 
 @router.get(
     "/{jobId}",
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
 )
 async def get_all_content(
     jobId: str,
