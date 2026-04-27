@@ -69,3 +69,20 @@ def _save_academics(db: Session, profile_id: str, items: list):
             end_year=item.get("end_year"),
         )
     db.add(academic)
+
+
+def _save_achievments(db: Session, profile_id: str, items: list):
+    for item in items or []:
+        achievement = Achievement(
+            profileId=profile_id,
+            title=item.get("title") or "Unknown",
+            achievement_type=item.get("achievement_type") or "other",
+            description=item.get("description"),
+            location=item.get("location"),
+            start_month=item.get("start_month"),
+            start_year=item.get("start_year"),
+            end_month=item.get("end_month"),
+            end_year=item.get("end_year"),
+            links=item.get("links") or {},
+        )
+    db.add(achievement)
