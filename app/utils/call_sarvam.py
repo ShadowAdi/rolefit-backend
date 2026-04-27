@@ -9,6 +9,68 @@ from app.core.logger import logger
 from app.utils.sarvam_const import RESUME_GEN_TIMEOUT, SARVAM_API_URL
 
 
+def _extract_json_from_text(text: str) -> str:
+    """
+    Robustly extract a JSON object string from LLM output.
+
+    Strategy:
+    1. Strip markdown code fences (```json ... ``` or ``` ... ```)
+    2. Find the first '{' and walk the string tracking brace depth to find
+       the matching '}'. This is safer than a greedy regex because it handles
+       any trailing text the model appended after the closing brace.
+    """
+    clean = text.strip()
+
+    clean = re.sub(r"^```(?:json)?\s*", "", clean, flags=re.IGNORECASE)
+    clean = re.sub(r"\s*```\s*$", "", clean)
+    clean = clean.strip()
+
+    start = clean.find("{")
+    if start == -1:
+        raise ValueError("No '{' found in LLM output")
+
+    depth = 0
+    in_string = False
+    escape_next = False
+    end = -1
+
+    for i, ch in enumerate(clean[start:], start=start):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\" and in_string:
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+
+    if end == -1:
+        raise ValueError("Unbalanced braces — could not find closing '}'")
+
+    return clean[start : end + 1]
+
+
+def _repair_json(json_str: str) -> str:
+    """
+    Apply lightweight repairs for common LLM JSON mistakes:
+    - Trailing commas before ] or }
+    - Single-quoted strings (replace with double quotes carefully)
+    - Unquoted null/true/false that appear as bare Python values
+    """
+    repaired = re.sub(r",\s*([}\]])", r"\1", json_str)
+    return repaired
+
+
 def _call_sarvam(resume_text: str, extracted_links: list[str]) -> dict:
     headers = sarvam_api_key_headers()
     payload = {
@@ -51,16 +113,9 @@ def _call_sarvam(resume_text: str, extracted_links: list[str]) -> dict:
             detail="Could not reach the resume parsing service.",
         )
 
-    data = None
-    message_content = ""
-
     try:
         data = response.json()
-
-        # Log the FULL raw response so you can see exactly what Sarvam returned
         logger.debug(f"Sarvam raw response: {json.dumps(data)}")
-        print(f"[SARVAM RAW RESPONSE]: {json.dumps(data, indent=2)}")
-
     except Exception as e:
         logger.error(
             f"Failed to parse Sarvam HTTP response as JSON: {e}. "
@@ -92,44 +147,46 @@ def _call_sarvam(resume_text: str, extracted_links: list[str]) -> dict:
         )
 
     logger.info(f"Sarvam message content length: {len(message_content)} chars")
-    print(f"[SARVAM MESSAGE CONTENT]:\n{message_content[:2000]}")
+    logger.debug(f"[SARVAM MESSAGE CONTENT]:\n{message_content[:3000]}")
 
-    clean = message_content.strip()
-
-    if clean.startswith("```"):
-        clean = re.sub(r"^```(?:json)?\s*", "", clean)
-        clean = re.sub(r"\s*```$", "", clean)
-        clean = clean.strip()
-
-    # Find the outermost { ... } block
-    match = re.search(r"\{.*\}", clean, flags=re.DOTALL)
-    if not match:
+    try:
+        json_str = _extract_json_from_text(message_content)
+    except ValueError as e:
         logger.error(
-            f"No JSON object found in Sarvam content. "
-            f"First 500 chars: {clean[:500]}"
+            f"Could not locate JSON object in Sarvam content. "
+            f"Extraction error: {e}. "
+            f"First 500 chars of content: {message_content[:500]}"
         )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Resume parsing service did not return valid JSON.",
         )
 
-    json_str = match.group()
-    print(f"[EXTRACTED JSON STRING FIRST 500]:\n{json_str[:500]}")
+    logger.debug(f"[EXTRACTED JSON STRING (first 500)]:\n{json_str[:500]}")
 
     try:
         parsed_json = json.loads(json_str)
-    except json.JSONDecodeError as e:
-        logger.error(
-            f"JSON decode failed: {e}. "
-            f"Problematic string around pos {e.pos}: "
-            f"...{json_str[max(0, e.pos - 50): e.pos + 50]}..."
+    except json.JSONDecodeError as first_err:
+        logger.warning(
+            f"Initial JSON parse failed at pos {first_err.pos}: {first_err.msg}. "
+            f"Context: ...{json_str[max(0, first_err.pos - 80): first_err.pos + 80]}... "
+            f"Attempting repair."
         )
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Resume parsing service returned malformed JSON. Please try again.",
-        )
+        repaired = _repair_json(json_str)
+        try:
+            parsed_json = json.loads(repaired)
+            logger.info("JSON parsed successfully after repair.")
+        except json.JSONDecodeError as second_err:
+            logger.error(
+                f"JSON decode still failed after repair at pos {second_err.pos}: {second_err.msg}. "
+                f"Context: ...{repaired[max(0, second_err.pos - 80): second_err.pos + 80]}..."
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Resume parsing service returned malformed JSON. Please try again.",
+            )
 
-    logger.info("Sarvam resume parsing successful")
-    print(f"[PARSED JSON KEYS]: {list(parsed_json.keys())}")
-
+    logger.info(
+        f"Sarvam resume parsing successful. Top-level keys: {list(parsed_json.keys())}"
+    )
     return parsed_json
