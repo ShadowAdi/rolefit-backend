@@ -48,3 +48,18 @@ async def get_content(
 ):
     user_id = current_user.id
     return content_service.get_content(userId=str(user_id), contentId=contentId, db=db)
+
+
+@router.delete(
+    "/{contentId}",
+    status_code=status.HTTP_200_OK,
+)
+async def delete_content(
+    contentId: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    return content_service.delete_content(
+        userId=str(user_id), contentId=contentId, db=db
+    )

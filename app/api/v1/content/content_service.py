@@ -384,3 +384,91 @@ class ContentServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while fetching content.",
             )
+
+    def delete_content(
+        self,
+        userId: str,
+        contentId: str,
+        db: Session,
+    ):
+        try:
+            if not userId or not contentId:
+                logger.error("Failed to fetch content. No user id and content id")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Failed to fetch content by id {contentId}.",
+                )
+
+            user = db.query(User).filter(User.id == userId).first()
+            if not user:
+                logger.warning(f"User not found: {userId}")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist. Invalid user ID.",
+                )
+
+            docQuery = db.query(GeneratedDocumment).filter(
+                GeneratedDocumment.userId == userId,
+                GeneratedDocumment.id == contentId,
+            )
+
+            docFound = docQuery.first()
+
+            if not docFound:
+                logger.warning(
+                    f"Content deletion failed: Content not found",
+                    extra={"userId": userId, "contentId": contentId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Content not found",
+                )
+
+            docFoundId = docFound.id
+
+            db.delete(docFound)
+            db.commit()
+
+            return {
+                "message": f"Doc Id '{docFoundId}' has been successfully deleted",
+                "id": str(docFoundId),
+            }
+
+        except HTTPException:
+            raise
+
+        except IntegrityError as e:
+            db.rollback()
+            logger.error(
+                f"DB integrity error for user={userId}",
+                extra={"error": str(e.orig)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database constraint violation occurred.",
+            )
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"DB error for deleting content content={contentId}",
+                extra={"error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while deleting content.",
+            )
+
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error for user={userId}",
+                extra={"error": str(e), "errorType": type(e).__name__},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while deleting content.",
+            )
