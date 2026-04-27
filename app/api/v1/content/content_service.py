@@ -9,7 +9,11 @@ from app.core.logger import logger
 from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
 from app.models.GeneratedDocument import GeneratedDocumment
-from app.response.GenerateDocument_responses import GenerateDocCreateResponse
+from app.response.GenerateDocument_responses import (
+    GenerateDocCreateResponse,
+    GeneratedDocumnetResponse,
+    DeleteDocumnetResponse,
+)
 from app.helpers.grok_ai_headers import grok_api_key_headers
 from uuid import UUID
 from groq import Groq
@@ -272,7 +276,9 @@ class ContentServiceClass:
                 .all()
             )
 
-            return [GeneratedDocumment.model_validate(genDoc) for genDoc in genDocs]
+            return [
+                GeneratedDocumnetResponse.model_validate(genDoc) for genDoc in genDocs
+            ]
 
         except HTTPException:
             raise
@@ -345,7 +351,7 @@ class ContentServiceClass:
                 .first()
             )
 
-            return GeneratedDocumment.model_validate(genDoc)
+            return GeneratedDocumnetResponse.model_validate(genDoc)
 
         except HTTPException:
             raise
@@ -430,10 +436,13 @@ class ContentServiceClass:
             db.delete(docFound)
             db.commit()
 
-            return {
-                "message": f"Doc Id '{docFoundId}' has been successfully deleted",
-                "id": str(docFoundId),
-            }
+            return DeleteDocumnetResponse.model_validate(
+                {
+                    "message": f"Doc Id '{docFoundId}' has been successfully deleted",
+                    "id": str(docFoundId),
+                    "success": True,
+                }
+            )
 
         except HTTPException:
             raise

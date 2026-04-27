@@ -12,6 +12,7 @@ class GenerateDocCreateResponse(BaseModel):
     userId: UUID
     jobId: UUID
     resume_text: str
+    user_response: str
     created_at: datetime
 
 
@@ -23,6 +24,7 @@ class GeneratedDocumnetResponse(BaseModel):
     resume_text: str
     userId: str
     jobId: str
+    user_response: str
     created_at: datetime
     updated_at: datetime
 
