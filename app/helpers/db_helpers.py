@@ -52,7 +52,7 @@ def _save_experience(db: Session, profile_id: str, items: list):
             end_year=item.get("end_year"),
             priority=item.get("priority") or i,
         )
-    db.add(exp)
+        db.add(exp)
 
 
 def _save_academics(db: Session, profile_id: str, items: list):
@@ -68,7 +68,7 @@ def _save_academics(db: Session, profile_id: str, items: list):
             end_month=item.get("end_month"),
             end_year=item.get("end_year"),
         )
-    db.add(academic)
+        db.add(academic)
 
 
 def _save_achievments(db: Session, profile_id: str, items: list):
@@ -85,4 +85,18 @@ def _save_achievments(db: Session, profile_id: str, items: list):
             end_year=item.get("end_year"),
             links=item.get("links") or {},
         )
-    db.add(achievement)
+        db.add(achievement)
+
+
+def _save_projects(db: Session, profile_id: str, items: list):
+    for item in items or []:
+        project = Project(
+            profileId=profile_id,
+            title=item.get("title") or "Untitled Project",
+            description=item.get("description"),
+            techStack=item.get("techStack") or [],
+            links=item.get("links") or {},
+            startDate=item.get("startDate"),
+            endDate=item.get("endDate"),
+        )
+        db.add(project)
