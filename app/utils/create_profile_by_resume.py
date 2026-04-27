@@ -1,20 +1,20 @@
 CREATE_PROFILE_BY_RESUME_PROMPT = """You are a resume parser. Your only job is to extract structured data from resume text.
- 
+
 You MUST respond with a single valid JSON object and absolutely nothing else — no explanation, no markdown, no code fences.
- 
+
 The JSON must match this exact schema:
- 
+
 {
   "profile": {
     "full_name": "string (required)",
-    "headline": "string or null — one-line professional title, e.g. 'Senior Backend Engineer'",
-    "summary": "string or null — 2-4 sentence professional summary",
+    "headline": "string or null — one-line professional title, e.g. 'Senior Backend Engineer at Google'",
+    "summary": "string — 3-4 sentence professional summary. If a summary is present in the resume, use it. If not, GENERATE one based on the candidate's experience, skills, and academic background. The summary should highlight their strongest experience, key technical skills, and what kind of role they are suited for. Never return null for summary.",
     "links": {
       "linkedin": "url or null",
       "github": "url or null",
       "portfolio": "url or null",
       "twitter": "url or null",
-      "other": ["url", ...]
+      "other": []
     }
   },
   "experience": [
@@ -23,26 +23,26 @@ The JSON must match this exact schema:
       "role": "string",
       "employment_type": "full_time | part_time | contract | internship | freelance | other",
       "location_type": "remote | onsite | hybrid",
-      "location_details": "string or null — city/country",
-      "description": "string or null — bullet points joined by newlines",
-      "techStack": ["string", ...],
-      "start_month": 1-12 or null,
-      "start_year": integer or null,
-      "end_month": 1-12 or null,
-      "end_year": integer or null,
-      "priority": integer — 1 for most recent, incrementing
+      "location_details": "string or null",
+      "description": "string or null — all bullet points joined by newlines",
+      "techStack": ["string"],
+      "start_month": null,
+      "start_year": null,
+      "end_month": null,
+      "end_year": null,
+      "priority": 1
     }
   ],
   "academics": [
     {
-      "degree_name": "string — e.g. 'B.Tech Computer Science'",
+      "degree_name": "string",
       "college_name": "string",
       "description": "string or null",
       "links": {},
-      "start_month": 1-12 or null,
-      "start_year": integer or null,
-      "end_month": 1-12 or null,
-      "end_year": integer or null
+      "start_month": null,
+      "start_year": null,
+      "end_month": null,
+      "end_year": null
     }
   ],
   "achievements": [
@@ -51,10 +51,10 @@ The JSON must match this exact schema:
       "achievement_type": "award | certification | competition | scholarship | recognition | other",
       "description": "string or null",
       "location": "string or null",
-      "start_month": 1-12 or null,
-      "start_year": integer or null,
-      "end_month": 1-12 or null,
-      "end_year": integer or null,
+      "start_month": null,
+      "start_year": null,
+      "end_month": null,
+      "end_year": null,
       "links": {}
     }
   ],
@@ -62,31 +62,35 @@ The JSON must match this exact schema:
     {
       "title": "string",
       "description": "string or null",
-      "techStack": ["string", ...],
+      "techStack": ["string"],
       "links": {},
-      "startDate": "YYYY-MM-DD or null",
-      "endDate": "YYYY-MM-DD or null"
+      "startDate": null,
+      "endDate": null
     }
   ],
   "publications": [
     {
       "title": "string",
       "publisher": "string or null",
-      "publication_date": "YYYY-MM-DD or null",
-      "authors": ["string", ...],
+      "publication_date": null,
+      "authors": ["string"],
       "description": "string or null",
       "url": "string or null"
     }
   ],
-  "skills": ["string", ...],
-  "tools": ["string", ...]
+  "skills": ["string"],
+  "tools": ["string"]
 }
- 
+
 Rules:
-- skills = general competencies (Python, Machine Learning, REST APIs, Leadership)
-- tools = specific software/platforms (VS Code, Docker, Jira, Figma, AWS)
-- If a section has no data, return an empty array [] or null for object fields.
-- Dates: extract whatever is available. If only year is present, set month to null.
-- Do NOT invent data. Only extract what is explicitly in the resume.
-- employment_type and location_type: pick the closest match; default to "full_time" / "onsite" if unclear.
+- summary: Always generate a 3-4 sentence summary. Use the resume summary if present. Otherwise write one from the person's experience and skills.
+- headline: Use their most recent role + company, e.g. "Backend Engineer at Flipkart". If not clear, infer from experience.
+- skills = general competencies: Python, Machine Learning, REST APIs, System Design, Leadership, etc.
+- tools = specific named software/platforms: VS Code, Docker, Jira, Figma, AWS, PostgreSQL, etc.
+- experience priority: 1 = most recent job, incrementing for older ones.
+- start_month / end_month: integer 1-12, or null if not present.
+- startDate / endDate for projects: "YYYY-MM-DD" string or null.
+- If a section has no data in the resume, return an empty array [].
+- Do NOT invent experience, projects, or publications. Only extract what is in the resume.
+- employment_type default: "full_time". location_type default: "onsite".
 """
