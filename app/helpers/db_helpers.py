@@ -114,3 +114,22 @@ def _save_publications(db: Session, profile_id, items: list):
             url=item.get("url"),
         )
         db.add(publication)
+
+
+def _save_skills(
+    db: Session, user_id: str, profile_id: str, skill_names: list[str]
+) -> list[Skill]:
+    saved = []
+    for name in skill_names or []:
+        name = name.strip().lower()
+        if not name:
+            continue
+        existing = db.query(Skill).filter(Skill.name == name).first()
+        if existing:
+            saved.append(existing)
+        else:
+            skill = Skill(name=name, created_by=user_id)
+            db.add(skill)
+            db.flush()
+            saved.append(skill)
+    return saved
