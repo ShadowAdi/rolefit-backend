@@ -66,10 +66,6 @@ def _apply_bold(text: str, pattern: re.Pattern) -> str:
     return pattern.sub(lambda m: f"<b>{m.group(0)}</b>", safe)
 
 
-# ---------------------------------------------------------------------------
-# Header link helpers
-# ---------------------------------------------------------------------------
-
 _LINK_LABELS = {
     "github.com": "GitHub",
     "linkedin.com": "LinkedIn",
