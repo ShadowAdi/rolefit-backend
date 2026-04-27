@@ -13,6 +13,7 @@ class GeneratedDocumment(Base):
     userId = Column(UUID, ForeignKey("User.id"), nullable=False)
     jobId = Column(UUID, ForeignKey("JobDescription.id"), nullable=False)
     resume_text = Column(String, nullable=False)
+    user_specifications = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,
