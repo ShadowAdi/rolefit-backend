@@ -11,6 +11,7 @@ from app.api.v1.tools import tool_router
 from app.api.v1.job_description import jd_router
 from app.api.v1.content import content_router
 from app.api.v1.resume import resume_router
+from app.api.v1.resume_extractor import resume_extractor_router
 
 
 v1_router = APIRouter()
@@ -27,3 +28,4 @@ v1_router.include_router(tool_router.router, prefix="/tools")
 v1_router.include_router(jd_router.router, prefix="/job-descriptions")
 v1_router.include_router(content_router.router, prefix="/content")
 v1_router.include_router(resume_router.router, prefix="/resume")
+v1_router.include_router(resume_extractor_router.router, prefix="/resume-extractor")
