@@ -100,3 +100,17 @@ def _save_projects(db: Session, profile_id: str, items: list):
             endDate=item.get("endDate"),
         )
         db.add(project)
+
+
+def _save_publications(db: Session, profile_id, items: list):
+    for item in items or []:
+        publication = Publication(
+            profileId=profile_id,
+            title=item.get("title") or "Untitled",
+            publisher=item.get("publisher"),
+            publication_date=item.get("publication_date"),
+            authors=item.get("authors") or [],
+            description=item.get("description"),
+            url=item.get("url"),
+        )
+        db.add(publication)
