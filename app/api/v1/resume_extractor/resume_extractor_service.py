@@ -28,10 +28,11 @@ class ResumeExtractorServiceClass:
 
         except HTTPException:
             raise
+
         except IntegrityError as e:
             db.rollback()
             logger.error(
-                f"Integrity error during project creation for user {userId}: {str(e)}",
+                f"Integrity error during resume extraction for user {userId}: {e}",
                 extra={"userId": userId, "error": str(e.orig)},
                 exc_info=True,
             )
@@ -39,25 +40,27 @@ class ResumeExtractorServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database constraint violation occurred",
             )
+
         except SQLAlchemyError as e:
             db.rollback()
             logger.error(
-                f"Database error during project creation for user {userId}: {str(e)}",
+                f"Database error during resume extraction for user {userId}: {e}",
                 extra={"userId": userId, "error": str(e)},
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred while creating project",
+                detail="Database error occurred",
             )
+
         except Exception as e:
             db.rollback()
             logger.error(
-                f"Unexpected error during project creation for user {userId}: {str(e)}",
+                f"Unexpected error during resume extraction for user {userId}: {e}",
                 extra={"userId": userId, "error": str(e)},
                 exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An unexpected error occurred while creating project",
+                detail="An unexpected error occurred while extracting resume content",
             )
