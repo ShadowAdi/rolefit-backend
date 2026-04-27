@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
-from uuid import UUID
 from app.models.User import User
 from app.core.logger import logger
-from typing import List
+from urllib.parse import urlparse
+from app.utils.extract_resume_content import extract_resume_content
 
 
 class ResumeExtractorServiceClass:
@@ -19,12 +19,30 @@ class ResumeExtractorServiceClass:
                 detail="User ID is required",
             )
         try:
-            if not resume_url:
-                logger.error("Failed to get the resume url")
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Failed to get the resume url",
+            if not resume_url or not resume_url.strip():
+                logger.error(
+                    "Resume extraction failed: missing resume URL",
+                    extra={"userId": userId},
                 )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="resume_url is required",
+                )
+
+            parsed = urlparse(resume_url.strip())
+            if parsed.scheme not in ("http", "https"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="resume_url must be an http or https URL",
+                )
+
+            result = extract_resume_content(resume_url=resume_url.strip())
+            logger.info(
+                f"Resume extraction successful for user {userId}: "
+                f"{result['page_count']} pages, {len(result['raw_text'])} chars",
+                extra={"userId": userId},
+            )
+            return result
 
         except HTTPException:
             raise
