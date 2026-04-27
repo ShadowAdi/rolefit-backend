@@ -9,25 +9,57 @@ from app.core.logger import logger
 from app.utils.sarvam_const import RESUME_GEN_TIMEOUT, SARVAM_API_URL
 
 
+def _strip_think_block(text: str) -> str:
+    """
+    Sarvam's reasoning model wraps its chain-of-thought in <think>...</think>.
+    Everything inside that block must be discarded before we look for JSON,
+    because the thinking text contains '{' / '}' characters that confuse the
+    brace-depth walker.
+
+    Handles three cases:
+    - <think>...</think> present and closed  → drop the whole block
+    - <think>... present but NOT closed      → drop everything up to the tag
+      (the model hit max_tokens mid-thought; the JSON follows after)
+    - No <think> tag at all                  → return text unchanged
+    """
+    think_open = text.find("<think>")
+    if think_open == -1:
+        return text  # no reasoning block, nothing to strip
+
+    think_close = text.find("</think>", think_open)
+    if think_close != -1:
+        # Well-formed block — drop it entirely, keep what comes after
+        after = text[think_close + len("</think>") :]
+    else:
+        # Block was never closed (truncated by max_tokens) —
+        # drop the opening tag; whatever follows IS the JSON output
+        after = text[think_open + len("<think>") :]
+
+    return after.strip()
+
+
 def _extract_json_from_text(text: str) -> str:
     """
     Robustly extract a JSON object string from LLM output.
 
     Strategy:
-    1. Strip markdown code fences (```json ... ``` or ``` ... ```)
-    2. Find the first '{' and walk the string tracking brace depth to find
-       the matching '}'. This is safer than a greedy regex because it handles
-       any trailing text the model appended after the closing brace.
+    1. Strip <think>...</think> reasoning block (Sarvam reasoning model)
+    2. Strip markdown code fences (```json ... ``` or ``` ... ```)
+    3. Find the first '{' and walk the string with brace-depth tracking to
+       find the matching '}', correctly ignoring braces inside string values.
     """
-    clean = text.strip()
+    # Step 1 — remove reasoning block so its '{' / '}' don't fool us
+    clean = _strip_think_block(text)
 
+    # Step 2 — strip markdown fences
     clean = re.sub(r"^```(?:json)?\s*", "", clean, flags=re.IGNORECASE)
     clean = re.sub(r"\s*```\s*$", "", clean)
     clean = clean.strip()
 
+    # Step 3 — find the first '{' and walk to its matching '}'
     start = clean.find("{")
     if start == -1:
-        raise ValueError("No '{' found in LLM output")
+        raise ValueError("No '{' found in LLM output after stripping think block")
 
     depth = 0
     in_string = False
