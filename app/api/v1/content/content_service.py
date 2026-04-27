@@ -191,6 +191,7 @@ class ContentServiceClass:
             gen_doc = GeneratedDocumment(
                 userId=UUID(userId),
                 jobId=UUID(jobId),
+                user_specifications=user_specifications,
                 resume_text=json.dumps(clean_json),
             )
 

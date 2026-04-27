@@ -79,7 +79,80 @@ def _is_ml_role(jd: dict) -> bool:
     return any(kw in text for kw in ml_keywords)
 
 
-def build_resume_prompt(user_data: dict) -> str:
+_BLOCKED_SPEC_KEYWORDS = [
+    "color",
+    "colour",
+    "theme",
+    "font",
+    "layout",
+    "margin",
+    "padding",
+    "template",
+    "border",
+    "background",
+    "page size",
+    "column",
+    "sidebar",
+    "header style",
+    "footer",
+    "section order",
+    "reorder sections",
+    "move section",
+    "remove section",
+    "add section",
+]
+
+
+def _sanitize_user_specifications(raw: str | None) -> str | None:
+    """
+    Strip out any layout/color/structural requests from user_specifications.
+    Returns cleaned text, or None if nothing useful remains.
+    """
+    if not raw or not raw.strip():
+        return None
+
+    lines = raw.strip().splitlines()
+    allowed_lines = []
+
+    for line in lines:
+        lower = line.lower()
+        if any(kw in lower for kw in _BLOCKED_SPEC_KEYWORDS):
+            continue
+        allowed_lines.append(line.strip())
+
+    cleaned = "\n".join(l for l in allowed_lines if l)
+    return cleaned if cleaned else None
+
+
+def _build_user_spec_block(raw: str | None) -> str:
+    """
+    Build the prompt section for user specifications.
+    Returns an empty string if there are no valid specs.
+    """
+    cleaned = _sanitize_user_specifications(raw)
+    if not cleaned:
+        return ""
+
+    return f"""
+=== USER PREFERENCES (Optional — apply where relevant) ===
+The candidate has provided the following preferences for this resume.
+Apply ONLY what is content-related (emphasis, ordering within sections, skill/project/tech highlighting).
+IGNORE any layout, color, font, or structural instructions — those are fixed.
+
+{cleaned}
+
+Rules for applying preferences:
+- If the user asks to emphasize a specific project → place it first in the projects array and expand its bullets slightly within the word limit.
+- If the user asks to highlight specific skills or tools → list them first within their skill category.
+- If the user asks to highlight specific tech stack items → naturally mention them in relevant bullets where truthful.
+- If the user asks to give importance to a degree or coursework → write a richer "description" field for that education entry.
+- If the user asks to prioritize a specific work experience → list it first and use the maximum allowed bullets for it.
+- Do NOT invent or fabricate any content that the user has not provided in their data.
+- Do NOT exceed the one-page content limits defined above.
+"""
+
+
+def build_resume_prompt(user_data: dict, user_specifications: str | None = None) -> str:
     profile = user_data.get("profile", {})
     experiences = user_data.get("experiences", [])
     projects = user_data.get("projects", [])
@@ -132,6 +205,9 @@ def build_resume_prompt(user_data: dict) -> str:
         if has_achievements
         else "- Achievements: Return empty array [] — user has not added any achievements."
     )
+
+    # Build optional user spec block (empty string if not provided / all blocked)
+    user_spec_block = _build_user_spec_block(user_specifications)
 
     prompt = f"""You are an expert resume writer and ATS optimization specialist.
 
@@ -187,7 +263,7 @@ Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
   Examples: BCA → "Studied computer science fundamentals, data structures, algorithms, and web development."
             BA English → "Studied English literature, communication, writing, and humanities."
             B.Tech CSE → "Studied software engineering, algorithms, operating systems, and computer networks."
-
+{user_spec_block}
 === OUTPUT JSON SCHEMA ===
 Return ONLY this JSON — no wrapping text, no markdown fences:
 
