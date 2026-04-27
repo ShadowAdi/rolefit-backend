@@ -68,6 +68,21 @@ class ContentServiceClass:
                     detail="Failed to generate content.",
                 )
 
+            genDocs = (
+                db.query(GeneratedDocumment)
+                .filter(
+                    GeneratedDocumment.jobId == jobId,
+                    GeneratedDocumment.userId == userId,
+                )
+                .all()
+            )
+            if len(genDocs) > 3:
+                logger.error("One Job cant have more than 3 Docs")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"A Single Job cant have more than 3 Generated Content. Delete the previous or use already existing ones to generate resume",
+                )
+
             user = db.query(User).filter(User.id == userId).first()
             if not user:
                 logger.warning(f"User not found: {userId}")
