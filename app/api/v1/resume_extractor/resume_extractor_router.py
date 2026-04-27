@@ -5,7 +5,7 @@ from app.db.db import get_db
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
-from typing import List
+from app.schema.ResumeExtractorResponse import ResumeExtractorResponse
 
 router = APIRouter(prefix="", tags=["Resume Extractor"])
 
@@ -14,18 +14,7 @@ ResumeExtractorService = ResumeExtractorServiceClass()
 
 @router.post(
     "/",
-    response_model={
-        "profile_id": str,
-        "counts": {
-            "experience": int,
-            "academics": int,
-            "achievements": int,
-            "projects": int,
-            "publications": int,
-            "skills": int,
-            "tools": int,
-        },
-    },
+    response_model=ResumeExtractorResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def resume_extractor(
