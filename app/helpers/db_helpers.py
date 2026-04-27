@@ -133,3 +133,23 @@ def _save_skills(
             db.flush()
             saved.append(skill)
     return saved
+
+
+def _save_tools(db: Session, user_id, profile_id, tool_names: list) -> list[Tool]:
+    """
+    Tools are global (unique by name). Reuse existing ones.
+    """
+    saved = []
+    for name in tool_names or []:
+        name = name.strip().lower()
+        if not name:
+            continue
+        existing = db.query(Tool).filter(Tool.name == name).first()
+        if existing:
+            saved.append(existing)
+        else:
+            tool = Tool(name=name, created_by=user_id)
+            db.add(tool)
+            db.flush()
+            saved.append(tool)
+    return saved
