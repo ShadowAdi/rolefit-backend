@@ -270,8 +270,8 @@ class ContentServiceClass:
             genDocs = (
                 db.query(GeneratedDocumment)
                 .filter(
-                    GeneratedDocumment.userId == UUID(userId),
-                    GeneratedDocumment.jobId == UUID(jobId),
+                    GeneratedDocumment.userId == userId,
+                    GeneratedDocumment.jobId == jobId,
                 )
                 .all()
             )
