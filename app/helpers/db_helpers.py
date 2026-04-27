@@ -53,3 +53,19 @@ def _save_experience(db: Session, profile_id: str, items: list):
             priority=item.get("priority") or i,
         )
     db.add(exp)
+
+
+def _save_academics(db: Session, profile_id: str, items: list):
+    for item in items or []:
+        academic = Academic(
+            profileId=profile_id,
+            degree_name=item.get("degree_name") or "Unknown",
+            college_name=item.get("college_name") or "Unknown",
+            description=item.get("description"),
+            links=item.get("links") or {},
+            start_month=item.get("start_month"),
+            start_year=item.get("start_year"),
+            end_month=item.get("end_month"),
+            end_year=item.get("end_year"),
+        )
+    db.add(academic)
