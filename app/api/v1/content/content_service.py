@@ -56,6 +56,7 @@ class ContentServiceClass:
         self,
         userId: str,
         jobId: str,
+        user_specifications: str,
         db: Session,
     ):
         try:
@@ -140,7 +141,6 @@ class ContentServiceClass:
             #     response_data["choices"][0].get("message", {}).get("content", "")
             # )
 
-            # --- Groq API call ---
             logger.debug("Calling Groq API for resume generation")
 
             api_key = grok_api_key_headers()

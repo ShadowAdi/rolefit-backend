@@ -16,12 +16,15 @@ content_service = ContentServiceClass()
 )
 async def generate_content(
     jobId: str,
+    user_specifications: str,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
     logger.info(f"Creating job description for user: {user_id}")
-    return content_service.generate_content(userId=str(user_id), jobId=jobId, db=db)
+    return content_service.generate_content(
+        userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
+    )
 
 
 @router.get(

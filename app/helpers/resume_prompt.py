@@ -82,7 +82,7 @@ def _is_ml_role(jd: dict) -> bool:
 def build_resume_prompt(user_data: dict) -> str:
     profile = user_data.get("profile", {})
     experiences = user_data.get("experiences", [])
-    projects = user_data.get("projects", [])  # only what user actually added
+    projects = user_data.get("projects", [])
     academics = user_data.get("academics", [])
     skills = user_data.get("skills", [])
     tools = user_data.get("tools", [])
@@ -96,13 +96,9 @@ def build_resume_prompt(user_data: dict) -> str:
     has_achievements = bool(achievements)
     include_publications = bool(publications) or _is_ml_role(jd)
 
-    # Layout strategy based on experience level
-    # Senior (3+ yrs): skills + experience only, no projects needed
-    # Mid (1-3 yrs): experience + projects if user added them
-    # Junior (<1 yr): everything including projects
     is_senior = years_experience >= 3
     include_projects = has_projects and not is_senior
-    include_summary = not is_senior  # senior profiles: no summary, more space for exp
+    include_summary = not is_senior
 
     sections_data = _build_sections_string(
         profile,
