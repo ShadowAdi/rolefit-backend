@@ -49,6 +49,11 @@ class ResumeExtractorServiceClass:
                     detail="User not found",
                 )
 
+            logger.info(
+                f"User {userId} found, proceeding with resume extraction",
+                extra={"userId": userId},
+            )
+
             existing_profile = (
                 db.query(Profile).filter(Profile.userId == userId).first()
             )
@@ -62,6 +67,11 @@ class ResumeExtractorServiceClass:
                     ),
                 )
 
+            logger.info(
+                f"No existing profile for user {userId}, proceeding",
+                extra={"userId": userId},
+            )
+
             parsed = urlparse(resume_url.strip())
             if parsed.scheme not in ("http", "https"):
                 raise HTTPException(
@@ -69,7 +79,15 @@ class ResumeExtractorServiceClass:
                     detail="resume_url must be an http or https URL",
                 )
 
+            logger.info(
+                f"Resume URL validated for user {userId}", extra={"userId": userId}
+            )
+
             extracted = extract_resume_content(resume_url=resume_url.strip())
+
+            logger.info(
+                f"Resume content extracted for user {userId}", extra={"userId": userId}
+            )
 
             resume_text: str = extracted["raw_text"]
             pdf_links: list[str] = extracted["links"]
@@ -83,7 +101,13 @@ class ResumeExtractorServiceClass:
                 resume_text=resume_text, extracted_links=pdf_links
             )
 
+            logger.info(
+                f"Sarvam AI data processed for user {userId}", extra={"userId": userId}
+            )
+
             profile = _save_profile(db, userId, resume_url.strip(), sarvam_data)
+
+            logger.info(f"Profile saved for user {userId}", extra={"userId": userId})
 
             experience_items = sarvam_data.get("experience") or []
             academic_items = sarvam_data.get("academics") or []
