@@ -7,7 +7,7 @@ from app.core.AppError import AppError
 from urllib.parse import urlparse
 from app.utils.extract_resume_content import extract_resume_content
 from app.models.Profile import Profile
-from app.utils.call_sarvam import _call_sarvam
+from app.utils.call_groq import _call_groq
 from app.helpers.db_helpers import (
     _save_academics,
     _save_achievments,
@@ -97,25 +97,23 @@ class ResumeExtractorServiceClass:
                 f"{extracted['page_count']} pages, {len(resume_text)} chars"
             )
 
-            sarvam_data = _call_sarvam(
-                resume_text=resume_text, extracted_links=pdf_links
-            )
+            groq_data = _call_groq(resume_text=resume_text, extracted_links=pdf_links)
 
             logger.info(
-                f"Sarvam AI data processed for user {userId}", extra={"userId": userId}
+                f"Groq AI data processed for user {userId}", extra={"userId": userId}
             )
 
-            profile = _save_profile(db, userId, resume_url.strip(), sarvam_data)
+            profile = _save_profile(db, userId, resume_url.strip(), groq_data)
 
             logger.info(f"Profile saved for user {userId}", extra={"userId": userId})
 
-            experience_items = sarvam_data.get("experience") or []
-            academic_items = sarvam_data.get("academics") or []
-            achievement_items = sarvam_data.get("achievements") or []
-            project_items = sarvam_data.get("projects") or []
-            publication_items = sarvam_data.get("publications") or []
-            skill_names = sarvam_data.get("skills") or []
-            tool_names = sarvam_data.get("tools") or []
+            experience_items = groq_data.get("experience") or []
+            academic_items = groq_data.get("academics") or []
+            achievement_items = groq_data.get("achievements") or []
+            project_items = groq_data.get("projects") or []
+            publication_items = groq_data.get("publications") or []
+            skill_names = groq_data.get("skills") or []
+            tool_names = groq_data.get("tools") or []
 
             _save_experience(db, profile.id, experience_items)
             _save_academics(db, profile.id, academic_items)
