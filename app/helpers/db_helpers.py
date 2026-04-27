@@ -33,3 +33,23 @@ def _save_profile(db: Session, user_id: str, resume_url: str, data: dict) -> Pro
     db.add(profile)
     db.flush()
     return profile
+
+
+def _save_experience(db: Session, profile_id: str, items: list):
+    for i, item in enumerate(items or [], start=1):
+        exp = Experience(
+            profileId=profile_id,
+            company_name=item.get("company_name") or "Unknown",
+            role=item.get("role") or "Unknown",
+            employment_type=item.get("employment_type") or "full_time",
+            location_type=item.get("location_type") or "onsite",
+            location_details=item.get("location_details"),
+            description=item.get("description"),
+            techStack=item.get("techStack") or [],
+            start_month=item.get("start_month"),
+            start_year=item.get("start_year"),
+            end_month=item.get("end_month"),
+            end_year=item.get("end_year"),
+            priority=item.get("priority") or i,
+        )
+    db.add(exp)
