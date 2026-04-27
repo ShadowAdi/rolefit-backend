@@ -55,7 +55,12 @@ The JSON must match this exact schema:
       "start_year": null,
       "end_month": null,
       "end_year": null,
-      "links": {}
+      "links": {
+        "github": "url or null",
+        "live": "url or null",
+        "certificate": "url or null",
+        "other": []
+      }
     }
   ],
   "projects": [
@@ -63,7 +68,13 @@ The JSON must match this exact schema:
       "title": "string",
       "description": "string or null",
       "techStack": ["string"],
-      "links": {},
+      "links": {
+        "github": "url or null — the GitHub repository URL for this project",
+        "live": "url or null — the deployed/live URL (Vercel, Netlify, etc.) for this project",
+        "devpost": "url or null",
+        "demo": "url or null",
+        "other": []
+      },
       "startDate": null,
       "endDate": null
     }
@@ -93,4 +104,12 @@ Rules:
 - If a section has no data in the resume, return an empty array [].
 - Do NOT invent experience, projects, or publications. Only extract what is in the resume.
 - employment_type default: "full_time". location_type default: "onsite".
+
+Project links rules (IMPORTANT):
+- Every project MUST have its links object populated if URLs appear anywhere in the resume text or in the extracted hyperlinks list.
+- github: set this to the GitHub repo URL for that specific project (e.g. https://github.com/user/repo-name). Match by repo name or project title.
+- live: set this to the deployed URL for that project (Vercel, Netlify, Railway, etc.).
+- Cross-reference BOTH the resume text and the provided hyperlinks list — links are often only in the hyperlinks list, not in the visible text.
+- If no URL is found for a field, set it to null. Never omit the links object entirely.
+- other: array of any additional URLs for the project that don't fit github/live/devpost/demo.
 """
