@@ -46,6 +46,9 @@ def validate_job_description_create(data: JobDescriptionCreate) -> JobDescriptio
             data.location_city,
             data.experience_required,
             data.summary,
+            data.company_name,
+            data.company_website_url,
+            data.company_information,
         ]
     )
 

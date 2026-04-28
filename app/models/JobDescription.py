@@ -44,9 +44,9 @@ class JobDescription(Base):
     Summary = Column(String, nullable=True)
     userId = Column(UUID, ForeignKey("User.id"), nullable=False)
     Raw_JD = Column(String, nullable=False)
-    CompanyName = Column(String, nullable=False, index=True)
-    CompanyInformation = Column(String, nullable=False)
-    CompanyWebsiteUrl = Column(String, nullable=False)
+    CompanyName = Column(String, nullable=True, index=True)
+    CompanyInformation = Column(String, nullable=True)
+    CompanyWebsiteUrl = Column(String, nullable=True)
     Created_At = Column(DateTime, default=datetime.now(timezone.utc))
     Updated_At = Column(
         DateTime,

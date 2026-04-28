@@ -34,12 +34,15 @@ class JobDescriptionCreate(BaseModel):
     salary_min: Optional[str] = Field(None, max_length=255)
     salary_max: Optional[str] = Field(None, max_length=255)
     salary_currency: Optional[str] = Field(None, max_length=10)
-    duration: Optional[str] = Field(None, max_length=255)  # For internships
+    duration: Optional[str] = Field(None, max_length=255)
     tech_stack: Optional[List[str]] = Field(default_factory=list)
     required_skills: Optional[List[str]] = Field(default_factory=list)
     experience_required: Optional[str] = Field(None, max_length=500)
     summary: Optional[str] = Field(None, max_length=2000)
-    raw_jd: str = Field(..., min_length=1)  # Required
+    raw_jd: str = Field(..., min_length=1)
+    company_name: Optional[str] = None
+    company_information: Optional[str] = Field(None, min_length=1, max_length=1000)
+    company_website_url: Optional[str] = None
 
 
 class JobDescriptionUpdate(BaseModel):
@@ -60,6 +63,9 @@ class JobDescriptionUpdate(BaseModel):
     experience_required: Optional[str] = Field(None, max_length=500)
     summary: Optional[str] = Field(None, max_length=2000)
     raw_jd: Optional[str] = Field(None, min_length=1)
+    company_name: Optional[str] = None
+    company_information: Optional[str] = Field(None, min_length=1, max_length=1000)
+    company_website_url: Optional[str] = None
 
 
 class JobDescriptionResponse(BaseModel):
@@ -83,5 +89,8 @@ class JobDescriptionResponse(BaseModel):
     experience_required: Optional[str]
     summary: Optional[str]
     raw_jd: str
+    company_name: Optional[str]
+    company_information: Optional[str]
+    company_website_url: Optional[str]
     created_at: datetime
     updated_at: datetime
