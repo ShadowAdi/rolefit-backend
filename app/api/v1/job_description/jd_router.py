@@ -32,6 +32,21 @@ async def create_job_description(
     return jd_service.create_jd(db, str(user_id), payload)
 
 
+@router.post(
+    "/generate",
+    response_model=JobDescriptionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_job_description(
+    body: JDInput,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user_id = current_user.id
+    logger.info(f"Generating job description from raw JD for user: {current_user.id}")
+    return jd_service.generate_jd(db, str(user_id), body.payload)
+
+
 @router.get(
     "/{jd_id}",
     response_model=JobDescriptionResponse,
@@ -75,21 +90,6 @@ async def update_job_description(
     user_id = current_user.id
     logger.info(f"Updating job description {jd_id} for user: {str(user_id)}")
     return jd_service.update_jd(db, jd_id, str(user_id), payload)
-
-
-@router.post(
-    "/generate",
-    response_model=JobDescriptionResponse,
-    status_code=status.HTTP_201_CREATED,
-)
-async def generate_job_description(
-    body: JDInput,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    user_id = current_user.id
-    logger.info(f"Generating job description from raw JD for user: {current_user.id}")
-    return jd_service.generate_jd(db, str(user_id), body.payload)
 
 
 @router.get(
