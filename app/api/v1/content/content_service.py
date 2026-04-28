@@ -8,6 +8,7 @@ from app.models.User import User
 from app.core.logger import logger
 from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
+from app.helpers.cover_letter_prompt import _build_cover_letter_prompt
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.response.GenerateDocument_responses import (
     GenerateDocCreateResponse,
@@ -491,9 +492,11 @@ class ContentServiceClass:
 
             logger.info(f"User verified: {userId}")
 
-            prompt = build_resume_prompt(job_profile_response)
+            prompt = _build_cover_letter_prompt(
+                job_profile_response, user_specifications
+            )
 
-            logger.debug("Calling Groq API for resume generation")
+            logger.debug("Calling Groq API for cover letter generation")
 
             api_key = grok_api_key_headers()
             groq_client = Groq(api_key=api_key)
@@ -538,7 +541,7 @@ class ContentServiceClass:
                     ),
                 )
 
-            logger.debug(f"Resume JSON generated successfully for user={userId}")
+            logger.debug(f"Cover letter JSON generated successfully for user={userId}")
 
             gen_doc = GeneratedDocumment(
                 userId=UUID(userId),
@@ -578,7 +581,7 @@ class ContentServiceClass:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred while creating resume content.",
+                detail="Database error occurred while creating cover letter content.",
             )
 
         except Exception as e:
@@ -590,5 +593,5 @@ class ContentServiceClass:
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An unexpected error occurred while creating the resume content.",
+                detail="An unexpected error occurred while creating the cover letter content.",
             )
