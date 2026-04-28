@@ -125,6 +125,19 @@ class JobDescriptionClass:
                 ),
                 Summary=payload.summary.strip() if payload.summary else None,
                 Raw_JD=payload.raw_jd.strip(),
+                CompanyName=(
+                    payload.company_name.strip() if payload.company_name else None
+                ),
+                CompanyInformation=(
+                    payload.company_information.strip()
+                    if payload.company_information
+                    else None
+                ),
+                CompanyWebsiteUrl=(
+                    payload.company_website_url.strip()
+                    if payload.company_website_url
+                    else None
+                ),
             )
 
             db.add(new_jd)
@@ -403,6 +416,12 @@ class JobDescriptionClass:
                 jd.Summary = payload.summary.strip()
             if payload.raw_jd:
                 jd.Raw_JD = payload.raw_jd.strip()
+            if payload.company_website_url:
+                jd.CompanyWebsiteUrl = payload.company_website_url.strip()
+            if payload.company_name:
+                jd.CompanyName = payload.company_name.strip()
+            if payload.company_information:
+                jd.CompanyInformation = payload.company_information.strip()
 
             db.commit()
             db.refresh(jd)
