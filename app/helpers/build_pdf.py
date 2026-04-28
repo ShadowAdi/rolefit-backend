@@ -18,9 +18,6 @@ from app.utils.style.style_factory import build_styles, section_header, bullet_p
 from reportlab.lib.styles import ParagraphStyle
 
 
-# ---------------------------------------------------------------------------
-# Base bold patterns — metrics and universal tech terms
-# ---------------------------------------------------------------------------
 _BASE_BOLD = re.compile(
     r"\b("
     # numeric metrics
