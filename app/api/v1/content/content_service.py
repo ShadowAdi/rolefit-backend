@@ -56,7 +56,7 @@ def _extract_clean_json(text: str) -> dict:
 
 
 class ContentServiceClass:
-    def generate_content(
+    def generate_resume_content(
         self,
         userId: str,
         jobId: str,
@@ -246,7 +246,7 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while creating the resume content.",
             )
 
-    def get_all_contents(
+    def get_all_resume_contents(
         self,
         userId: str,
         jobId: str,
@@ -321,7 +321,7 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while fetching contents.",
             )
 
-    def get_content(
+    def get_resume_content(
         self,
         userId: str,
         contentId: str,
@@ -394,7 +394,7 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while fetching content.",
             )
 
-    def delete_content(
+    def delete_resume_content(
         self,
         userId: str,
         contentId: str,

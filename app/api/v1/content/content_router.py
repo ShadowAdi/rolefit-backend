@@ -14,7 +14,7 @@ content_service = ContentServiceClass()
     "/{jobId}",
     status_code=status.HTTP_201_CREATED,
 )
-async def generate_content(
+async def generate_resume_content(
     jobId: str,
     user_specifications: str,
     current_user: dict = Depends(get_current_user),
@@ -22,7 +22,7 @@ async def generate_content(
 ):
     user_id = current_user.id
     logger.info(f"Creating job description for user: {user_id}")
-    return content_service.generate_content(
+    return content_service.generate_resume_content(
         userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
     )
 
@@ -31,38 +31,42 @@ async def generate_content(
     "/{jobId}",
     status_code=status.HTTP_200_OK,
 )
-async def get_all_content(
+async def get_all_resume_content(
     jobId: str,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
-    return content_service.get_all_contents(userId=str(user_id), jobId=jobId, db=db)
+    return content_service.get_all_resume_contents(
+        userId=str(user_id), jobId=jobId, db=db
+    )
 
 
 @router.get(
     "/{contentId}",
     status_code=status.HTTP_200_OK,
 )
-async def get_content(
+async def get_resume_content(
     contentId: str,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
-    return content_service.get_content(userId=str(user_id), contentId=contentId, db=db)
+    return content_service.get_resume_content(
+        userId=str(user_id), contentId=contentId, db=db
+    )
 
 
 @router.delete(
     "/{contentId}",
     status_code=status.HTTP_200_OK,
 )
-async def delete_content(
+async def delete_resume_content(
     contentId: str,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
-    return content_service.delete_content(
+    return content_service.delete_resume_content(
         userId=str(user_id), contentId=contentId, db=db
     )
