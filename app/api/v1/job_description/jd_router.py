@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Body
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.dependency.dependencies import get_db, get_current_user
 from app.schema.JobDescription import (
@@ -25,7 +25,7 @@ jd_service = JobDescriptionClass()
 async def create_job_description(
     payload: JobDescriptionCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     user_id = current_user.id
     logger.info(f"Creating job description for user: {str(user_id)}")
@@ -55,7 +55,7 @@ async def generate_job_description(
 async def get_job_description(
     jd_id: str,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     user_id = current_user.id
     logger.info(f"Retrieving job description {jd_id} for user: {user_id}")
@@ -69,7 +69,7 @@ async def get_job_description(
 )
 async def get_all_job_descriptions(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     user_id = current_user.id
     logger.info(f"Retrieving all job descriptions for user: {str(user_id)}")
@@ -85,7 +85,7 @@ async def update_job_description(
     jd_id: str,
     payload: JobDescriptionUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     user_id = current_user.id
     logger.info(f"Updating job description {jd_id} for user: {str(user_id)}")

@@ -23,7 +23,7 @@ from app.validators.job_description_validators import (
     validate_job_description_create,
     validate_job_description_update,
 )
-from app.helpers.jd_parser import parse_jd_with_ai
+from app.helpers.jd_parser import JDParseError, parse_jd_with_ai
 from typing import List
 
 
@@ -583,7 +583,19 @@ class JobDescriptionClass:
                     detail="Raw job description cannot be empty",
                 )
 
-            user = db.query(User).filter(User.id == userId).first()
+            try:
+                user_uuid = UUID(str(userId))
+            except (TypeError, ValueError) as e:
+                logger.warning(
+                    "Invalid userId format for JD generation",
+                    extra={"userId": userId, "error": str(e)},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid User ID format {userId}",
+                )
+
+            user = db.query(User).filter(User.id == user_uuid).first()
             if not user:
                 logger.warning(
                     "JD Generation failed: User not found",
@@ -660,14 +672,14 @@ class JobDescriptionClass:
                 detail="Failed to parse job description. Please try again later.",
             )
 
-        except ValueError as e:
+        except JDParseError as e:
             logger.warning(
-                f"Invalid UUID format for JD generation {userId}",
+                f"AI JD parsing failed for user {userId}: {str(e)}",
                 extra={"userId": userId, "error": str(e)},
             )
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid User ID format {userId}",
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not parse the job description into structured data. Please try again.",
             )
 
         except Exception as e:
