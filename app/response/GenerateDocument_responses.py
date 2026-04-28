@@ -2,6 +2,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, List
+from enum import Enum
+
+
+class GeneratedDocumentEnumType(str, Enum):
+    RESUME = "Resume"
+    COVER_LETTER = "Cover-letter"
 
 
 class GenerateDocCreateResponse(BaseModel):
@@ -12,6 +18,7 @@ class GenerateDocCreateResponse(BaseModel):
     userId: UUID
     jobId: UUID
     resume_text: str
+    gen_doc_type: Optional[GeneratedDocumentEnumType]
     user_response: str
     created_at: datetime
 
@@ -24,6 +31,7 @@ class GeneratedDocumnetResponse(BaseModel):
     resume_text: str
     userId: str
     jobId: str
+    gen_doc_type: Optional[GeneratedDocumentEnumType]
     user_response: str
     created_at: datetime
     updated_at: datetime

@@ -6,6 +6,11 @@ import uuid
 import enum
 
 
+class GeneratedDocumentEnumType(str, enum.Enum):
+    RESUME = "Resume"
+    COVER_LETTER = "Cover-letter"
+
+
 class GeneratedDocumment(Base):
     __tablename__ = "GeneratedDocument"
 
@@ -13,6 +18,12 @@ class GeneratedDocumment(Base):
     userId = Column(UUID, ForeignKey("User.id"), nullable=False)
     jobId = Column(UUID, ForeignKey("JobDescription.id"), nullable=False)
     resume_text = Column(String, nullable=False)
+    gen_doc_type = Column(
+        SQLEnum(GeneratedDocumentEnumType),
+        nullable=True,
+        default=GeneratedDocumentEnumType.RESUME,
+        index=True,
+    )
     user_specifications = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
