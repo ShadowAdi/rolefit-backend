@@ -36,6 +36,7 @@ def _build_sections_string(
     skills: list,
     tools: list,
     achievements: list,
+    publications: list,
     jd: dict,
 ) -> str:
     parts = []
@@ -74,58 +75,178 @@ def _build_sections_string(
         f"Job Description Summary: {jd.get('description', '') or jd.get('raw_text', '')}"
     )
 
+    skill_names = [s.get("name", "") for s in skills if s.get("name")]
+    tool_names = [t.get("name", "") for t in tools if t.get("name")]
+    if skill_names or tool_names:
+        parts.append(
+            f"SKILLS (include ALL, do not drop any):\n"
+            f"Skills: {', '.join(skill_names)}\n"
+            f"Tools: {', '.join(tool_names)}"
+        )
+
     if experiences:
         exp_lines = []
-        for e in experiences[:4]:
+        for e in experiences:
             start_str = _fmt_date(e.get("start_month"), e.get("start_year"))
             end_str = _fmt_date(
                 e.get("end_month"), e.get("end_year"), fallback="Present"
             )
             tech = ", ".join((e.get("techStack") or [])[:6])
+            emp_type = e.get("employment_type", "")
+
             exp_lines.append(
-                f"- Role: {e.get('role')} at {e.get('company_name')}\n"
-                f"  Period: {start_str} – {end_str}\n"
+                f"- Role: {e.get('role')}\n"
+                f"  Company: {e.get('company_name')}\n"
+                f"  Employment Type: {emp_type}\n"
+                f"  Start: {start_str}\n"
+                f"  End: {end_str}\n"
                 f"  Tech: {tech}\n"
                 f"  Description: {e.get('description', '')}"
             )
-        parts.append(
-            "EXPERIENCE (use most relevant to role):\n" + "\n\n".join(exp_lines)
-        )
-    else:
-        parts.append("EXPERIENCE: None provided.")
-
-    skill_names = [s.get("name", "") for s in skills if s.get("name")]
-    tool_names = [t.get("name", "") for t in tools if t.get("name")]
-    if skill_names or tool_names:
-        parts.append(
-            f"SKILLS & TOOLS:\n"
-            f"Skills: {', '.join(skill_names)}\n"
-            f"Tools: {', '.join(tool_names)}"
-        )
+        parts.append("EXPERIENCE:\n" + "\n\n".join(exp_lines))
 
     if projects:
         proj_lines = []
-        for p in projects[:3]:
+        for p in projects[:2]:
             tech = ", ".join((p.get("techStack") or [])[:5])
             proj_lines.append(
-                f"- {p.get('title')}: {p.get('description', '')} (Tech: {tech})"
+                f"- Title: {p.get('title')}\n"
+                f"  Tech: {tech}\n"
+                f"  Description: {p.get('description', '')}\n"
             )
-        parts.append("PROJECTS:\n" + "\n".join(proj_lines))
+        titles = [p.get("title") for p in projects[:2]]
+        parts.append(
+            f"PROJECTS: User has exactly {len(projects[:2])} project(s). "
+            f"Use ONLY these titles: {titles}. Do not add any others.\n\n"
+            + "\n\n".join(proj_lines)
+        )
+    else:
+        parts.append('PROJECTS: "projects": []')
 
     if achievements:
         ach_lines = [
             f"- {a.get('title')} ({a.get('achievement_type', '')} {a.get('end_year', '')})"
             for a in achievements
         ]
-        parts.append("ACHIEVEMENTS:\n" + "\n".join(ach_lines))
+        parts.append(
+            f"ACHIEVEMENTS: User has exactly {len(achievements)} achievement(s). "
+            f"Use only these:\n" + "\n".join(ach_lines)
+        )
+    else:
+        parts.append('ACHIEVEMENTS: "achievements": []')
+
+    if publications:
+        pub_lines = [
+            f"- {p.get('title')} | {p.get('publisher', '')} ({p.get('publication_date', '')})"
+            for p in publications
+        ]
+        parts.append("PUBLICATIONS:\n" + "\n".join(pub_lines))
 
     if academics:
         edu_lines = []
         for a in academics:
+            start_str = _fmt_date(a.get("start_month"), a.get("start_year"), "")
             end_str = _fmt_date(a.get("end_month"), a.get("end_year"), "Present")
+            period = f"{start_str} – {end_str}".strip(" –")
             edu_lines.append(
-                f"- {a.get('degree_name')} from {a.get('college_name')} ({end_str})"
+                f"- Degree: {a.get('degree_name')}\n"
+                f"  Institution: {a.get('college_name')}\n"
+                f"  Period: {period}\n"
+                f"  Description: {a.get('description') or 'Not provided — infer from degree name.'}"
             )
-        parts.append("EDUCATION:\n" + "\n".join(edu_lines))
+        parts.append("EDUCATION:\n" + "\n\n".join(edu_lines))
 
     return "\n\n".join(parts)
+
+
+def _build_cover_letter_prompt(
+    user_data: dict, user_specifications: str | None = None
+) -> str:
+    profile = user_data.get("profile", {})
+    experiences = user_data.get("experiences", [])
+    projects = user_data.get("projects", [])
+    academics = user_data.get("academics", [])
+    skills = user_data.get("skills", [])
+    tools = user_data.get("tools", [])
+    publications = user_data.get("publications", [])
+    achievements = user_data.get("achievements", [])
+    jd = user_data.get("job_description", {})
+    email = user_data.get("user", {}).get("email", "")
+
+    company_name = jd.get("company_name") or jd.get("company", "the company")
+    role_name = jd.get("role_name", "the role")
+    today = datetime.now().strftime("%B %Y")
+
+    sections_data = _build_sections_string(
+        profile=profile,
+        email=email,
+        experiences=experiences,
+        projects=projects,
+        academics=academics,
+        achievements=achievements,
+        skills=skills,
+        tools=tools,
+        publications=publications,
+        jd=jd,
+    )
+
+    user_spec_block = _build_user_spec_block(user_specifications)
+
+    prompt = f"""You are an expert cover letter writer. Write a compelling, personalised, one-page cover letter.
+ 
+CRITICAL: Output ONLY valid JSON matching the schema below. No markdown, no explanation, no extra keys.
+ 
+=== TARGET ===
+Role: {role_name}
+Company: {company_name}
+Today's Date: {today}
+ 
+=== WRITING RULES ===
+1. ONE page only — four short paragraphs total (opening, body1, body2, closing).
+2. Each paragraph: 2-4 sentences MAX. No padding, no fluff.
+3. Opening: Express genuine enthusiasm for the specific role + company. Reference company name. DO NOT start with "I am writing to".
+4. Body1: Connect the candidate's STRONGEST and MOST RELEVANT experience to the job requirements. Include one specific metric or achievement if available.
+5. Body2: Highlight 2-3 skills/projects/tools that directly match the job's tech stack or requirements. If company_description is provided, mention 1 thing about why the company mission resonates.
+6. Closing: Confident call-to-action. Express eagerness to discuss further.
+7. Tone: Professional but warm. Not robotic. First-person.
+8. NEVER fabricate experience, companies, or metrics not present in the user data.
+9. Use the candidate's actual name, email, phone, and LinkedIn in the candidate object.
+10. sign_off: use "Sincerely" unless user_specifications say otherwise.
+ 
+=== PARAGRAPH LENGTH GUIDE ===
+- opening: 2-3 sentences
+- body1:   3-4 sentences (strongest experience match + metric)
+- body2:   3-4 sentences (skills / projects / culture fit)  
+- closing: 2-3 sentences (call to action)
+{user_spec_block}
+=== OUTPUT JSON SCHEMA ===
+Return ONLY this JSON — no wrapping text, no markdown fences:
+ 
+{{
+  "candidate": {{
+    "name": "string",
+    "email": "string",
+    "phone": "string or empty string",
+    "location": "string or empty string",
+    "linkedin": "string or null"
+  }},
+  "company": {{
+    "name": "{company_name}",
+    "role": "{role_name}"
+  }},
+  "date": "{today}",
+  "paragraphs": {{
+    "opening": "string",
+    "body1":   "string",
+    "body2":   "string",
+    "closing": "string"
+  }},
+  "sign_off": "Sincerely"
+}}
+ 
+=== RAW USER DATA ===
+{sections_data}
+ 
+Return ONLY the JSON. No explanation. No markdown fences.
+"""
+    return prompt
