@@ -601,7 +601,7 @@ class JobDescriptionClass:
             logger.debug(f"Parsed role_name: {parsed_data.get('role_name')}")
 
             jd_payload = JobDescriptionCreate(
-                user_id=userId,
+                user_id=user.id,
                 role_name=parsed_data.get("role_name"),
                 company=parsed_data.get("company"),
                 role_type=parsed_data.get("role_type"),
