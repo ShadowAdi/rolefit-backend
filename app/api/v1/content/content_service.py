@@ -78,6 +78,7 @@ class ContentServiceClass:
                 .filter(
                     GeneratedDocumment.jobId == jobId,
                     GeneratedDocumment.userId == userId,
+                    GeneratedDocumment.gen_doc_type == "Resume",
                 )
                 .all()
             )
