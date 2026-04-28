@@ -6,15 +6,11 @@ from reportlab.platypus import (
     HRFlowable,
     SimpleDocTemplate,
     Spacer,
-    Table,
-    TableStyle,
 )
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.enums import TA_RIGHT
-from app.utils.style.cl_style_factory import build_cover_letter_pdf, _build_cl_styles
-from reportlab.lib.styles import ParagraphStyle
-from app.core.resume_colors import BLACK, ACCENT, SUBTEXT, RULE
+from app.utils.style.cl_style_factory import _build_cl_styles
+from app.core.resume_colors import RULE
 
 
 def build_cover_letter_pdf(data: dict) -> bytes:
