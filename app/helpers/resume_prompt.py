@@ -3,29 +3,6 @@ Resume generation prompt builder.
 Produces structured JSON consumed directly by build_pdf.py.
 """
 
-MONTH_MAP = {
-    1: "Jan",
-    2: "Feb",
-    3: "Mar",
-    4: "Apr",
-    5: "May",
-    6: "Jun",
-    7: "Jul",
-    8: "Aug",
-    9: "Sep",
-    10: "Oct",
-    11: "Nov",
-    12: "Dec",
-}
-
-
-def _fmt_date(month, year, fallback: str = "Present") -> str:
-    if year and month:
-        return f"{MONTH_MAP.get(int(month), '')} {year}"
-    if year:
-        return str(year)
-    return fallback
-
 
 def _label_links(links) -> list[str]:
     if not links:
