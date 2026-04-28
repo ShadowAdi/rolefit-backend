@@ -73,6 +73,10 @@ class ContentServiceClass:
                     detail="Failed to generate content.",
                 )
 
+            job_profile_response = filter_jd(
+                jobId=jobId, userId=userId, db=db, content_type="Resume"
+            )
+
             genDocs = (
                 db.query(GeneratedDocumment)
                 .filter(
@@ -88,36 +92,6 @@ class ContentServiceClass:
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"A Single Job cant have more than 3 Generated Content. Delete the previous or use already existing ones to generate resume",
                 )
-
-            user = db.query(User).filter(User.id == userId).first()
-            if not user:
-                logger.warning(f"User not found: {userId}")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User does not exist. Invalid user ID.",
-                )
-
-            logger.info(f"User verified: {userId}")
-
-            jd = (
-                db.query(JobDescription)
-                .filter(
-                    JobDescription.id == jobId,
-                    JobDescription.userId == userId,
-                )
-                .first()
-            )
-
-            if not jd:
-                logger.warning(f"JD not found for user={userId} job={jobId}")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Job description not found",
-                )
-
-            job_profile_response = filter_jd(
-                jobId=str(jd.id), userId=str(user.id), db=db
-            )
 
             prompt = build_resume_prompt(job_profile_response)
 
@@ -483,4 +457,138 @@ class ContentServiceClass:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while deleting content.",
+            )
+
+    def generate_cover_letter_content(
+        self,
+        userId: str,
+        jobId: str,
+        user_specifications: str,
+        db: Session,
+    ):
+        try:
+            logger.info(f"Starting resume generation for user: {userId}")
+
+            job_profile_response = filter_jd(
+                jobId=jobId, userId=userId, db=db, content_type="cover_letter"
+            )
+
+            genDocs = (
+                db.query(GeneratedDocumment)
+                .filter(
+                    GeneratedDocumment.jobId == jobId,
+                    GeneratedDocumment.userId == userId,
+                    GeneratedDocumment.gen_doc_type == "Cover-letter",
+                )
+                .all()
+            )
+            if len(genDocs) > 3:
+                logger.error("One Job cant have more than 3 Docs")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"A Single Job cant have more than 3 Generated Content. Delete the previous or use already existing ones to generate cover letter",
+                )
+
+            logger.info(f"User verified: {userId}")
+
+            prompt = build_resume_prompt(job_profile_response)
+
+            logger.debug("Calling Groq API for resume generation")
+
+            api_key = grok_api_key_headers()
+            groq_client = Groq(api_key=api_key)
+
+            chat_completion = groq_client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a JSON-only resume writer. "
+                            "Output ONLY valid JSON. No markdown, no explanation, no extra text."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    },
+                ],
+                model="llama-3.3-70b-versatile",
+                max_tokens=4000,
+                temperature=0.3,
+            )
+
+            message_content = chat_completion.choices[0].message.content
+
+            if not message_content:
+                logger.error("Groq returned empty content")
+                raise ValueError("No content in Groq API response")
+
+            try:
+                clean_json = _extract_clean_json(message_content)
+            except (ValueError, json.JSONDecodeError) as e:
+                logger.error(
+                    f"Groq returned invalid JSON for user={userId} job={jobId}: {e}",
+                    extra={"raw_response": message_content[:500]},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=(
+                        "The AI returned an unexpected format. "
+                        "Please try generating again."
+                    ),
+                )
+
+            logger.debug(f"Resume JSON generated successfully for user={userId}")
+
+            gen_doc = GeneratedDocumment(
+                userId=UUID(userId),
+                jobId=UUID(jobId),
+                user_specifications=user_specifications,
+                resume_text=json.dumps(clean_json),
+                gen_doc_type="Cover-letter",
+            )
+
+            db.add(gen_doc)
+            db.commit()
+            db.refresh(gen_doc)
+
+            return GenerateDocCreateResponse.model_validate(gen_doc)
+
+        except HTTPException:
+            raise
+
+        except IntegrityError as e:
+            db.rollback()
+            logger.error(
+                f"DB integrity error for user={userId}",
+                extra={"error": str(e.orig)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database constraint violation occurred.",
+            )
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"DB error for user={userId}",
+                extra={"error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while creating resume content.",
+            )
+
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error for user={userId}",
+                extra={"error": str(e), "errorType": type(e).__name__},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while creating the resume content.",
             )

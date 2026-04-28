@@ -24,7 +24,9 @@ from app.models.UserTool import UserTool
 from typing import Dict, Any
 
 
-def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
+def filter_jd(
+    jobId: str, userId: str, content_type: str, db: Session
+) -> Dict[str, Any]:
     try:
         if not jobId or not isinstance(jobId, str):
             logger.error(
@@ -150,6 +152,24 @@ def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
                 detail="Failed to fetch user data from database",
             )
 
+        job_description_data = {
+            "id": str(jd.id),
+            "role_name": jd.Role_Name,
+            "company": jd.Company,
+            "role_type": jd.Role_Type.value if jd.Role_Type else None,
+            "location": jd.Location.value if jd.Location else None,
+            "location_city": jd.Location_City,
+            "salary_min": jd.Salary_Min,
+            "salary_max": jd.Salary_Max,
+            "salary_currency": jd.Salary_Currency,
+            "duration": jd.Duration,
+            "tech_stack": jd.Tech_Stack,
+            "required_skills": jd.Required_Skills,
+            "experience_required": jd.Experience_Required,
+            "summary": jd.Summary,
+            "raw_jd": jd.Raw_JD,
+        }
+
         user_data_dict = {
             "user": {
                 "id": str(user.id),
@@ -257,24 +277,21 @@ def filter_jd(jobId: str, userId: str, db: Session) -> Dict[str, Any]:
                 }
                 for tool in user_tools
             ],
-            "job_description": {
-                "id": str(jd.id),
-                "role_name": jd.Role_Name,
-                "company": jd.Company,
-                "role_type": jd.Role_Type.value if jd.Role_Type else None,
-                "location": jd.Location.value if jd.Location else None,
-                "location_city": jd.Location_City,
-                "salary_min": jd.Salary_Min,
-                "salary_max": jd.Salary_Max,
-                "salary_currency": jd.Salary_Currency,
-                "duration": jd.Duration,
-                "tech_stack": jd.Tech_Stack,
-                "required_skills": jd.Required_Skills,
-                "experience_required": jd.Experience_Required,
-                "summary": jd.Summary,
-                "raw_jd": jd.Raw_JD,
-            },
+            "job_description": job_description_data,
         }
+
+        if content_type != "Resume":
+            job_description_data.update(
+                {
+                    "company_name": jd.CompanyName if jd.CompanyName else None,
+                    "company_information": (
+                        jd.CompanyInformation if jd.CompanyInformation else None
+                    ),
+                    "company_website_url": (
+                        jd.CompanyWebsiteUrl if jd.CompanyWebsiteUrl else None
+                    ),
+                }
+            )
 
         logger.info(
             "Successfully compiled user data for resume/cover letter generation",
