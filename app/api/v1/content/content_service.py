@@ -197,6 +197,7 @@ class ContentServiceClass:
                 jobId=UUID(jobId),
                 user_specifications=user_specifications,
                 resume_text=json.dumps(clean_json),
+                gen_doc_type="Resume",
             )
 
             db.add(gen_doc)
