@@ -547,7 +547,7 @@ class ContentServiceClass:
                 userId=UUID(userId),
                 jobId=UUID(jobId),
                 user_specifications=user_specifications,
-                resume_text=json.dumps(clean_json),
+                cover_letter_text=json.dumps(clean_json),
                 gen_doc_type="Cover-letter",
             )
 

@@ -10,7 +10,8 @@ class GeneratedDocumentEnumType(str, Enum):
 
 class CreateGeneratedDocumnet(BaseModel):
 
-    resume_text: str = Field(..., min_length=100)
+    resume_text: Optional[str]
+    cover_letter_text: Optional[str]
     userId: str = Field(None)
     jobId: str = Field(None)
     user_specifications = Field(..., max_length=1000)

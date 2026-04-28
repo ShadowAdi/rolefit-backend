@@ -18,6 +18,7 @@ class GeneratedDocumment(Base):
     userId = Column(UUID, ForeignKey("User.id"), nullable=False)
     jobId = Column(UUID, ForeignKey("JobDescription.id"), nullable=False)
     resume_text = Column(String, nullable=False)
+    cover_letter_text = Column(String, nullable=False)
     gen_doc_type = Column(
         SQLEnum(GeneratedDocumentEnumType),
         nullable=True,

@@ -70,3 +70,20 @@ async def delete_resume_content(
     return content_service.delete_resume_content(
         userId=str(user_id), contentId=contentId, db=db
     )
+
+
+@router.post(
+    "/cover-letter/{jobId}",
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_cover_letter_content(
+    jobId: str,
+    user_specifications: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    logger.info(f"Creating cover letter content for user: {user_id}")
+    return content_service.generate_cover_letter_content(
+        userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
+    )
