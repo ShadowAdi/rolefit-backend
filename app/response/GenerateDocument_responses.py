@@ -18,7 +18,7 @@ class GenerateDocCreateResponse(BaseModel):
     userId: UUID
     jobId: UUID
     resume_text: str
-    gen_doc_type: Optional[GeneratedDocumentEnumType]
+    gen_doc_type: GeneratedDocumentEnumType
     user_response: str
     created_at: datetime
 
@@ -31,7 +31,7 @@ class GeneratedDocumnetResponse(BaseModel):
     resume_text: str
     userId: str
     jobId: str
-    gen_doc_type: Optional[GeneratedDocumentEnumType]
+    gen_doc_type: GeneratedDocumentEnumType
     user_response: str
     created_at: datetime
     updated_at: datetime
