@@ -11,9 +11,10 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 from app.utils.style.cl_style_factory import _build_cl_styles
 from app.core.resume_colors import RULE
+from app.schema.CoverLetterData import CoverLetterData
 
 
-def build_cover_letter_pdf(data: dict) -> bytes:
+def build_cover_letter_pdf(data: CoverLetterData) -> bytes:
     buff = io.BytesIO()
     M = 0.85 * inch
 
@@ -29,26 +30,26 @@ def build_cover_letter_pdf(data: dict) -> bytes:
     styles = _build_cl_styles()
     story = []
 
-    candidate = data.get("candidate", {})
-    company = data.get("company", {})
-    date_str = data.get("date", "")
-    paragraphs = data.get("paragraphs", {})
-    sign_off = data.get("sign_off", "Sincerely")
+    candidate = data.candidate
+    company = data.company
+    date_str = data.date
+    paragraphs = data.paragraphs
+    sign_off = data.sign_off
 
-    name = candidate.get("name", "")
+    name = candidate.name
     if name:
         story.append(Paragraph(name, styles["name"]))
 
     contact_parts = []
     for field in [
-        candidate.get("email"),
-        candidate.get("phone"),
-        candidate.get("location"),
+        candidate.email,
+        candidate.phone,
+        candidate.location,
     ]:
         if field and field.strip():
             contact_parts.append(field.strip().replace("&", "&amp;"))
 
-    linkedin = candidate.get("linkedin")
+    linkedin = candidate.linkedin
     if linkedin and linkedin.strip():
         url = linkedin.strip().replace("&", "&amp;")
         contact_parts.append(
@@ -68,8 +69,8 @@ def build_cover_letter_pdf(data: dict) -> bytes:
         story.append(Paragraph(date_str, styles["date"]))
         story.append(Spacer(1, 6))
 
-    company_name = company.get("name", "")
-    role_name = company.get("role", "")
+    company_name = company.name
+    role_name = company.role
 
     if company_name or role_name:
         block_lines = []
@@ -82,7 +83,7 @@ def build_cover_letter_pdf(data: dict) -> bytes:
     story.append(Paragraph("Dear Hiring Manager,", styles["salutation"]))
 
     for key in ("opening", "body1", "body2", "closing"):
-        text = paragraphs.get(key, "").strip()
+        text = getattr(paragraphs, key, "").strip()
         if not text:
             continue
         safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

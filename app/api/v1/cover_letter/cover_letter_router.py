@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.dependency.dependencies import get_db, get_current_user
 from app.models.GeneratedDocument import GeneratedDocumment
-from app.schema.pdf_resume import ResumeData
+from app.schema.CoverLetterData import CoverLetterData
 from app.helpers.buid_cover_letter_pdf import build_cover_letter_pdf
 from app.core.logger import logger
 
@@ -32,22 +32,33 @@ def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocummen
     return doc
 
 
-def _parse_cover_letter_text(resume_text: str) -> ResumeData:
+def _parse_cover_letter_text(cover_letter_text: str) -> CoverLetterData:
     try:
-        raw = resume_text.strip()
+        raw = cover_letter_text.strip()
+
+        # Handle markdown code blocks (```)
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1]).strip()
 
         parsed = json.loads(raw)
-        return ResumeData(**parsed)
+        return CoverLetterData(**parsed)
 
-    except (json.JSONDecodeError, ValueError) as e:
+    except json.JSONDecodeError as e:
         logger.error(f"Failed to parse cover letter text as JSON: {e}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
                 "The stored cover letter content is not valid JSON. "
+                "Please regenerate the document."
+            ),
+        )
+    except ValueError as e:
+        logger.error(f"Failed to validate cover letter data against schema: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "The cover letter content doesn't match the expected format. "
                 "Please regenerate the document."
             ),
         )
