@@ -47,12 +47,12 @@ Job Description:
         chat_completion = groq_client.chat.completions.create(
             messages=[
                 {
-                    "role": "system",
+                    "role": "user",
                     "content": prompt,
                 },
             ],
             model="llama-3.3-70b-versatile",
-            max_tokens=2000,
+            max_tokens=600,
             temperature=0.1,
         )
     except Exception as e:
