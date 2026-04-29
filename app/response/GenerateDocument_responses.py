@@ -20,7 +20,7 @@ class GenerateDocCreateResponse(BaseModel):
     resume_text: Optional[str]
     cover_letter_text: Optional[str]
     gen_doc_type: str
-    user_specifications: str
+    user_specifications: Optional[str]
     created_at: datetime
 
 
@@ -34,7 +34,7 @@ class GeneratedDocumnetResponse(BaseModel):
     userId: UUID
     jobId: UUID
     gen_doc_type: str
-    user_specifications: str
+    user_specifications: Optional[str]
     created_at: datetime
     updated_at: datetime
 
