@@ -155,3 +155,26 @@ class BoldSectionHeader(Flowable):
 
 def section_header_bold(text: str, styles: dict) -> list:
     return [BoldSectionHeader(text)]
+
+
+_BASE_BOLD = re.compile(
+    r"\b("
+    r"\d[\d,\.]*\s*%|"
+    r"\d[\d,\.]*\+?\s*(?:users|ms|seconds?|minutes?|hours?|days?|months?|requests?|"
+    r"records?|events?|transactions?|calls?|endpoints?|services?|nodes?|instances?)|"
+    r"Built|Engineered|Developed|Designed|Implemented|Optimized|Reduced|Increased|"
+    r"Improved|Automated|Shipped|Led|Architected|Deployed|Migrated|Integrated|"
+    r"Launched|Scaled|Delivered|Established|Created|Streamlined|"
+    r"REST(?:ful)?|GraphQL|gRPC|Microservices?|CI/CD|Docker|Kubernetes|AWS|GCP|Azure|"
+    r"PostgreSQL|MongoDB|Redis|Kafka|RabbitMQ|Elasticsearch|TypeORM|Prisma|"
+    r"React|Next\.js|NestJS|Node\.js|FastAPI|Django|Spring Boot|Express|"
+    r"TypeScript|JavaScript|Python|Go|Golang|Rust|Java|C\+\+|"
+    r"LLM|GPT|ML|AI|NLP|RAG|fine.tun(?:ing|ed)"
+    r")\b",
+    re.IGNORECASE,
+)
+
+
+def _apply_bold(text: str, pattern: re.Pattern) -> str:
+    safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return pattern.sub(lambda m: f"<b>{m.group(0)}</b>", safe)
