@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.dependency.dependencies import get_db, get_current_user
 from app.api.v1.content.content_service import ContentServiceClass
 from app.core.logger import logger
-from typing import List
+from app.models.GeneratedDocument import GeneratedDocumentEnumType
 
 router = APIRouter(prefix="", tags=["Content"])
 
@@ -33,11 +33,14 @@ async def generate_resume_content(
 )
 async def get_all_contents(
     jobId: str,
+    content_type: GeneratedDocumentEnumType,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
-    return content_service.get_all_contents(userId=str(user_id), jobId=jobId, db=db)
+    return content_service.get_all_contents(
+        userId=str(user_id), jobId=jobId, content_type=content_type, db=db
+    )
 
 
 @router.get(

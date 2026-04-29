@@ -9,7 +9,7 @@ from app.core.logger import logger
 from app.helpers.filter_jd import filter_jd
 from app.helpers.resume_prompt import build_resume_prompt
 from app.helpers.cover_letter_prompt import _build_cover_letter_prompt
-from app.models.GeneratedDocument import GeneratedDocumment
+from app.models.GeneratedDocument import GeneratedDocumment, GeneratedDocumentEnumType
 from app.response.GenerateDocument_responses import (
     GenerateDocCreateResponse,
     GeneratedDocumnetResponse,
@@ -225,10 +225,10 @@ class ContentServiceClass:
         self,
         userId: str,
         jobId: str,
+        content_type: GeneratedDocumentEnumType,
         db: Session,
     ):
         try:
-
             if not userId or not jobId:
                 logger.error("Failed to fetch all content. No user id and job id")
                 raise HTTPException(
@@ -249,6 +249,7 @@ class ContentServiceClass:
                 .filter(
                     GeneratedDocumment.userId == userId,
                     GeneratedDocumment.jobId == jobId,
+                    GeneratedDocumment.gen_doc_type == content_type,
                 )
                 .all()
             )
