@@ -11,6 +11,13 @@ class GeneratedDocumentEnumType(str, enum.Enum):
     COVER_LETTER = "Cover-letter"
 
 
+class GeneratedDocumentStatusEnumType(str, enum.Enum):
+    Pending = "pending"
+    Processing = "processing"
+    Completed = "completed"
+    failed = "failed"
+
+
 class GeneratedDocumment(Base):
     __tablename__ = "GeneratedDocument"
 
@@ -25,6 +32,13 @@ class GeneratedDocumment(Base):
         default=GeneratedDocumentEnumType.RESUME,
         index=True,
     )
+    status = Column(
+        SQLEnum(GeneratedDocumentStatusEnumType),
+        nullable=False,
+        default=GeneratedDocumentStatusEnumType.Pending,
+        index=True,
+    )
+    error_message = Column(String, nullable=True)
     user_specifications = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(

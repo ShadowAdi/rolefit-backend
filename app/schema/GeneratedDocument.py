@@ -8,6 +8,13 @@ class GeneratedDocumentEnumType(str, Enum):
     COVER_LETTER = "Cover-letter"
 
 
+class GeneratedDocumentStatusEnumType(str, Enum):
+    Pending = "pending"
+    Processing = "processing"
+    Completed = "completed"
+    failed = "failed"
+
+
 class CreateGeneratedDocumnet(BaseModel):
 
     resume_text: Optional[str]
@@ -16,5 +23,7 @@ class CreateGeneratedDocumnet(BaseModel):
     jobId: str = Field(None)
     user_specifications = Field(..., max_length=1000)
     gen_doc_type: Optional[GeneratedDocumentEnumType] = None
+    status: Optional[GeneratedDocumentStatusEnumType] = None
+    error_message: Optional[str]
 
     model_config = ConfigDict(from_attributes=True)
