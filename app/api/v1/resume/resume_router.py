@@ -114,3 +114,27 @@ async def preview_resume_pdf(
         )
 
     return _stream_pdf(pdf_bytes, "resume_preview.pdf", inline=True)
+
+
+@router.get("/templates")
+async def list_templates():
+    """Return available template IDs for the frontend to display as options."""
+    return {
+        "templates": [
+            {
+                "id": "classic",
+                "name": "Classic",
+                "description": "Clean single-column layout with accent-coloured headings.",
+            },
+            {
+                "id": "minimalist",
+                "name": "Minimalist",
+                "description": "Generous white space, thin rules, muted tones — very readable.",
+            },
+            {
+                "id": "bold",
+                "name": "Bold",
+                "description": "Dark header block, vivid accent sidebar rules — stands out.",
+            },
+        ]
+    }
