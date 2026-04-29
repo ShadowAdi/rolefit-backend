@@ -17,11 +17,11 @@ class GeneratedDocumment(Base):
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     userId = Column(UUID, ForeignKey("User.id"), nullable=False)
     jobId = Column(UUID, ForeignKey("JobDescription.id"), nullable=False)
-    resume_text = Column(String, nullable=False)
-    cover_letter_text = Column(String, nullable=False)
+    resume_text = Column(String, nullable=True)
+    cover_letter_text = Column(String, nullable=True)
     gen_doc_type = Column(
         SQLEnum(GeneratedDocumentEnumType),
-        nullable=True,
+        nullable=False,
         default=GeneratedDocumentEnumType.RESUME,
         index=True,
     )
