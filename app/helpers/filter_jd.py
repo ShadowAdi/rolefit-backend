@@ -60,7 +60,7 @@ def filter_jd(
                 detail="Job ID and User ID must be valid UUIDs",
             )
 
-        user = db.query(User).filter(User.id == user_uuid).first()
+        user = db.query(User).filter(User.id == userId).first()
         if not user:
             logger.warning(
                 "User not found",
@@ -86,8 +86,8 @@ def filter_jd(
         jd = (
             db.query(JobDescription)
             .filter(
-                JobDescription.id == job_uuid,
-                JobDescription.userId == user_uuid,
+                JobDescription.id == jobId,
+                JobDescription.userId == userId,
             )
             .first()
         )
