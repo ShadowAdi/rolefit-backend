@@ -117,7 +117,7 @@ def build_styles_bold() -> dict:
     }
 
 
-class BoldSectionHeader(Flowable):
+class BoldHeaderBlock(Flowable):
     FONT = "Helvetica-Bold"
     FONT_SIZE = 9.5
     BAR_W = 3
@@ -154,7 +154,7 @@ class BoldSectionHeader(Flowable):
 
 
 def section_header_bold(text: str, styles: dict) -> list:
-    return [BoldSectionHeader(text)]
+    return [BoldHeaderBlock(text)]
 
 
 _BASE_BOLD = re.compile(
