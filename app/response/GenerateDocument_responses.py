@@ -28,11 +28,11 @@ class GeneratedDocumnetResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: UUID
     resume_text: Optional[str]
     cover_letter_text: Optional[str]
-    userId: str
-    jobId: str
+    userId: UUID
+    jobId: UUID
     gen_doc_type: str
     user_specifications: str
     created_at: datetime
@@ -43,6 +43,6 @@ class DeleteDocumnetResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: UUID
     success: bool
     message: str
