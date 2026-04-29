@@ -108,7 +108,7 @@ class ContentServiceClass:
                 ],
                 model="llama-3.3-70b-versatile",
                 max_tokens=4000,
-                temperature=0.3,  # lower = more deterministic JSON output
+                temperature=0.3,
             )
 
             message_content = chat_completion.choices[0].message.content
