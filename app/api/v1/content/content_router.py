@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 from app.dependency.dependencies import get_db, get_current_user
 from app.api.v1.content.content_service import ContentServiceClass
@@ -33,7 +33,7 @@ async def generate_resume_content(
 )
 async def get_all_contents(
     jobId: str,
-    content_type: GeneratedDocumentEnumType,
+    content_type: GeneratedDocumentEnumType = Query(...),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
