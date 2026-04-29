@@ -16,7 +16,7 @@ content_service = ContentServiceClass()
 )
 async def generate_resume_content(
     jobId: str,
-    user_specifications: str,
+    user_specifications: str = Query(None),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -77,7 +77,7 @@ async def delete_content(
 )
 async def generate_cover_letter_content(
     jobId: str,
-    user_specifications: str,
+    user_specifications: str = Query(None),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
