@@ -221,7 +221,7 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while creating the resume content.",
             )
 
-    def get_all_resume_contents(
+    def get_all_contents(
         self,
         userId: str,
         jobId: str,
@@ -296,7 +296,7 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while fetching contents.",
             )
 
-    def get_resume_content(
+    def get_content(
         self,
         userId: str,
         contentId: str,
@@ -369,7 +369,7 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while fetching content.",
             )
 
-    def delete_resume_content(
+    def delete_content(
         self,
         userId: str,
         contentId: str,
