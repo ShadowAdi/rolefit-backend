@@ -13,8 +13,6 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 
 def _build_cl_styles() -> dict[str, ParagraphStyle]:
-    base = getSampleStyleSheet()
-
     def s(name, **kw) -> ParagraphStyle:
         defaults = dict(
             fontName="Helvetica",
@@ -25,7 +23,7 @@ def _build_cl_styles() -> dict[str, ParagraphStyle]:
             spaceBefore=0,
         )
         defaults.update(kw)
-        return ParagraphStyle(name=name, parent=base["normal"], **defaults)
+        return ParagraphStyle(name=name, **defaults)
 
     return {
         "name": s(

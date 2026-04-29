@@ -98,7 +98,7 @@ async def download_cover_letter_pdf(
             detail="Failed to generate PDF. Please try again.",
         )
 
-    name_slug = cover_letter_data.header.name.replace(" ", "_").lower()
+    name_slug = cover_letter_data.candidate.name.replace(" ", "_").lower()
     return _stream_pdf(pdf_bytes, f"{name_slug}_cover_letter.pdf", inline=False)
 
 
