@@ -76,7 +76,7 @@ async def download_cover_letter_pdf(
     logger.info(f"PDF download requested | user={user_id} doc={docId}")
 
     doc = _get_verified_doc(docId, user_id, db)
-    cover_letter_data = _parse_cover_letter_text(doc.resume_text)
+    cover_letter_data = _parse_cover_letter_text(doc.cover_letter_text)
 
     try:
         pdf_bytes = build_cover_letter_pdf(cover_letter_data)
@@ -102,10 +102,10 @@ async def preview_cover_letter_pdf(
     logger.info(f"PDF preview requested | user={user_id} doc={docId}")
 
     doc = _get_verified_doc(docId, user_id, db)
-    resume_data = _parse_cover_letter_text(doc.resume_text)
+    cover_letter_data = _parse_cover_letter_text(doc.cover_letter_text)
 
     try:
-        pdf_bytes = build_cover_letter_pdf(resume_data)
+        pdf_bytes = build_cover_letter_pdf(cover_letter_data)
     except Exception as e:
         logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
         raise HTTPException(
