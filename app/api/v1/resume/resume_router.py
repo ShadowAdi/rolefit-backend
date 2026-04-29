@@ -10,6 +10,9 @@ from app.dependency.dependencies import get_db, get_current_user
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.schema.pdf_resume import ResumeData
 from app.helpers.build_pdf import build_pdf
+from app.helpers.build_pdf_bold import build_pdf_bold
+from app.helpers.build_pdf_minimalist import build_pdf_minimalist
+
 from app.core.logger import logger
 
 router = APIRouter(prefix="", tags=["Resume PDF"])
@@ -65,9 +68,10 @@ def _stream_pdf(pdf_bytes: bytes, filename: str, inline: bool) -> StreamingRespo
     )
 
 
-@router.get("/{docId}/download")
+@router.get("/{docId}/{resume_type}/download")
 async def download_resume_pdf(
     docId: str,
+    resume_type: str,
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -79,7 +83,13 @@ async def download_resume_pdf(
     resume_data = _parse_resume_text(doc.resume_text)
 
     try:
-        pdf_bytes = build_pdf(resume_data)
+        if resume_type == "minimalist":
+            pdf_bytes = build_pdf_minimalist(resume_data)
+        elif resume_type == "bold":
+            pdf_bytes = build_pdf_bold(resume_data)
+        else:
+            pdf_bytes = build_pdf(resume_data)
+
     except Exception as e:
         logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
         raise HTTPException(
