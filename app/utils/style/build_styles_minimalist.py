@@ -3,7 +3,7 @@ import re
 from reportlab.platypus import (
     Flowable,
 )
-from reportlab.lib.enums import  TA_CENTER
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.colors import HexColor
 from app.core.resume_colors import MINI_BLACK, MINI_ACCENT, MINI_SUBTEXT, MINI_RULE
@@ -105,31 +105,31 @@ class MiniSectionHeader(Flowable):
     SPACE_BEFORE = 12
     SPACE_AFTER = 5
 
-    def __init__(self,text:str):
+    def __init__(self, text: str):
         super().__init__()
-        self.text()=text.upper()
-        self._height=self.SPACE_BEFORE+self.FONT_SIZE+self.SPACE_AFTER
-    
-    def wrap(self,aw,ah):
-        self._width=aw
+        self.text = text.upper()
+        self._height = self.SPACE_BEFORE + self.FONT_SIZE + self.SPACE_AFTER
+
+    def wrap(self, aw, ah):
+        self._width = aw
         return aw, self._height
 
     def draw(self):
-        c=self.canv
-        rule_y=self.SPACE_AFTER + self.FONT_SIZE + 3
+        c = self.canv
+        rule_y = self.SPACE_AFTER + self.FONT_SIZE + 3
         c.setStrokeColor(MINI_RULE)
         c.setLineWidth(self.RULE_T)
-        c.line(0,rule_y,self._width,rule_y)
-        text_y=self.SPACE_AFTER
+        c.line(0, rule_y, self._width, rule_y)
+        text_y = self.SPACE_AFTER
         c.setFont(self.FONT, self.FONT_SIZE)
         c.setFillColor(MINI_SUBTEXT)
         c.drawString(0, text_y, self.text)
         c.setFont(self.FONT, self.FONT_SIZE)
         c.setFillColor(MINI_SUBTEXT)
         c.drawString(0, text_y, self.text)
- 
-    
-def section_header_minimalist(text:str,styles:dict)->list:
+
+
+def section_header_minimalist(text: str, styles: dict) -> list:
     return MiniSectionHeader(text=text)
 
 
@@ -150,8 +150,7 @@ _BASE_BOLD = re.compile(
     re.IGNORECASE,
 )
 
-def _apply_bold(text:str,pattern:re.Pattern)->str:
+
+def _apply_bold(text: str, pattern: re.Pattern) -> str:
     safe = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return pattern.sub(lambda m: f"<b>{m.group(0)}</b>", safe)
-
-
