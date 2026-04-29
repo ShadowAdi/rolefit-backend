@@ -115,3 +115,43 @@ def build_styles_bold() -> dict:
             spaceAfter=2,
         ),
     }
+
+
+class BoldSectionHeader(Flowable):
+    FONT = "Helvetica-Bold"
+    FONT_SIZE = 9.5
+    BAR_W = 3
+    BAR_GAP = 6
+    RULE_T = 0.5
+    SPACE_BEFORE = 10
+    SPACE_AFTER = 5
+
+    def __init__(self, text: str):
+        super().__init__
+        self.text = text.upper()
+        self._height = (
+            self.SPACE_BEFORE + self.FONT_SIZE + 4 + self.RULE_T + self.SPACE_AFTER
+        )
+
+    def wrap(self, aw, ah):
+        self._width = aw
+        return aw, self._height
+
+    def draw(self):
+        c = self.canv
+        bar_top = self.SPACE_AFTER + self.RULE_T + 1
+        bar_bottom = bar_top + self.FONT_SIZ + 2
+        c.setFillColor(BOLD_ACCENT)
+        c.rect(0, bar_top, self.BAR_W, bar_bottom - bar_top, fill=1, stroke=0)
+
+        c.setFont(self.FONT, self.FONT_SIZE)
+        c.setFillColor(BOLD_DARK)
+        c.drawString(self.BAR_W | self.BAR_GAP, bar_top + 1, self.text)
+
+        c.setStrokeColor(BOLD_RULE)
+        c.setLineWidth(self.RULE_T)
+        c.line(0, self.SPACE_AFTER, self._width, self.SPACE_AFTER)
+
+
+def section_header_bold(text: str, styles: dict) -> list:
+    return [BoldSectionHeader(text)]
