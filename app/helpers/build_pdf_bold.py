@@ -32,9 +32,13 @@ from app.utils.style.build_styles_bold import (
 )
 
 
-def build_pdf_bold(data, bold_pattern: re.Pattern) -> bytes:
+def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
     buff = io.BytesIO()
     M = 0.48 * inch
+
+    # Default pattern: no bold highlighting if not provided
+    if bold_pattern is None:
+        bold_pattern = re.compile(r"(?!)")  # Pattern that matches nothing
 
     doc = SimpleDocTemplate(
         buff,

@@ -19,9 +19,12 @@ from app.utils.style.build_styles_minimalist import (
 )
 
 
-def build_pdf_minimalist(data, bold_pattern: re.Pattern) -> bytes:
+def build_pdf_minimalist(data, minimal_pattern: re.Pattern) -> bytes:
     buff = io.BytesIO()
     M = 0.55 * inch
+
+    if minimal_pattern is None:
+        minimal_pattern = re.compile(r"(?!)")  # Pattern that matches nothing
 
     doc = SimpleDocTemplate(
         buff, pagesize=letter, leftMargin=M, rightMargin=M, topMargin=0.50 * inch
