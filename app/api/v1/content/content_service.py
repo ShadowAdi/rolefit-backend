@@ -19,15 +19,6 @@ from app.helpers.grok_ai_headers import grok_api_key_headers
 from uuid import UUID
 from groq import Groq
 
-# --- Sarvam imports (commented out) ---
-# import requests
-# from app.utils.sarvam_const import (
-#     RESUME_GEN_MAX_TOKENS,
-#     RESUME_GEN_TIMEOUT,
-#     SARVAM_API_URL,
-# )
-# from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
-
 
 def _extract_clean_json(text: str) -> dict:
     print(f"AI OUTPUT: {text}")
@@ -95,31 +86,6 @@ class ContentServiceClass:
                 )
 
             prompt = build_resume_prompt(job_profile_response)
-
-            # --- Sarvam API call (commented out) ---
-            # headers = sarvam_api_key_headers()
-            # payload = {
-            #     "model": "sarvam-m",
-            #     "messages": [
-            #         {
-            #             "role": "system",
-            #             "content": "/no_think You are a JSON-only resume writer...",
-            #         },
-            #         {"role": "user", "content": prompt},
-            #     ],
-            #     "max_tokens": RESUME_GEN_MAX_TOKENS,
-            # }
-            # response = requests.post(
-            #     SARVAM_API_URL,
-            #     json=payload,
-            #     headers=headers,
-            #     timeout=RESUME_GEN_TIMEOUT,
-            # )
-            # response.raise_for_status()
-            # response_data = response.json()
-            # message_content = (
-            #     response_data["choices"][0].get("message", {}).get("content", "")
-            # )
 
             logger.debug("Calling Groq API for resume generation")
 
