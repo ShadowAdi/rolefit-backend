@@ -139,6 +139,7 @@ Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
 - If user provided 0 projects, return projects as empty array [].
 - Links are "Label::URL" strings — copy exactly, do not modify.
 - MAX 2 bullets per project, each MIN 10 words and MAX 30 words.
+- It Can happen that user has provided n number of projects it can be 0 or it can be 1,2,3...or as many he wants you will only choose what you find useful not all of them based on Job Requiremnet. You will choose project based on that maximium 2 or 3 projects will work or if no project then returns an empty array [].
 
 === ACHIEVEMENTS RULES ===
 - ONLY use achievements explicitly provided by the user (hackathons won, competitions, awards, certifications they listed).
