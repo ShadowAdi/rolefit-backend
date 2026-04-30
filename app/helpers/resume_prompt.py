@@ -253,7 +253,7 @@ def _build_sections_string(
 
     if include_projects and projects:
         proj_lines = []
-        for p in projects[:2]:
+        for p in projects:
             tech = ", ".join((p.get("techStack") or [])[:5])
             labelled = _label_links(p.get("links"))
             proj_lines.append(
