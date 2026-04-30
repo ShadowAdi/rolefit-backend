@@ -130,7 +130,7 @@ class MiniSectionHeader(Flowable):
 
 
 def section_header_minimalist(text: str, styles: dict) -> list:
-    return MiniSectionHeader(text=text)
+    return [MiniSectionHeader(text=text)]
 
 
 _BASE_BOLD = re.compile(

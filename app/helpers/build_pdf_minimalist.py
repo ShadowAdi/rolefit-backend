@@ -19,7 +19,7 @@ from app.utils.style.build_styles_minimalist import (
 )
 
 
-def build_pdf_minimalist(data, minimal_pattern: re.Pattern) -> bytes:
+def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
     buff = io.BytesIO()
     M = 0.55 * inch
 
@@ -55,7 +55,7 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern) -> bytes:
     if data.summary:
         story += section_header_minimalist("Summary", styles)
         story.append(
-            Paragraph(_apply_bold(data.summary, bold_pattern), styles["summary"])
+            Paragraph(_apply_bold(data.summary, minimal_pattern), styles["summary"])
         )
 
     if data.skills:
@@ -119,7 +119,7 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern) -> bytes:
             story.append(t)
             for b in exp.bullets:
                 story.append(
-                    Paragraph(f"• {_apply_bold(b, bold_pattern)}", styles["bullet"])
+                    Paragraph(f"• {_apply_bold(b, minimal_pattern)}", styles["bullet"])
                 )
 
     if data.projects:
@@ -130,15 +130,15 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern) -> bytes:
                 story.append(Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]))
             for b in proj.bullets:
                 story.append(
-                    Paragraph(f"• {_apply_bold(b, bold_pattern)}", styles["bullet"])
+                    Paragraph(f"• {_apply_bold(b, minimal_pattern)}", styles["bullet"])
                 )
             story.append(Spacer(1, 4))
 
-    if data.achievments:
+    if data.achievements:
         story += section_header_minimalist("Achievements & Certifications", styles)
         for ach in data.achievements:
             story.append(
-                Paragraph(f"• {_apply_bold(ach, bold_pattern)}", styles["bullet"])
+                Paragraph(f"• {_apply_bold(ach, minimal_pattern)}", styles["bullet"])
             )
 
     if data.publications:
@@ -150,7 +150,7 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern) -> bytes:
             if pub.year:
                 line += f" ({pub.year})"
             story.append(
-                Paragraph(f"• {_apply_bold(line, bold_pattern)}", styles["pub"])
+                Paragraph(f"• {_apply_bold(line, minimal_pattern)}", styles["pub"])
             )
 
     if data.education:
