@@ -264,7 +264,7 @@ def _build_sections_string(
             )
         titles = [p.get("title") for p in projects[:2]]
         parts.append(
-            f"PROJECTS: User has exactly {len(projects[:2])} project(s). "
+            f"PROJECTS: User has exactly {len(projects)} project(s). "
             f"Use ONLY these titles: {titles}. Do not add any others.\n\n"
             + "\n\n".join(proj_lines)
         )
