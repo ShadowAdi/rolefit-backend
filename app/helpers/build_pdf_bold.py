@@ -14,7 +14,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
 from app.utils.style.build_styles_bold import build_styles_bold
-from .build_pdf import _format_header_links
+from .build_pdf import _format_header_links, _render_project_links
 from app.utils.style.build_styles_bold import (
     build_styles_bold,
     _apply_bold,
@@ -27,7 +27,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
     M = 0.48 * inch
 
     if bold_pattern is None:
-        bold_pattern = re.compile(r"(?!)")  # Pattern that matches nothing
+        bold_pattern = re.compile(r"(?!)")
 
     doc = SimpleDocTemplate(
         buff,
@@ -133,8 +133,29 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
         story += section_header_bold("Projects", styles)
         for proj in data.projects:
             story.append(Paragraph(proj.title, styles["role"]))
-            if proj.tech:
+            link_para = _render_project_links(proj.links, styles["company_meta"])
+
+            if proj.tech and link_para:
+                row = [
+                    Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]),
+                    link_para,
+                ]
+                t = Table([row], colWidths=[4.9 * inch, 2.5 * inch])
+                t.setStyle(
+                    TableStyle(
+                        [
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                            ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ]
+                    )
+                )
+                story.append(t)
+            elif proj.tech:
                 story.append(Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]))
+            elif link_para:
+                story.append(link_para)
+
             for b in proj.bullets:
                 story.append(
                     Paragraph(f"• {_apply_bold(b, bold_pattern)}", styles["bullet"])
