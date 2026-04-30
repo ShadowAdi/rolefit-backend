@@ -172,7 +172,6 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                     Paragraph(f"• {_apply_bold(b, bold_pattern)}", styles["bullet"])
                 )
 
-    # ── Projects ──────────────────────────────────────────────────────────
     if data.projects:
         story += section_header_bold("Projects", styles)
         for proj in data.projects:
@@ -204,7 +203,6 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 )
             story.append(Spacer(1, 3))
 
-    # ── Achievements ──────────────────────────────────────────────────────
     if data.achievements:
         story += section_header_bold("Achievements & Certifications", styles)
         for ach in data.achievements:
@@ -212,7 +210,6 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 Paragraph(f"• {_apply_bold(ach, bold_pattern)}", styles["bullet"])
             )
 
-    # ── Publications ──────────────────────────────────────────────────────
     if data.publications:
         story += section_header_bold("Publications", styles)
         for pub in data.publications:
@@ -225,7 +222,6 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 Paragraph(f"• {_apply_bold(line, bold_pattern)}", styles["pub"])
             )
 
-    # ── Education ─────────────────────────────────────────────────────────
     if data.education:
         story += section_header_bold("Education", styles)
         for edu in data.education:
