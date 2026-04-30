@@ -140,7 +140,7 @@ class BoldHeaderBlock(Flowable):
     def draw(self):
         c = self.canv
         bar_top = self.SPACE_AFTER + self.RULE_T + 1
-        bar_bottom = bar_top + self.FONT_SIZ + 2
+        bar_bottom = bar_top + self.FONT_SIZE + 2
         c.setFillColor(BOLD_ACCENT)
         c.rect(0, bar_top, self.BAR_W, bar_bottom - bar_top, fill=1, stroke=0)
 

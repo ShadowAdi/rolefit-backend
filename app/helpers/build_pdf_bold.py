@@ -59,13 +59,18 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
         if field:
             contact_parts.append(field.replace("&", "&amp;"))
 
-        if h.links:
-            link_str = _format_header_links(h.links, accent_hex="#c0c8f0")
-            if link_str:
-                contact_parts.append(link_str)
-        contact_markup = " | ".join(contact_parts)
+    if h.links:
+        link_str = _format_header_links(h.links, accent_hex="#c0c8f0")
+        if link_str:
+            contact_parts.append(link_str)
 
-    story.append(BoldHeaderBlock(h.name, h.title or "", contact_markup, styles))
+    story.append(Paragraph(h.name, styles["name"]))
+    if h.title:
+        story.append(Paragraph(h.title, styles["title"]))
+
+    if contact_parts:
+        story.append(Paragraph(" | ".join(contact_parts), styles["contact"]))
+
     story.append(Spacer(1, 8))
 
     if data.summary:
