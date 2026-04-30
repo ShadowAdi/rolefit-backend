@@ -56,27 +56,19 @@ async def get_current_user(
             )
 
         cache_key = f"authenticated-user-{user_id}"
-        cached_user = await get_cache(cache_key)
+        cached = await get_cache(cache_key)
 
-        if cached_user:
-            logger.debug(f"User retrieved from cache: {user_id}")
-            user_data = json.loads(cached_user)
-            user = User(**user_data)
+        if cached:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                raise HTTPException(status_code=401, detail="User no longer exists")
             return user
 
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
-            logger.warning(f"User from token no longer exists: {user_id}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User no longer exists",
-            )
+            raise HTTPException(status_code=401, detail="User no longer exists")
 
-        user_data = jsonable_encoder(user)
-        await set_cache(cache_key, json.dumps(user_data), 900)
-        logger.debug(f"User cached: {user_id}")
-
-        logger.info(f"User authenticated successfully: {user.email}")
+        await set_cache(cache_key, "1", 900)  # Just mark token as valid
         return user
 
     except HTTPException:
