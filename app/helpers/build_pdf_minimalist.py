@@ -11,7 +11,7 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
-from .build_pdf import _format_header_links
+from .build_pdf import _format_header_links, _render_project_links
 from app.utils.style.build_styles_minimalist import (
     build_styles_minimalist,
     section_header_minimalist,
@@ -124,10 +124,30 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
 
     if data.projects:
         story += section_header_minimalist("Projects", styles)
+        link_para = _render_project_links(proj.links, styles["company_meta"])
         for proj in data.projects:
             story.append(Paragraph(proj.title, styles["role"]))
-            if proj.tech:
+            if proj.tech and link_para:
+                row = [
+                    Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]),
+                    link_para,
+                ]
+                t = Table([row], colWidths=[4.9 * inch, 2.5 * inch])
+                t.setStyle(
+                    TableStyle(
+                        [
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                            ("TOPPADDING", (0, 0), (-1, -1), 0),
+                        ]
+                    )
+                )
+                story.append(t)
+            elif proj.tech:
                 story.append(Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]))
+            elif link_para:
+                story.append(link_para)
+
             for b in proj.bullets:
                 story.append(
                     Paragraph(f"• {_apply_bold(b, minimal_pattern)}", styles["bullet"])
