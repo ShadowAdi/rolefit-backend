@@ -3,18 +3,20 @@ build_pdf_sidebar.py  —  "Sidebar" two-column template builder
 ───────────────────────────────────────────────────────────────
 Architecture:
   The entire page is ONE outer Table with 2 columns:
-    col[0]  = sidebar cell  (slate bg painted via a SidebarBackground Flowable)
+    col[0]  = sidebar cell  (slate bg painted via canvas onPage callback)
     col[1]  = main cell     (white, normal content)
 
-  Because ReportLab Tables don't paint cell backgrounds that extend to page
-  edges cleanly at 0-margin, we use a full-bleed approach:
-    • leftMargin = 0, rightMargin = 0, topMargin = 0, bottomMargin = 0
-    • A single outer Table covers the full page width
-    • Left cell has BACKGROUND TableStyle set to SB_BG
-    • Inner padding added via LEFTPADDING / RIGHTPADDING / TOPPADDING
+  FIX 1 – Full-height sidebar:
+    ReportLab Table BACKGROUND only paints over actual cell content height,
+    so the sidebar colour stopped mid-page when sidebar content was shorter
+    than main content. The fix: use a SimpleDocTemplate `onFirstPage` /
+    `onLaterPages` canvas callback that draws a full-bleed SB_BG rectangle
+    covering the entire left strip BEFORE the table is drawn on every page.
+    The table cell background is therefore removed entirely.
 
-  Sidebar content: name, title, contact, skills, education
-  Main content:    summary, experience, projects, achievements, publications
+  FIX 2 – Sidebar too wide:
+    SIDE_W reduced from 2.20 → 1.95 inch, giving the main column an extra
+    ~18 pts of width.
 """
 
 import io
@@ -84,10 +86,10 @@ def _main_section(text: str, styles: dict) -> list:
 def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
     buff = io.BytesIO()
     PW, PH = letter  # 612 x 792 pts
-    SIDE_W = 2.20 * inch  # sidebar width
-    MAIN_W = PW - SIDE_W  # main column width
+    SIDE_W = 1.95 * inch  # FIX 2: reduced from 2.20 → 1.95 inch
+    MAIN_W = PW - SIDE_W  # main column gets the rest
     V_PAD = 0.40 * inch  # top/bottom page padding
-    SB_PAD_H = 0.20 * inch  # sidebar inner horizontal padding
+    SB_PAD_H = 0.18 * inch  # sidebar inner horizontal padding (slightly tighter)
     SB_PAD_T = 0.38 * inch  # sidebar inner top padding
     MN_PAD_H = 0.22 * inch  # main inner horizontal padding
     MN_PAD_T = 0.38 * inch  # main inner top padding
@@ -96,6 +98,15 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
         bold_pattern = re.compile(r"(?!)")
 
     styles = build_styles_sidebar()
+
+    # ── FIX 1: canvas callback paints the full-height sidebar background ──
+    # This runs on every page before flowables are drawn, so the slate
+    # strip always covers the entire page height regardless of content.
+    def _draw_sidebar_bg(canvas, doc):
+        canvas.saveState()
+        canvas.setFillColor(SB_BG)
+        canvas.rect(0, 0, SIDE_W, PH, fill=1, stroke=0)
+        canvas.restoreState()
 
     # ── Build sidebar story ───────────────────────────────────────────────
     sb = []
@@ -170,7 +181,6 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
                     ),
                 ),
             ]
-            # Column widths must fit inside MAIN_W minus inner padding
             avail = MAIN_W - 2 * MN_PAD_H
             t = Table([header_row], colWidths=[avail * 0.62, avail * 0.38])
             t.setStyle(
@@ -239,7 +249,6 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
             mn.append(Paragraph(f"• {_apply_bold(line, bold_pattern)}", styles["pub"]))
 
     # ── Assemble as a 2-column Table ──────────────────────────────────────
-    # Each cell's content is wrapped in an inner Table to apply padding
     def _padded(story_items, pad_h, pad_t):
         """Wrap a list of flowables in a single-cell table for padding."""
         t = Table([[story_items]], colWidths=[None])
@@ -256,8 +265,6 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
         )
         return t
 
-    # ReportLab doesn't allow list of flowables directly in a Table cell;
-    # we must use a nested Table (single col) as the container.
     sb_cell = _padded(sb, SB_PAD_H, SB_PAD_T)
     mn_cell = _padded(mn, MN_PAD_H, MN_PAD_T)
 
@@ -268,7 +275,8 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
     outer.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (0, -1), SB_BG),
+                # FIX 1: BACKGROUND removed from here — canvas callback handles it.
+                # Keeping it here would only paint the content-height area anyway.
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("LEFTPADDING", (0, 0), (-1, -1), 0),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 0),
@@ -278,7 +286,9 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
         )
     )
 
-    # Full-bleed doc — zero margins, outer table fills entire page
+    # Full-bleed doc — zero margins, outer table fills entire page.
+    # onFirstPage / onLaterPages both use _draw_sidebar_bg so the slate
+    # strip is painted on every page before content is laid down.
     doc = SimpleDocTemplate(
         buff,
         pagesize=letter,
@@ -287,6 +297,10 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
         topMargin=0,
         bottomMargin=0,
     )
-    doc.build([outer])
+    doc.build(
+        [outer],
+        onFirstPage=_draw_sidebar_bg,
+        onLaterPages=_draw_sidebar_bg,
+    )
     buff.seek(0)
     return buff.read()
