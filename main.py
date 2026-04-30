@@ -7,6 +7,7 @@ import json
 from dotenv import load_dotenv
 
 from app.db import db as database
+from app.db import redis_db as redis_database
 from app.core.logger import logger
 from app.core.AppError import AppError, app_error_handler
 from contextlib import asynccontextmanager
@@ -20,6 +21,7 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     logger.info("Starting application - initializing database...")
     await database.init_db()
+    await redis_database.init_redis()
     logger.info("Database initialized successfully")
 
     yield
@@ -27,6 +29,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down application...")
     if database.engine:
         database.engine.dispose()
+    redis_database.close_redis()
 
 
 app = FastAPI(lifespan=lifespan)
