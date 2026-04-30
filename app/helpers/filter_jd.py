@@ -47,19 +47,6 @@ def filter_jd(
                 detail="User ID is required and must be a valid string",
             )
 
-        try:
-            job_uuid = UUID(jobId)
-            user_uuid = UUID(userId)
-        except ValueError as e:
-            logger.error(
-                "Invalid UUID format provided",
-                extra={"jobId": jobId, "userId": userId, "error": str(e)},
-            )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Job ID and User ID must be valid UUIDs",
-            )
-
         user = db.query(User).filter(User.id == userId).first()
         if not user:
             logger.warning(
