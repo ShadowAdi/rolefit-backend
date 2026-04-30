@@ -6,7 +6,7 @@ from app.utils.utils import decode_token
 from app.db.db import get_db
 from app.models.User import User
 from app.core.logger import logger
-from app.helpers.redis_cache_helpers import set_cache, get_cache, delete_cache
+from app.helpers.redis_cache_helpers import set_cache, get_cache
 from fastapi.encoders import jsonable_encoder
 import json
 
@@ -55,17 +55,15 @@ async def get_current_user(
                 detail="Invalid token payload",
             )
 
-        # Check Redis cache first
         cache_key = f"authenticated-user-{user_id}"
         cached_user = await get_cache(cache_key)
+
         if cached_user:
             logger.debug(f"User retrieved from cache: {user_id}")
             user_data = json.loads(cached_user)
-            # Reconstruct User object from cached data
             user = User(**user_data)
             return user
 
-        # If not in cache, query database
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             logger.warning(f"User from token no longer exists: {user_id}")
@@ -74,9 +72,9 @@ async def get_current_user(
                 detail="User no longer exists",
             )
 
-        # Cache the user for 15 minutes (900 seconds)
         user_data = jsonable_encoder(user)
         await set_cache(cache_key, json.dumps(user_data), 900)
+        logger.debug(f"User cached: {user_id}")
 
         logger.info(f"User authenticated successfully: {user.email}")
         return user

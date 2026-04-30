@@ -15,6 +15,7 @@ from .profile_service import ProfileServiceClass
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
+from app.helpers.redis_cache_helpers import invalidate_user_cache
 
 router = APIRouter(prefix="", tags=["Profile"])
 service = ProfileServiceClass()
@@ -167,6 +168,9 @@ async def update_profile(
             db=db, payload=data, userId=str(current_user.id)
         )
 
+        # Invalidate user cache so next request fetches updated data
+        await invalidate_user_cache(str(current_user.id))
+
         logger.info(
             f"Profile update endpoint completed successfully for user: {current_user.id}",
             extra={"userId": str(current_user.id), "profileId": str(profile.id)},
@@ -220,6 +224,9 @@ async def delete_profile(
         )
 
         response = service.delete_profile(db=db, userId=str(current_user.id))
+
+        # Invalidate user cache after deletion
+        await invalidate_user_cache(str(current_user.id))
 
         logger.info(
             f"Profile deletion endpoint completed successfully for user: {current_user.id}",

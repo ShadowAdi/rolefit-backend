@@ -13,6 +13,7 @@ from .user_service import UserService
 from datetime import datetime, timezone
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
+from app.helpers.redis_cache_helpers import invalidate_user_cache
 
 router = APIRouter(tags=["Users"])
 
@@ -96,6 +97,9 @@ async def delete_my_profile(
         HTTPException: If validation fails or deletion fails
     """
     deleted_user_id = UserService.delete_user(db=db, user_id=str(current_user.id))
+
+    # Invalidate user cache after deletion
+    await invalidate_user_cache(str(current_user.id))
 
     return DeleteUserApiResponse(
         success=True,
