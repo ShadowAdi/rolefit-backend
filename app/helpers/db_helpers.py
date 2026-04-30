@@ -16,12 +16,12 @@ def get_user_profile(db: Session, userId: str) -> Profile:
 
     if not user_profile:
         logger.warning(
-            f"Academic creation failed: User profile not found",
+            f"Creation failed: User profile not found",
             extra={"userId": userId},
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User profile does not exist. Please create a profile before adding academic records.",
+            detail="User profile does not exist. Please create a profile before adding any records.",
         )
 
 

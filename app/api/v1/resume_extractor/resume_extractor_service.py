@@ -6,7 +6,6 @@ from app.core.logger import logger
 from app.core.AppError import AppError
 from urllib.parse import urlparse
 from app.utils.extract_resume_content import extract_resume_content
-from app.models.Profile import Profile
 from app.utils.call_groq import _call_groq
 from app.helpers.db_helpers import (
     _save_academics,
@@ -18,6 +17,7 @@ from app.helpers.db_helpers import (
     _save_skills,
     _save_tools,
 )
+from app.helpers.db_helpers import get_user_profile
 
 
 class ResumeExtractorServiceClass:
@@ -54,18 +54,7 @@ class ResumeExtractorServiceClass:
                 extra={"userId": userId},
             )
 
-            existing_profile = (
-                db.query(Profile).filter(Profile.userId == userId).first()
-            )
-            if existing_profile:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        "A profile already exists for this user. "
-                        "Use the PATCH endpoint to update it, or use the individual "
-                        "endpoints to add experience, projects, etc."
-                    ),
-                )
+            user_profile = get_user_profile(db, userId)
 
             logger.info(
                 f"No existing profile for user {userId}, proceeding",
