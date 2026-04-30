@@ -27,7 +27,6 @@ def get_current_user(
         HTTPException: If token is invalid, expired, or user doesn't exist
     """
     try:
-        # Validate token is provided
         if not creds or not creds.credentials:
             logger.warning("Authentication attempted without token")
             raise HTTPException(
