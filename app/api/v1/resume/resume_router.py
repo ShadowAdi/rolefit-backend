@@ -12,6 +12,7 @@ from app.schema.pdf_resume import ResumeData
 from app.helpers.build_pdf import build_pdf
 from app.helpers.build_pdf_bold import build_pdf_bold
 from app.helpers.build_pdf_minimalist import build_pdf_minimalist
+from app.helpers.build_pdf_sidebar import build_pdf_sidebar
 
 from app.core.logger import logger
 
@@ -87,6 +88,8 @@ async def download_resume_pdf(
             pdf_bytes = build_pdf_minimalist(resume_data)
         elif resume_type == "bold":
             pdf_bytes = build_pdf_bold(resume_data)
+        elif resume_type == "two-column":
+            pdf_bytes = build_pdf_sidebar(resume_data)
         else:
             pdf_bytes = build_pdf(resume_data)
 

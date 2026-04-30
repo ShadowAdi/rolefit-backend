@@ -44,8 +44,6 @@ from app.utils.style.build_styles_sidebar import (
     MAIN_ACCENT,
 )
 
-# ── Sidebar section label helper ──────────────────────────────────────────
-
 
 def _sb_section(text: str, styles: dict) -> list:
     """Teal ALL-CAPS label + thin teal rule below for sidebar sections."""
