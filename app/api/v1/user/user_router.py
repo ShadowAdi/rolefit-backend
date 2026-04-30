@@ -98,7 +98,6 @@ async def delete_my_profile(
     """
     deleted_user_id = UserService.delete_user(db=db, user_id=str(current_user.id))
 
-    # Invalidate user cache after deletion
     await invalidate_user_cache(str(current_user.id))
 
     return DeleteUserApiResponse(
