@@ -1,14 +1,12 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException, status
-from app.models.Profile import Profile
 from app.models.User import User
 from app.models.Experience import Experience
 from app.schema.Experience import ExperienceCreateRequest, ExperienceUpdateRequest
 from app.response.experience_responses import (
     ExperienceCreateResponse,
     ExperienceGetResponse,
-    ExperienceListResponse,
     ExperienceUpdateResponse,
 )
 from app.core.logger import logger
@@ -17,6 +15,7 @@ from app.validators.experience_validators import (
     ValidationException,
 )
 from app.core.validation_error import ValidationErrorField, ValidationErrorResponse
+from app.helpers.db_helpers import get_user_profile
 
 
 class ExperienceServiceClass:
@@ -118,7 +117,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -267,7 +266,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -401,7 +400,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -640,7 +639,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -895,7 +894,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(

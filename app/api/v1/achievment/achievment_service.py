@@ -8,11 +8,11 @@ from app.schema.Achievement import AchievementCreateRequest, AchievementUpdateRe
 from app.response.achievement_responses import (
     AchievementCreateResponse,
     AchievementGetResponse,
-    AchievementListResponse,
     AchievementUpdateResponse,
 )
 from app.core.logger import logger
 from app.validators.achievement_validators import AchievementValidator
+from app.helpers.db_helpers import get_user_profile
 
 
 class AchievementServiceClass:
@@ -53,7 +53,9 @@ class AchievementServiceClass:
                 )
 
             try:
-                logger.info(f"Validating achievement creation payload for user {userId}")
+                logger.info(
+                    f"Validating achievement creation payload for user {userId}"
+                )
                 AchievementValidator.validate_title(payload.title)
                 AchievementValidator.validate_achievement_type(payload.achievement_type)
                 AchievementValidator.validate_description(payload.description)
@@ -100,17 +102,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
-
-            if not user_profile:
-                logger.warning(
-                    f"Achievement creation failed: User profile not found",
-                    extra={"userId": userId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User profile does not exist. Please create a profile before adding achievements.",
-                )
+            user_profile = get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -197,7 +189,9 @@ class AchievementServiceClass:
                 detail="An unexpected error occurred while creating the achievement record.",
             )
 
-    def list_achievements(self, db: Session, userId: str) -> list[AchievementGetResponse]:
+    def list_achievements(
+        self, db: Session, userId: str
+    ) -> list[AchievementGetResponse]:
         """
         Retrieve all achievement records for an authenticated user.
 
@@ -246,7 +240,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -260,7 +254,9 @@ class AchievementServiceClass:
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
-            logger.info(f"Fetching all achievement records for profile: {user_profile.id}")
+            logger.info(
+                f"Fetching all achievement records for profile: {user_profile.id}"
+            )
 
             achievements = (
                 db.query(Achievement)
@@ -380,7 +376,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -598,7 +594,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -644,7 +640,9 @@ class AchievementServiceClass:
                     detail="Achievement record not found or does not belong to this user.",
                 )
 
-            logger.info(f"Achievement record found, proceeding with update for {achievementId}")
+            logger.info(
+                f"Achievement record found, proceeding with update for {achievementId}"
+            )
 
             logger.info(f"Updating achievement record fields for {achievementId}")
             updated_fields = {}
@@ -841,7 +839,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+            user_profile = get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
