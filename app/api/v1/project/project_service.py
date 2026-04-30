@@ -104,6 +104,19 @@ class ProjectServiceClass:
                 f"Creating new project for user: {userId}",
                 extra={"userId": userId, "profileId": str(user_profile.id)},
             )
+
+            numberOfProjects = (
+                db.query(Project.profileId == user_profile.id).all().count()
+            )
+            if numberOfProjects > 5:
+                logger.warning(
+                    f"Project creation failed: Cant have more than 5 Projects. Choose only the best project.",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Project creation failed: Cant have more than 5 Projects. Choose only the best project.",
+                )
             project = Project(
                 title=payload.title,
                 description=payload.description,
