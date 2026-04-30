@@ -1,0 +1,7 @@
+from app.utils.redis_keys import REDIS_URL
+from redis.asyncio import Redis
+
+
+async def init_redis():
+    global redis
+    redis = Redis.from_url(REDIS_URL, decode_responses=True)
