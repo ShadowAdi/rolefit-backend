@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-
+from fastapi import HTTPException, status
 from app.models.Profile import Profile
 from app.models.Experience import Experience
 from app.models.Academic import Academic
@@ -8,6 +8,21 @@ from app.models.Project import Project
 from app.models.Publication import Publication
 from app.models.Skill import Skill
 from app.models.Tool import Tool
+from app.core.logger import logger
+
+
+def get_user_profile(db: Session, userId: str) -> Profile:
+    user_profile = db.query(Profile).filter(Profile.userId == userId).first()
+
+    if not user_profile:
+        logger.warning(
+            f"Academic creation failed: User profile not found",
+            extra={"userId": userId},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile does not exist. Please create a profile before adding academic records.",
+        )
 
 
 def _save_profile(db: Session, user_id: str, resume_url: str, data: dict) -> Profile:

@@ -8,11 +8,11 @@ from app.schema.Academic import AcademicCreateRequest, AcademicUpdateRequest
 from app.response.academic_responses import (
     AcademicCreateResponse,
     AcademicGetResponse,
-    AcademicListResponse,
     AcademicUpdateResponse,
 )
 from app.core.logger import logger
 from app.validators.academic_validators import AcademicValidator
+from app.helpers.db_helpers import get_user_profile
 
 
 class AcademicServiceClass:
@@ -99,17 +99,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
-
-            if not user_profile:
-                logger.warning(
-                    f"Academic creation failed: User profile not found",
-                    extra={"userId": userId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User profile does not exist. Please create a profile before adding academic records.",
-                )
+            user_profile = get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -244,17 +234,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
-
-            if not user_profile:
-                logger.warning(
-                    f"Academic retrieval failed: User profile not found",
-                    extra={"userId": userId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User profile does not exist. Please create a profile first.",
-                )
+            user_profile = get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -375,17 +355,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
-
-            if not user_profile:
-                logger.warning(
-                    f"Academic retrieval failed: User profile not found",
-                    extra={"userId": userId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User profile does not exist. Please create a profile first.",
-                )
+            user_profile = get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -589,17 +559,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
-
-            if not user_profile:
-                logger.warning(
-                    f"Academic update failed: User profile not found",
-                    extra={"userId": userId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User profile does not exist. Please create a profile first.",
-                )
+            user_profile = get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -830,17 +790,8 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = db.query(Profile).filter(Profile.userId == userId).first()
 
-            if not user_profile:
-                logger.warning(
-                    f"Academic deletion failed: User profile not found",
-                    extra={"userId": userId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User profile does not exist.",
-                )
+            user_profile = get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
