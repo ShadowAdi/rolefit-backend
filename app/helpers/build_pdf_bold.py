@@ -11,24 +11,14 @@ from reportlab.platypus import (
 )
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.colors import HexColor
-from app.core.resume_colors import (
-    BOLD_BG,
-    BOLD_WHITE,
-    BOLD_ACCENT,
-    BOLD_DARK,
-    BOLD_SUBTEXT,
-    BOLD_RULE,
-)
+from reportlab.lib.enums import TA_RIGHT
+from reportlab.lib.styles import ParagraphStyle
 from app.utils.style.build_styles_bold import build_styles_bold
 from .build_pdf import _format_header_links
 from app.utils.style.build_styles_bold import (
     build_styles_bold,
     _apply_bold,
     section_header_bold,
-    BoldHeaderBlock,
 )
 
 
@@ -36,7 +26,6 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
     buff = io.BytesIO()
     M = 0.48 * inch
 
-    # Default pattern: no bold highlighting if not provided
     if bold_pattern is None:
         bold_pattern = re.compile(r"(?!)")  # Pattern that matches nothing
 
@@ -60,7 +49,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
             contact_parts.append(field.replace("&", "&amp;"))
 
     if h.links:
-        link_str = _format_header_links(h.links, accent_hex="#c0c8f0")
+        link_str = _format_header_links(h.links, accent_hex="#1c1c1c")
         if link_str:
             contact_parts.append(link_str)
 

@@ -46,7 +46,7 @@ def build_styles_bold() -> dict:
         "name": s(
             "bold_name",
             fontName="Helvetica-Bold",
-            fontSize=24,
+            fontSize=20,
             leading=28,
             textColor=BOLD_DARK,
             alignment=TA_CENTER,
