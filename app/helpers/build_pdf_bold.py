@@ -88,7 +88,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 Paragraph(grp.category + ":", styles["skill_category"]),
                 Paragraph(", ".join(grp.items), styles["skill_items"]),
             ]
-            t = Table([row], colWidths=[1.65 * inch, 5.60 * inch])
+            t = Table([row], colWidths=[1.90 * inch, 5.60 * inch])
             t.setStyle(
                 TableStyle(
                     [
