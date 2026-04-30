@@ -6,19 +6,17 @@ from reportlab.platypus import (
     Spacer,
     Table,
     TableStyle,
-    Flowable,
-    HRFlowable,
 )
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
-from app.utils.style.build_styles_bold import build_styles_bold
 from .build_pdf import _format_header_links, _render_project_links
 from app.utils.style.build_styles_bold import (
     build_styles_bold,
-    _apply_bold,
+    BoldHeaderBlock,  # ← full dark header block, not section header
     section_header_bold,
+    _apply_bold,
 )
 
 
@@ -34,40 +32,36 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
         pagesize=letter,
         leftMargin=M,
         rightMargin=M,
-        topMargin=0.0 * inch,
+        topMargin=0.0 * inch,  # header block bleeds to top edge
         bottomMargin=0.40 * inch,
     )
 
     styles = build_styles_bold()
     story = []
 
+    # ── Dark navy header block (name + title + contact in white) ──────────
     h = data.header
     contact_parts = []
-
     for field in [h.email, h.phone, h.location]:
         if field:
             contact_parts.append(field.replace("&", "&amp;"))
-
     if h.links:
-        link_str = _format_header_links(h.links, accent_hex="#1c1c1c")
+        link_str = _format_header_links(h.links, accent_hex="#c0c8f0")
         if link_str:
             contact_parts.append(link_str)
 
-    story.append(Paragraph(h.name, styles["name"]))
-    if h.title:
-        story.append(Paragraph(h.title, styles["title"]))
-
-    if contact_parts:
-        story.append(Paragraph(" | ".join(contact_parts), styles["contact"]))
-
+    contact_markup = " | ".join(contact_parts)
+    story.append(BoldHeaderBlock(h.name, h.title or "", contact_markup, styles))
     story.append(Spacer(1, 8))
 
+    # ── Summary ───────────────────────────────────────────────────────────
     if data.summary:
         story += section_header_bold("Summary", styles)
         story.append(
             Paragraph(_apply_bold(data.summary, bold_pattern), styles["summary"])
         )
 
+    # ── Skills ────────────────────────────────────────────────────────────
     if data.skills:
         story += section_header_bold("Skills & Technologies", styles)
         for grp in data.skills:
@@ -89,6 +83,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
             )
             story.append(t)
 
+    # ── Experience ────────────────────────────────────────────────────────
     if data.experience:
         story += section_header_bold("Professional Experience", styles)
         for exp in data.experience:
@@ -129,6 +124,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                     Paragraph(f"• {_apply_bold(b, bold_pattern)}", styles["bullet"])
                 )
 
+    # ── Projects ──────────────────────────────────────────────────────────
     if data.projects:
         story += section_header_bold("Projects", styles)
         for proj in data.projects:
@@ -162,6 +158,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 )
             story.append(Spacer(1, 3))
 
+    # ── Achievements ──────────────────────────────────────────────────────
     if data.achievements:
         story += section_header_bold("Achievements & Certifications", styles)
         for ach in data.achievements:
@@ -169,6 +166,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 Paragraph(f"• {_apply_bold(ach, bold_pattern)}", styles["bullet"])
             )
 
+    # ── Publications ──────────────────────────────────────────────────────
     if data.publications:
         story += section_header_bold("Publications", styles)
         for pub in data.publications:
@@ -181,6 +179,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 Paragraph(f"• {_apply_bold(line, bold_pattern)}", styles["pub"])
             )
 
+    # ── Education ─────────────────────────────────────────────────────────
     if data.education:
         story += section_header_bold("Education", styles)
         for edu in data.education:

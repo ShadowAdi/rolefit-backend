@@ -24,10 +24,15 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
     M = 0.55 * inch
 
     if minimal_pattern is None:
-        minimal_pattern = re.compile(r"(?!)")  # Pattern that matches nothing
+        minimal_pattern = re.compile(r"(?!)")
 
     doc = SimpleDocTemplate(
-        buff, pagesize=letter, leftMargin=M, rightMargin=M, topMargin=0.50 * inch
+        buff,
+        pagesize=letter,
+        leftMargin=M,
+        rightMargin=M,
+        topMargin=0.50 * inch,
+        bottomMargin=0.45 * inch,
     )
 
     styles = build_styles_minimalist()
@@ -35,20 +40,20 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
 
     h = data.header
 
+    # Name + title LEFT-aligned (styles enforce TA_LEFT)
     story.append(Paragraph(h.name, styles["name"]))
     if h.title:
         story.append(Paragraph(h.title, styles["title"]))
 
+    # Contact LEFT-aligned, separated by · (not |)
     contact_parts = []
     for field in [h.email, h.phone, h.location]:
         if field:
             contact_parts.append(field.replace("&", "&amp;"))
-
     if h.links:
         link_str = _format_header_links(h.links, accent_hex="#2d2d2d")
         if link_str:
             contact_parts.append(link_str)
-
     if contact_parts:
         story.append(Paragraph("  ·  ".join(contact_parts), styles["contact"]))
 
@@ -67,7 +72,7 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
                 Paragraph(grp.category + ":", styles["skill_category"]),
                 Paragraph(", ".join(grp.items), styles["skill_items"]),
             ]
-            t = Table([row], colWidths=[1.70 * inch, 5.55 * inch])
+            t = Table([row], colWidths=[1.70 * inch, 5.45 * inch])
             t.setStyle(
                 TableStyle(
                     [
@@ -92,7 +97,6 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
                 f"<font color='#888888' size='9'>{emp_display}</font>",
                 styles["role"],
             )
-
             header_row = [
                 role_para,
                 Paragraph(
@@ -106,7 +110,6 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
                 ),
             ]
             t = Table([header_row], colWidths=[4.5 * inch, 3.0 * inch])
-
             t.setStyle(
                 TableStyle(
                     [
@@ -115,7 +118,6 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
                     ]
                 )
             )
-
             story.append(t)
             for b in exp.bullets:
                 story.append(
@@ -124,9 +126,11 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
 
     if data.projects:
         story += section_header_minimalist("Projects", styles)
-        link_para = _render_project_links(proj.links, styles["company_meta"])
         for proj in data.projects:
+            # ← link_para is INSIDE the loop (was outside = NameError crash)
+            link_para = _render_project_links(proj.links, styles["company_meta"])
             story.append(Paragraph(proj.title, styles["role"]))
+
             if proj.tech and link_para:
                 row = [
                     Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]),

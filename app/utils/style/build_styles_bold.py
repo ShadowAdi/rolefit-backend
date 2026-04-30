@@ -1,17 +1,6 @@
-import io
 import re
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-    Flowable,
-    HRFlowable,
-)
-from reportlab.lib.units import inch
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
+from reportlab.platypus import Flowable, Paragraph
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.colors import HexColor
 from app.core.resume_colors import (
@@ -43,19 +32,20 @@ def build_styles_bold() -> dict:
         return ParagraphStyle(name=name, parent=base["Normal"], **defaults)
 
     return {
+        # These render ON the dark navy header block → must be white/light
         "name": s(
             "bold_name",
             fontName="Helvetica-Bold",
-            fontSize=20,
+            fontSize=24,
             leading=28,
-            textColor=BOLD_DARK,
+            textColor=BOLD_WHITE,  # white on dark bg
             alignment=TA_CENTER,
             spaceAfter=2,
         ),
         "title": s(
             "bold_title",
             fontSize=11,
-            textColor=HexColor("#1c1c1c"),
+            textColor=HexColor("#c0c8f0"),  # soft lavender on dark bg
             alignment=TA_CENTER,
             spaceAfter=3,
         ),
@@ -63,10 +53,11 @@ def build_styles_bold() -> dict:
             "bold_contact",
             fontSize=8.5,
             leading=11,
-            textColor=HexColor("#1c1c1c"),
+            textColor=HexColor("#aab0cc"),  # muted light on dark bg
             alignment=TA_CENTER,
             spaceAfter=0,
         ),
+        # Body styles (on white background)
         "role": s(
             "bold_role",
             fontName="Helvetica-Bold",
@@ -94,7 +85,7 @@ def build_styles_bold() -> dict:
             fontName="Helvetica-Bold",
             fontSize=9.5,
             leading=11,
-            textColor=BOLD_ACCENT,
+            textColor=BOLD_ACCENT,  # accent colour on category labels
         ),
         "skill_items": s("bold_skill_items", fontSize=8.5, leading=11),
         "summary": s("bold_summary", fontSize=9.5, leading=13, spaceAfter=4),
@@ -118,6 +109,70 @@ def build_styles_bold() -> dict:
 
 
 class BoldHeaderBlock(Flowable):
+    """
+    Full-width dark navy rectangle that replaces the plain text header.
+    Renders name, title, and contact centred in white/light text ON the block.
+
+    Fixes from original:
+      - super().__init__()  was missing ()  → never initialized properly
+      - Paragraphs are measured to get real height instead of hardcoded 80pt
+    """
+
+    PAD_V = 14  # top + bottom inner padding
+    PAD_H = 12  # left + right inner padding
+
+    def __init__(self, name: str, title: str, contact_markup: str, styles: dict):
+        super().__init__()  # ← () required — was missing in original
+        self.name_text = name
+        self.title_text = title
+        self.contact_text = contact_markup
+        self.styles = styles
+
+    def wrap(self, aw, ah):
+        self._width = aw
+        inner_w = aw - 2 * self.PAD_H
+        self._paras = []
+
+        self._paras.append(Paragraph(self.name_text, self.styles["name"]))
+        if self.title_text:
+            self._paras.append(Paragraph(self.title_text, self.styles["title"]))
+        if self.contact_text:
+            self._paras.append(Paragraph(self.contact_text, self.styles["contact"]))
+
+        total_h = self.PAD_V
+        for p in self._paras:
+            _, h = p.wrap(inner_w, 9999)
+            total_h += h + 2
+        total_h += self.PAD_V
+        self._height = total_h
+        return aw, self._height
+
+    def draw(self):
+        c = self.canv
+        # Dark navy background — full width
+        c.setFillColor(BOLD_BG)
+        c.rect(0, 0, self._width, self._height, fill=1, stroke=0)
+
+        inner_w = self._width - 2 * self.PAD_H
+        y = self._height - self.PAD_V
+        for p in self._paras:
+            _, h = p.wrap(inner_w, 9999)
+            y -= h
+            p.drawOn(c, self.PAD_H, y)
+            y -= 2
+
+
+class BoldSectionHeader(Flowable):
+    """
+    Left accent bar (3pt wide, BOLD_ACCENT) + BOLD UPPERCASE label.
+    Thin BOLD_RULE line runs full width below.
+
+    Fixes from original build_styles_bold.py:
+      - Class was named BoldHeaderBlock (same name as header block) — renamed
+      - BAR_W | BAR_GAP was bitwise OR → fixed to BAR_W + BAR_GAP
+      - super().__init__ missing () → fixed
+    """
+
     FONT = "Helvetica-Bold"
     FONT_SIZE = 9.5
     BAR_W = 3
@@ -127,7 +182,7 @@ class BoldHeaderBlock(Flowable):
     SPACE_AFTER = 5
 
     def __init__(self, text: str):
-        super().__init__
+        super().__init__()  # ← () required
         self.text = text.upper()
         self._height = (
             self.SPACE_BEFORE + self.FONT_SIZE + 4 + self.RULE_T + self.SPACE_AFTER
@@ -139,22 +194,27 @@ class BoldHeaderBlock(Flowable):
 
     def draw(self):
         c = self.canv
+
         bar_top = self.SPACE_AFTER + self.RULE_T + 1
         bar_bottom = bar_top + self.FONT_SIZE + 2
+
+        # Left accent bar
         c.setFillColor(BOLD_ACCENT)
         c.rect(0, bar_top, self.BAR_W, bar_bottom - bar_top, fill=1, stroke=0)
 
+        # Label — offset past bar
         c.setFont(self.FONT, self.FONT_SIZE)
         c.setFillColor(BOLD_DARK)
-        c.drawString(self.BAR_W | self.BAR_GAP, bar_top + 1, self.text)
+        c.drawString(self.BAR_W + self.BAR_GAP, bar_top + 1, self.text)  # + not |
 
+        # Thin rule across full width
         c.setStrokeColor(BOLD_RULE)
         c.setLineWidth(self.RULE_T)
         c.line(0, self.SPACE_AFTER, self._width, self.SPACE_AFTER)
 
 
 def section_header_bold(text: str, styles: dict) -> list:
-    return [BoldHeaderBlock(text)]
+    return [BoldSectionHeader(text)]
 
 
 _BASE_BOLD = re.compile(
