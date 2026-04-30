@@ -21,8 +21,6 @@ from groq import Groq
 
 
 def _extract_clean_json(text: str) -> dict:
-    print(f"AI OUTPUT: {text}")
-
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
     text = re.sub(r"^```(?:json)?\s*", "", text).strip()
