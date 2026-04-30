@@ -23,7 +23,7 @@ AchievementService = AchievementServiceClass()
     response_model=AchievementCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_achievement(
+async def create_achievement(
     data: AchievementCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -85,7 +85,7 @@ def create_achievement(
     response_model=List[AchievementGetResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_achievements(
+async def list_achievements(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -144,7 +144,7 @@ def list_achievements(
     response_model=AchievementGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_achievement(
+async def get_achievement(
     achievementId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -210,7 +210,7 @@ def get_achievement(
     response_model=AchievementUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_achievement(
+async def update_achievement(
     achievementId: str,
     data: AchievementUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -280,7 +280,7 @@ def update_achievement(
     "/{achievementId}",
     status_code=status.HTTP_200_OK,
 )
-def delete_achievement(
+async def delete_achievement(
     achievementId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

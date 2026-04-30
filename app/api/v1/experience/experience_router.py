@@ -23,7 +23,7 @@ ExperienceService = ExperienceServiceClass()
     response_model=ExperienceCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_experience(
+async def create_experience(
     data: ExperienceCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -82,7 +82,7 @@ def create_experience(
     response_model=List[ExperienceGetResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_experiences(
+async def list_experiences(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -138,7 +138,7 @@ def list_experiences(
     response_model=ExperienceGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_experience(
+async def get_experience(
     experienceId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -201,7 +201,7 @@ def get_experience(
     response_model=ExperienceUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_experience(
+async def update_experience(
     experienceId: str,
     data: ExperienceUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -265,7 +265,7 @@ def update_experience(
     "/{experienceId}",
     status_code=status.HTTP_200_OK,
 )
-def delete_experience(
+async def delete_experience(
     experienceId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

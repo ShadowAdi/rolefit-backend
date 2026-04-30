@@ -25,7 +25,7 @@ router = APIRouter(prefix="", tags=["Project"])
     response_model=ProjectCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_project(
+async def create_project(
     data: ProjectCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -84,7 +84,7 @@ def create_project(
     response_model=List[ProjectListResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_projects(
+async def list_projects(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -138,7 +138,7 @@ def list_projects(
     response_model=ProjectGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_project(
+async def get_project(
     projectId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -201,7 +201,7 @@ def get_project(
     response_model=ProjectUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_project(
+async def update_project(
     projectId: str,
     data: ProjectUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -265,7 +265,7 @@ def update_project(
     "/{projectId}",
     status_code=status.HTTP_200_OK,
 )
-def delete_project(
+async def delete_project(
     projectId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

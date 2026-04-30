@@ -49,7 +49,7 @@ def register(data: UserCreateRequest, db: Session = Depends(get_db)):
     response_model=GetUserApiResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_my_profile(
+async def get_my_profile(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -78,7 +78,7 @@ def get_my_profile(
     response_model=DeleteUserApiResponse,
     status_code=status.HTTP_200_OK,
 )
-def delete_my_profile(
+async def delete_my_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

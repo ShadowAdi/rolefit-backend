@@ -28,7 +28,7 @@ ToolService = ToolServiceClass()
     response_model=ToolCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_tool(
+async def create_tool(
     data: ToolCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -88,7 +88,7 @@ def create_tool(
     response_model=List[ToolListResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_tools(
+async def list_tools(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -145,7 +145,7 @@ def list_tools(
     response_model=ToolGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_tool(
+async def get_tool(
     toolId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -209,7 +209,7 @@ def get_tool(
     response_model=ToolUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_tool(
+async def update_tool(
     toolId: str,
     data: ToolUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -279,7 +279,7 @@ def update_tool(
     "/{toolId}",
     status_code=status.HTTP_200_OK,
 )
-def delete_tool(
+async def delete_tool(
     toolId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -341,7 +341,7 @@ def delete_tool(
     "/user/add",
     status_code=status.HTTP_200_OK,
 )
-def add_tool_to_user(
+async def add_tool_to_user(
     data: AddToolToUserRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -410,7 +410,7 @@ def add_tool_to_user(
     "/user/remove/{toolId}",
     status_code=status.HTTP_200_OK,
 )
-def remove_tool_from_user(
+async def remove_tool_from_user(
     toolId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

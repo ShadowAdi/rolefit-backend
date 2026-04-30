@@ -23,7 +23,7 @@ AcademicService = AcademicServiceClass()
     response_model=AcademicCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_academic(
+async def create_academic(
     data: AcademicCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -82,7 +82,7 @@ def create_academic(
     response_model=List[AcademicGetResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_academics(
+async def list_academics(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -136,7 +136,7 @@ def list_academics(
     response_model=AcademicGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_academic(
+async def get_academic(
     academicId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -199,7 +199,7 @@ def get_academic(
     response_model=AcademicUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_academic(
+async def update_academic(
     academicId: str,
     data: AcademicUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -263,7 +263,7 @@ def update_academic(
     "/{academicId}",
     status_code=status.HTTP_200_OK,
 )
-def delete_academic(
+async def delete_academic(
     academicId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

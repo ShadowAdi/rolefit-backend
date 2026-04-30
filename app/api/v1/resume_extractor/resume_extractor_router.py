@@ -17,7 +17,7 @@ ResumeExtractorService = ResumeExtractorServiceClass()
     response_model=ResumeExtractorResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def resume_extractor(
+async def resume_extractor(
     resume_url: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

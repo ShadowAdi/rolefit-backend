@@ -28,7 +28,7 @@ SkillService = SkillServiceClass()
     response_model=SkillCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_skill(
+async def create_skill(
     data: SkillCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -90,7 +90,7 @@ def create_skill(
     response_model=List[SkillListResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_skills(
+async def list_skills(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -147,7 +147,7 @@ def list_skills(
     response_model=SkillGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_skill(
+async def get_skill(
     skillId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -211,7 +211,7 @@ def get_skill(
     response_model=SkillUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_skill(
+async def update_skill(
     skillId: str,
     data: SkillUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -281,7 +281,7 @@ def update_skill(
     "/{skillId}",
     status_code=status.HTTP_200_OK,
 )
-def delete_skill(
+async def delete_skill(
     skillId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -343,7 +343,7 @@ def delete_skill(
     "/user/add",
     status_code=status.HTTP_200_OK,
 )
-def add_skill_to_user(
+async def add_skill_to_user(
     data: AddSkillToUserRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -412,7 +412,7 @@ def add_skill_to_user(
     "/user/remove/{skillId}",
     status_code=status.HTTP_200_OK,
 )
-def remove_skill_from_user(
+async def remove_skill_from_user(
     skillId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

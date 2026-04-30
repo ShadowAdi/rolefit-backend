@@ -26,7 +26,7 @@ PublicationService = PublicationServiceClass()
     response_model=PublicationCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_publication(
+async def create_publication(
     data: PublicationCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -88,7 +88,7 @@ def create_publication(
     response_model=List[PublicationGetResponse],
     status_code=status.HTTP_200_OK,
 )
-def list_publications(
+async def list_publications(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -147,7 +147,7 @@ def list_publications(
     response_model=PublicationGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_publication(
+async def get_publication(
     publicationId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -213,7 +213,7 @@ def get_publication(
     response_model=PublicationUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_publication(
+async def update_publication(
     publicationId: str,
     data: PublicationUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -283,7 +283,7 @@ def update_publication(
     "/{publicationId}",
     status_code=status.HTTP_200_OK,
 )
-def delete_publication(
+async def delete_publication(
     publicationId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

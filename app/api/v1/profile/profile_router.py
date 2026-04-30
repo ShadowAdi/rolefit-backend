@@ -25,7 +25,7 @@ service = ProfileServiceClass()
     response_model=ProfileCreateResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_profile(
+async def create_profile(
     data: ProfileCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -84,7 +84,7 @@ def create_profile(
     response_model=ProfileGetResponse,
     status_code=status.HTTP_200_OK,
 )
-def get_profile(
+async def get_profile(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
@@ -138,7 +138,7 @@ def get_profile(
     response_model=ProfileUpdateResponse,
     status_code=status.HTTP_200_OK,
 )
-def update_profile(
+async def update_profile(
     data: ProfileUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -197,7 +197,7 @@ def update_profile(
     response_model=ProfileDeleteResponse,
     status_code=status.HTTP_200_OK,
 )
-def delete_profile(
+async def delete_profile(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
