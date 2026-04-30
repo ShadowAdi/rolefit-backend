@@ -1,3 +1,13 @@
+"""
+build_pdf_bold.py  —  "Bold / Accent-bar" template builder
+────────────────────────────────────────────────────────────
+Key structural difference from Classic:
+  • Header is a TWO-COLUMN Table: name (left, large) | title + contact (right, small)
+  • Section labels have a red-pink left accent bar + thin rule below
+  • Skill category labels are red-pink coloured
+  • topMargin slightly larger (0.45in) — cleaner breathing room at top
+"""
+
 import io
 import re
 from reportlab.platypus import (
@@ -14,15 +24,15 @@ from reportlab.lib.styles import ParagraphStyle
 from .build_pdf import _format_header_links, _render_project_links
 from app.utils.style.build_styles_bold import (
     build_styles_bold,
-    BoldHeaderBlock,  # ← full dark header block, not section header
     section_header_bold,
     _apply_bold,
+    BOLD_ACCENT,
 )
 
 
 def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
     buff = io.BytesIO()
-    M = 0.48 * inch
+    M = 0.50 * inch
 
     if bold_pattern is None:
         bold_pattern = re.compile(r"(?!)")
@@ -32,27 +42,65 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
         pagesize=letter,
         leftMargin=M,
         rightMargin=M,
-        topMargin=0.0 * inch,  # header block bleeds to top edge
+        topMargin=0.45 * inch,
         bottomMargin=0.40 * inch,
     )
 
     styles = build_styles_bold()
     story = []
 
-    # ── Dark navy header block (name + title + contact in white) ──────────
+    # ── Header: name LEFT | title + contact RIGHT ─────────────────────────
     h = data.header
+
     contact_parts = []
     for field in [h.email, h.phone, h.location]:
         if field:
             contact_parts.append(field.replace("&", "&amp;"))
     if h.links:
-        link_str = _format_header_links(h.links, accent_hex="#c0c8f0")
+        link_str = _format_header_links(h.links, accent_hex="#e8445a")
         if link_str:
             contact_parts.append(link_str)
 
-    contact_markup = " | ".join(contact_parts)
-    story.append(BoldHeaderBlock(h.name, h.title or "", contact_markup, styles))
-    story.append(Spacer(1, 8))
+    right_col = []
+    if h.title:
+        right_col.append(Paragraph(h.title, styles["title"]))
+    if contact_parts:
+        right_col.append(Paragraph(" | ".join(contact_parts), styles["contact"]))
+
+    # Pad right column with spacer if only one line
+    if len(right_col) == 1:
+        right_col.insert(0, Spacer(1, 14))
+
+    from reportlab.platypus import KeepTogether
+
+    header_table = Table(
+        [[Paragraph(h.name, styles["name"]), right_col]],
+        colWidths=[3.8 * inch, 3.7 * inch],
+    )
+    header_table.setStyle(
+        TableStyle(
+            [
+                ("VALIGN", (0, 0), (-1, -1), "BOTTOM"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ("TOPPADDING", (0, 0), (-1, -1), 0),
+            ]
+        )
+    )
+    story.append(header_table)
+
+    # Thin divider under header
+    from reportlab.platypus import HRFlowable
+
+    story.append(Spacer(1, 6))
+    story.append(
+        HRFlowable(
+            width="100%",
+            thickness=1.2,
+            color=BOLD_ACCENT,
+            spaceAfter=4,
+            spaceBefore=0,
+        )
+    )
 
     # ── Summary ───────────────────────────────────────────────────────────
     if data.summary:
@@ -71,7 +119,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 Paragraph(grp.category + ":", styles["skill_category"]),
                 Paragraph(", ".join(grp.items), styles["skill_items"]),
             ]
-            t = Table([row], colWidths=[1.90 * inch, 5.60 * inch])
+            t = Table([row], colWidths=[1.75 * inch, 5.55 * inch])
             t.setStyle(
                 TableStyle(
                     [
@@ -105,7 +153,7 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                         "bold_date",
                         parent=styles["company_meta"],
                         alignment=TA_RIGHT,
-                        fontSize=9.5,
+                        fontSize=9,
                     ),
                 ),
             ]
@@ -130,7 +178,6 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
         for proj in data.projects:
             story.append(Paragraph(proj.title, styles["role"]))
             link_para = _render_project_links(proj.links, styles["company_meta"])
-
             if proj.tech and link_para:
                 row = [
                     Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]),
@@ -151,7 +198,6 @@ def build_pdf_bold(data, bold_pattern: re.Pattern = None) -> bytes:
                 story.append(Paragraph(f"Tech: {proj.tech}", styles["proj_tech"]))
             elif link_para:
                 story.append(link_para)
-
             for b in proj.bullets:
                 story.append(
                     Paragraph(f"• {_apply_bold(b, bold_pattern)}", styles["bullet"])
