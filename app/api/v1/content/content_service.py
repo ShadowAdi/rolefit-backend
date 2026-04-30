@@ -23,20 +23,16 @@ from groq import Groq
 def _extract_clean_json(text: str) -> dict:
     print(f"AI OUTPUT: {text}")
 
-    # Strip <think> blocks (reasoning models)
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
-    # Strip markdown fences
     text = re.sub(r"^```(?:json)?\s*", "", text).strip()
     text = re.sub(r"\s*```$", "", text).strip()
 
-    # Try direct parse
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
 
-    # Fallback: find first {...} block
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if match:
         try:
