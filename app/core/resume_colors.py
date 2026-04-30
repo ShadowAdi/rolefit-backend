@@ -8,7 +8,7 @@ WHITE = colors.white
 
 MINI_BLACK = colors.HexColor("#1e1e1e")
 MINI_ACCENT = colors.HexColor("#2d2d2d")  # near-black — no colour, just weight
-MINI_SUBTEXT = colors.HexColor("#888888")
+MINI_SUBTEXT = colors.HexColor("#1c1c1c")
 MINI_RULE = colors.HexColor("#e0e0e0")  # very light rule
 
 BOLD_BG = colors.HexColor("#1b1f3b")  # dark navy header background
