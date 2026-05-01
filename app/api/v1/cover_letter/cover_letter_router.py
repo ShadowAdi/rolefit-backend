@@ -2,23 +2,27 @@ import json
 import base64
 import io
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 
 from sqlalchemy.orm import Session
+
+from typing import Literal
+
 
 from app.dependency.dependencies import get_db, get_current_user
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.schema.CoverLetterData import CoverLetterData
 from app.helpers.buid_cover_letter_pdf import build_cover_letter_pdf
-from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
+from app.helpers.build_cover_letter_bold import build_cover_letter_pdf_bold
+from app.helpers.build_cover_letter_minimal import build_cover_letter_pdf_minimal
+from app.helpers.redis_cache_helpers import get_cache, set_cache
 from app.core.logger import logger
 
 router = APIRouter(prefix="", tags=["Cover letter PDF"])
 
 
 async def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
-    # Try cache first - only store userId for ownership verification (safe & lightweight)
     cache_key = f"doc-owner-{docId}"
     cached_owner = await get_cache(cache_key)
     if cached_owner:
@@ -29,7 +33,6 @@ async def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDo
                 detail="You do not have access to this document.",
             )
 
-    # Always fetch fresh doc from DB (ensures latest data, avoids ORM serialization issues)
     doc = db.query(GeneratedDocumment).filter(GeneratedDocumment.id == docId).first()
     if not doc:
         raise HTTPException(
@@ -43,7 +46,6 @@ async def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDo
             detail="You do not have access to this document.",
         )
 
-    # Cache only ownership metadata - safe, lightweight JSON (1 hour)
     await set_cache(cache_key, json.dumps({"userId": str(doc.userId)}), ttl=3600)
 
     return doc
@@ -52,7 +54,6 @@ async def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDo
 async def _parse_cover_letter_text(
     cover_letter_text: str, docId: str
 ) -> CoverLetterData:
-    # Try cache first
     cache_key = f"cover-letter-parsed-{docId}"
     cached_cover_letter = await get_cache(cache_key)
     if cached_cover_letter:
@@ -61,7 +62,6 @@ async def _parse_cover_letter_text(
     try:
         raw = cover_letter_text.strip()
 
-        # Handle markdown code blocks (```)
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1]).strip()
@@ -69,7 +69,6 @@ async def _parse_cover_letter_text(
         parsed = json.loads(raw)
         cover_letter_data = CoverLetterData(**parsed)
 
-        # Cache the parsed cover letter data (24 hours)
         await set_cache(cache_key, json.dumps(parsed), ttl=86400)
 
         return cover_letter_data
@@ -106,9 +105,10 @@ def _stream_pdf(pdf_bytes: bytes, filename: str, inline: bool) -> StreamingRespo
     )
 
 
-@router.get("/{docId}/download")
+@router.get("/{docId}/{cover_letter_type}/download")
 async def download_cover_letter_pdf(
     docId: str,
+    cover_letter_type: Literal["classic", "bold", "minimal"] = Query(default="classic"),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -119,7 +119,6 @@ async def download_cover_letter_pdf(
     doc = await _get_verified_doc(docId, user_id, db)
     cover_letter_data = await _parse_cover_letter_text(doc.cover_letter_text, docId)
 
-    # Try cache first for PDF bytes
     pdf_cache_key = f"cover-letter-pdf-{docId}"
     cached_pdf = await get_cache(pdf_cache_key)
     if cached_pdf:
@@ -127,7 +126,13 @@ async def download_cover_letter_pdf(
         pdf_bytes = base64.b64decode(cached_pdf)
     else:
         try:
-            pdf_bytes = build_cover_letter_pdf(cover_letter_data)
+            if cover_letter_type == "minimalist":
+                pdf_bytes = build_cover_letter_pdf_minimal(cover_letter_data)
+            elif cover_letter_type == "bold":
+                pdf_bytes = build_cover_letter_pdf_bold(cover_letter_data)
+            else:
+                pdf_bytes = build_cover_letter_pdf(cover_letter_data)
+
         except Exception as e:
             logger.error(
                 f"Cover letter build failed for doc={docId}: {e}", exc_info=True
