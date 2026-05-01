@@ -252,7 +252,13 @@ class JobDescriptionClass:
             )
 
             response = format_job_description_response(jd)
-            await set_cache(cache_key, json.dumps(response), ttl=3600)
+            # Convert Pydantic model to dict for JSON serialization
+            response_dict = (
+                response.model_dump()
+                if hasattr(response, "model_dump")
+                else response.dict()
+            )
+            await set_cache(cache_key, json.dumps(response_dict), ttl=3600)
             return response
 
         except HTTPException:
@@ -321,7 +327,12 @@ class JobDescriptionClass:
             )
 
             response = format_job_descriptions_response(jds)
-            await set_cache(cache_key, json.dumps(response), ttl=3600)
+            # Convert Pydantic models to dicts for JSON serialization
+            response_dicts = [
+                item.model_dump() if hasattr(item, "model_dump") else item.dict()
+                for item in response
+            ]
+            await set_cache(cache_key, json.dumps(response_dicts), ttl=3600)
             return response
 
         except HTTPException:
