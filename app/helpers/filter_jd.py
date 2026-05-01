@@ -1,17 +1,10 @@
-import os
-import requests
-import json
-import re
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException, status
 from uuid import UUID
-from pydantic import ValidationError
 from app.models.JobDescription import JobDescription
 from app.models.User import User
 from app.core.logger import logger
-from app.core.AppError import AppError
-from app.models.Profile import Profile
 from app.models.Experience import Experience
 from app.models.Achievement import Achievement
 from app.models.Project import Project
@@ -22,9 +15,10 @@ from app.models.Academic import Academic
 from app.models.UserSkill import UserSkill
 from app.models.UserTool import UserTool
 from typing import Dict, Any
+from app.helpers.db_helpers import get_user_profile
 
 
-def filter_jd(
+async def filter_jd(
     jobId: str, userId: str, content_type: str, db: Session
 ) -> Dict[str, Any]:
     try:
@@ -58,17 +52,7 @@ def filter_jd(
                 detail="User does not exist",
             )
 
-        user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
-
-        if not user_profile:
-            logger.warning(
-                "User profile not found",
-                extra={"userId": userId},
-            )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User profile does not exist. Please create a profile first before adding projects.",
-            )
+        user_profile = await get_user_profile(db, userId)
 
         jd = (
             db.query(JobDescription)
