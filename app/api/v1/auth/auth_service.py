@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy import func
 from fastapi import HTTPException, status
 from app.models.User import User
 from app.schema.auth import LoginRequest
@@ -45,7 +46,7 @@ class AuthServiceClass:
 
             existing_user = (
                 db.query(User)
-                .filter(User.email.lower().strip() == data.email.lower().strip())
+                .filter(func.lower(User.email) == data.email.lower().strip())
                 .first()
             )
             if not existing_user:
