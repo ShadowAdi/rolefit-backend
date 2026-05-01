@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
 from app.models.User import User
+from app.models.Profile import Profile
 from app.core.logger import logger
 from app.core.AppError import AppError
 from urllib.parse import urlparse
@@ -75,6 +76,19 @@ class ResumeExtractorServiceClass:
             logger.info(
                 f"Groq AI data processed for user {userId}", extra={"userId": userId}
             )
+
+            existing_profile = (
+                db.query(Profile).filter(Profile.userId == userId).first()
+            )
+            if existing_profile:
+                logger.warning(
+                    f"Profile already exists for user {userId}",
+                    extra={"userId": userId, "profileId": str(existing_profile.id)},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Profile already exists for this user. Please update the existing profile or contact support.",
+                )
 
             profile = _save_profile(db, userId, resume_url.strip(), groq_data)
 
