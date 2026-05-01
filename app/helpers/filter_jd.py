@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from fastapi import HTTPException, status,ValidationError
+from fastapi import HTTPException, status
+from pydantic import ValidationError
 from uuid import UUID
 import json
 from app.models.JobDescription import JobDescription
