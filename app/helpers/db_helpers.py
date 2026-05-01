@@ -1,3 +1,6 @@
+import json
+import uuid
+import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.Profile import Profile
@@ -9,9 +12,29 @@ from app.models.Publication import Publication
 from app.models.Skill import Skill
 from app.models.Tool import Tool
 from app.core.logger import logger
+from app.helpers.redis_cache_helpers import get_cache, set_cache
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm.session import make_transient
 
 
-def get_user_profile(db: Session, userId: str) -> Profile:
+async def get_user_profile(db: Session, userId: str) -> Profile:
+    cached_profile_key = f"authenticated-profile-{userId}"
+    cached_profile = get_cache(cached_profile_key)
+
+    if cached_profile:
+        logger.debug(f"User retrieved from cache: {userId}")
+        user_data = json.loads(cached_profile)
+
+        user_data["id"] = uuid.UUID(str(user_data["id"]))
+
+        for field in ("created_at", "updated_at"):
+            if isinstance(user_data.get(field), str):
+                user_data[field] = datetime.datetime.fromisoformat(user_data[field])
+
+        profile = Profile(**user_data)
+        make_transient(profile)
+        return profile
+
     user_profile = db.query(Profile).filter(Profile.userId == userId).first()
 
     if not user_profile:
@@ -23,9 +46,13 @@ def get_user_profile(db: Session, userId: str) -> Profile:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User profile does not exist. Please create a profile before adding any records.",
         )
+    profile_data = jsonable_encoder(user_profile)
+    await set_cache(cached_profile_key, json.dumps(profile_data), ttl=900)
+    return user_profile
 
 
 def _save_profile(db: Session, user_id: str, resume_url: str, data: dict) -> Profile:
+
     p = data.get("profile", {})
     links = p.get("links") or {}
 
