@@ -67,7 +67,6 @@ async def _parse_resume_text(resume_text: str, docId: str) -> ResumeData:
         parsed = json.loads(raw)
         resume_data = ResumeData(**parsed)
 
-        # Cache the parsed resume data (24 hours)
         await set_cache(cache_key, json.dumps(parsed), ttl=86400)
 
         return resume_data
@@ -95,16 +94,22 @@ def _stream_pdf(pdf_bytes: bytes, filename: str, inline: bool) -> StreamingRespo
     )
 
 
-@router.get("/{docId}/{resume_type}/download")
+@router.get("/{docId}/download")
 async def download_resume_pdf(
     docId: str,
-    resume_type: str,
+    resume_type: str = "classic",
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Download the resume as a PDF file."""
+    """Download the resume as a PDF file.
+
+    Query Parameters:
+        resume_type: Type of resume template - "classic", "minimalist", "bold", or "two-column" (default: "classic")
+    """
     user_id = str(current_user.id)
-    logger.info(f"PDF download requested | user={user_id} doc={docId}")
+    logger.info(
+        f"PDF download requested | user={user_id} doc={docId} type={resume_type}"
+    )
 
     doc = await _get_verified_doc(docId, user_id, db)
     resume_data = await _parse_resume_text(doc.resume_text, docId)
