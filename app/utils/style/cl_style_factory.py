@@ -1,14 +1,6 @@
 import io
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from app.core.resume_colors import BLACK, ACCENT, SUBTEXT, RULE
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    HRFlowable,
-)
-from reportlab.lib.units import inch
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle
+from app.core.resume_colors import BLACK, ACCENT, SUBTEXT
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 
