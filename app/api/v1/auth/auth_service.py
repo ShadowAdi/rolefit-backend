@@ -26,7 +26,7 @@ class AuthServiceClass:
         """
         try:
             try:
-                UserValidator.validate_email(data.email)
+                UserValidator.validate_email(data.email.lower().strip())
             except ValueError as e:
                 logger.warning(f"Email validation failed: {str(e)}")
                 raise HTTPException(
@@ -43,7 +43,11 @@ class AuthServiceClass:
                     detail=str(e),
                 )
 
-            existing_user = db.query(User).filter(User.email == data.email).first()
+            existing_user = (
+                db.query(User)
+                .filter(User.email.lower().strip() == data.email.lower().strip())
+                .first()
+            )
             if not existing_user:
                 logger.warning(f"User with this email does not exist: {data.email}")
                 raise HTTPException(
