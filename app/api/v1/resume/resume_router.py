@@ -1,5 +1,4 @@
 import json
-import pickle
 import base64
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -23,17 +22,17 @@ router = APIRouter(prefix="", tags=["Resume PDF"])
 
 
 def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
-    cache_key = f"doc-{docId}"
-    cached_doc = get_cache(cache_key)
-    if cached_doc:
-        doc = pickle.loads(base64.b64decode(cached_doc))
-        if str(doc.userId) != str(userId):
+    cache_key = f"doc-owner-{docId}"
+    cached_owner = get_cache(cache_key)
+    if cached_owner:
+        cached_user_id = json.loads(cached_owner).get("userId")
+        if str(cached_user_id) != str(userId):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You do not have access to this document.",
             )
-        return doc
 
+    # Always fetch fresh doc from DB (ensures latest data, avoids ORM serialization issues)
     doc = db.query(GeneratedDocumment).filter(GeneratedDocumment.id == docId).first()
     if not doc:
         raise HTTPException(
@@ -47,9 +46,8 @@ def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocummen
             detail="You do not have access to this document.",
         )
 
-    # Cache the doc object (1 hour)
-    set_cache(cache_key, base64.b64encode(pickle.dumps(doc)).decode(), ttl=3600)
-
+    # Cache only ownership metadata - safe, lightweight JSON (1 hour)
+    set_cache(cache_key, json.dumps({"userId": str(doc.userId)}), ttl=3600)
     return doc
 
 

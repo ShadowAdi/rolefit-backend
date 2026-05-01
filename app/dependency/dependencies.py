@@ -1,6 +1,5 @@
 import json
 import uuid
-import datetime
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -11,7 +10,6 @@ from app.db.db import get_db
 from app.models.User import User
 from app.core.logger import logger
 from app.helpers.redis_cache_helpers import set_cache, get_cache
-from fastapi.encoders import jsonable_encoder
 
 bearer = HTTPBearer()
 
@@ -52,12 +50,10 @@ async def get_current_user(
             logger.debug(f"User retrieved from cache: {user_id}")
             user_data = json.loads(cached_user)
 
-            user_data["id"] = uuid.UUID(str(user_data["id"]))
-            for field in ("created_at", "updated_at"):
-                if isinstance(user_data.get(field), str):
-                    user_data[field] = datetime.datetime.fromisoformat(user_data[field])
-
-            user = User(**user_data)
+            user = User(
+                id=uuid.UUID(str(user_data["id"])),
+                email=user_data["email"],
+            )
             make_transient(user)
             return user
 
@@ -69,8 +65,11 @@ async def get_current_user(
                 detail="User no longer exists",
             )
 
-        user_data = jsonable_encoder(user)
-        await set_cache(cache_key, json.dumps(user_data), 900)
+        cached_data = {
+            "id": str(user.id),
+            "email": user.email,
+        }
+        await set_cache(cache_key, json.dumps(cached_data), 900)
         logger.debug(f"User cached: {user_id}")
 
         logger.info(f"User authenticated successfully: {user.email}")
