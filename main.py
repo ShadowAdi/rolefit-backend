@@ -21,7 +21,11 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     logger.info("Starting application - initializing database...")
     await database.init_db()
-    await redis_database.init_redis()
+    try:
+        await redis_database.init_redis()
+        logger.info("Redis initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize Redis: {str(e)}", exc_info=True)
     logger.info("Database initialized successfully")
 
     yield
@@ -29,7 +33,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down application...")
     if database.engine:
         database.engine.dispose()
-    redis_database.close_redis()
+    await redis_database.close_redis()
 
 
 app = FastAPI(lifespan=lifespan)

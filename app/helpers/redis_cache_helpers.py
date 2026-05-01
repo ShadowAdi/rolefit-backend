@@ -4,23 +4,33 @@ from app.core.logger import logger
 
 async def get_cache(key: str):
     if not redis:
-        logger.error("Redis not initialized. Call init_redis() first.")
-        raise RuntimeError("Redis not initialized. Call init_redis() first.")
-    return await redis.get(key)
+        logger.warning("Redis not initialized. Cache retrieval skipped.")
+        return None
+    try:
+        return await redis.get(key)
+    except Exception as e:
+        logger.error(f"Error retrieving cache for key {key}: {str(e)}")
+        return None
 
 
 async def set_cache(key: str, value: str, ttl: int = 300):
     if not redis:
-        logger.error("Redis not initialized. Call init_redis() first.")
-        raise RuntimeError("Redis not initialized. Call init_redis() first.")
-    await redis.set(key, value, ex=ttl)
+        logger.warning("Redis not initialized. Cache write skipped.")
+        return
+    try:
+        await redis.set(key, value, ex=ttl)
+    except Exception as e:
+        logger.error(f"Error setting cache for key {key}: {str(e)}")
 
 
 async def delete_cache(key: str):
     if not redis:
-        logger.error("Redis not initialized. Call init_redis() first.")
-        raise RuntimeError("Redis not initialized. Call init_redis() first.")
-    await redis.delete(key)
+        logger.warning("Redis not initialized. Cache deletion skipped.")
+        return
+    try:
+        await redis.delete(key)
+    except Exception as e:
+        logger.error(f"Error deleting cache for key {key}: {str(e)}")
 
 
 async def invalidate_user_cache(user_id: str):
