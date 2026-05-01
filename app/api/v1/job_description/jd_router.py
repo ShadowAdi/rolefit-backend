@@ -29,7 +29,7 @@ async def create_job_description(
 ):
     user_id = current_user.id
     logger.info(f"Creating job description for user: {str(user_id)}")
-    return jd_service.create_jd(db, str(user_id), payload)
+    return await jd_service.create_jd(db, str(user_id), payload)
 
 
 @router.post(
@@ -59,7 +59,7 @@ async def get_job_description(
 ):
     user_id = current_user.id
     logger.info(f"Retrieving job description {jd_id} for user: {user_id}")
-    return jd_service.get_jd(db, jd_id, str(user_id))
+    return await jd_service.get_jd(db, jd_id, str(user_id))
 
 
 @router.get(
@@ -73,7 +73,7 @@ async def get_all_job_descriptions(
 ):
     user_id = current_user.id
     logger.info(f"Retrieving all job descriptions for user: {str(user_id)}")
-    return jd_service.get_all_jds(db, str(user_id))
+    return await jd_service.get_all_jds(db, str(user_id))
 
 
 @router.patch(
@@ -89,7 +89,7 @@ async def update_job_description(
 ):
     user_id = current_user.id
     logger.info(f"Updating job description {jd_id} for user: {str(user_id)}")
-    return jd_service.update_jd(db, jd_id, str(user_id), payload)
+    return await jd_service.update_jd(db, jd_id, str(user_id), payload)
 
 
 @router.get(
@@ -101,7 +101,7 @@ async def test_jd(
     db: Session = Depends(get_db),
 ):
     user_id = current_user.id
-    return jd_service.test_jd(db, str(user_id))
+    return await jd_service.test_jd(db, str(user_id))
 
 
 @router.delete(
@@ -115,4 +115,4 @@ async def delete_job_description(
 ):
     user_id = current_user.id
     logger.info(f"Deleting job description {jd_id} for user: {user_id}")
-    return jd_service.delete_jd(db, jd_id, str(user_id))
+    return await jd_service.delete_jd(db, jd_id, str(user_id))
