@@ -14,7 +14,7 @@ The JSON must match this exact schema:
       "github": "url or null",
       "portfolio": "url or null",
       "twitter": "url or null",
-      "other": []
+      "other": ""
     }
   },
   "experience": [
