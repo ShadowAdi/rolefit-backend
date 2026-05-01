@@ -177,3 +177,27 @@ async def preview_cover_letter_pdf(
         await set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
 
     return _stream_pdf(pdf_bytes, "cover_letter_preview.pdf", inline=True)
+
+
+@router.get("/templates")
+async def list_cl_templates():
+    """Return available cover letter template options for the frontend."""
+    return {
+        "templates": [
+            {
+                "id": "classic",
+                "name": "Classic",
+                "description": "Centered accent name, thin rule, clean body.",
+            },
+            {
+                "id": "bold",
+                "name": "Bold",
+                "description": "Dark navy header, red-pink accent bars, strong typography.",
+            },
+            {
+                "id": "minimal",
+                "name": "Minimal",
+                "description": "Left-aligned, no rule, wide margins, airy spacing.",
+            },
+        ]
+    }
