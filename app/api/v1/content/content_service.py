@@ -67,7 +67,7 @@ class ContentServiceClass:
                 logger.info(f"Job profile retrieved from cache for jobId={jobId}")
                 job_profile_response = json.loads(cached_profile)
             else:
-                job_profile_response = filter_jd(
+                job_profile_response = await filter_jd(
                     jobId=jobId, userId=userId, db=db, content_type="Resume"
                 )
                 # Cache job profile for 6 hours (won't change unless JD is updated)
@@ -457,7 +457,7 @@ class ContentServiceClass:
                 logger.info(f"Job profile retrieved from cache for jobId={jobId}")
                 job_profile_response = json.loads(cached_profile)
             else:
-                job_profile_response = filter_jd(
+                job_profile_response = await filter_jd(
                     jobId=jobId, userId=userId, db=db, content_type="cover_letter"
                 )
                 # Cache job profile for 6 hours (won't change unless JD is updated)
