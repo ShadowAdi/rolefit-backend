@@ -321,7 +321,7 @@ class JobDescriptionClass:
             )
 
             response = format_job_descriptions_response(jds)
-            await set_cache(cache_key, json.dumps(response), ttl=1800)
+            await set_cache(cache_key, json.dumps(response), ttl=3600)
             return response
 
         except HTTPException:
