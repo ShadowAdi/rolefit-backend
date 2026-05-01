@@ -17,7 +17,6 @@ from app.helpers.db_helpers import (
     _save_skills,
     _save_tools,
 )
-from app.helpers.db_helpers import get_user_profile
 
 
 class ResumeExtractorServiceClass:
