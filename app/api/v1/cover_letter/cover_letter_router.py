@@ -116,8 +116,8 @@ async def download_cover_letter_pdf(
     user_id = str(current_user.id)
     logger.info(f"PDF download requested | user={user_id} doc={docId}")
 
-    doc = _get_verified_doc(docId, user_id, db)
-    cover_letter_data = _parse_cover_letter_text(doc.cover_letter_text, docId)
+    doc = await _get_verified_doc(docId, user_id, db)
+    cover_letter_data = await _parse_cover_letter_text(doc.cover_letter_text, docId)
 
     # Try cache first for PDF bytes
     pdf_cache_key = f"cover-letter-pdf-{docId}"
@@ -154,8 +154,8 @@ async def preview_cover_letter_pdf(
     user_id = str(current_user.id)
     logger.info(f"PDF preview requested | user={user_id} doc={docId}")
 
-    doc = _get_verified_doc(docId, user_id, db)
-    cover_letter_data = _parse_cover_letter_text(doc.cover_letter_text, docId)
+    doc = await _get_verified_doc(docId, user_id, db)
+    cover_letter_data = await _parse_cover_letter_text(doc.cover_letter_text, docId)
 
     # Try cache first for preview PDF
     pdf_cache_key = f"cover-letter-pdf-{docId}-preview"
