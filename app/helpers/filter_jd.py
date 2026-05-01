@@ -44,9 +44,8 @@ async def filter_jd(
                 detail="User ID is required and must be a valid string",
             )
 
-        # Try cache first - job profile is shared across all content for a job
         cache_key = f"job-profile-data-{jobId}-{userId}"
-        cached_data = get_cache(cache_key)
+        cached_data = await get_cache(cache_key)
         if cached_data:
             logger.info(f"Job profile data retrieved from cache for jobId={jobId}")
             return json.loads(cached_data)
@@ -280,7 +279,7 @@ async def filter_jd(
         )
 
         # Cache the compiled job profile data for 6 hours (won't change unless JD is updated)
-        set_cache(cache_key, json.dumps(user_data_dict), ttl=21600)
+        await set_cache(cache_key, json.dumps(user_data_dict), ttl=21600)
 
         return user_data_dict
 
