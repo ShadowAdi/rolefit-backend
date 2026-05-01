@@ -21,9 +21,9 @@ from app.core.logger import logger
 router = APIRouter(prefix="", tags=["Resume PDF"])
 
 
-def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
+async def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
     cache_key = f"doc-owner-{docId}"
-    cached_owner = get_cache(cache_key)
+    cached_owner = await get_cache(cache_key)
     if cached_owner:
         cached_user_id = json.loads(cached_owner).get("userId")
         if str(cached_user_id) != str(userId):
@@ -47,14 +47,14 @@ def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocummen
         )
 
     # Cache only ownership metadata - safe, lightweight JSON (1 hour)
-    set_cache(cache_key, json.dumps({"userId": str(doc.userId)}), ttl=3600)
+    await set_cache(cache_key, json.dumps({"userId": str(doc.userId)}), ttl=3600)
     return doc
 
 
-def _parse_resume_text(resume_text: str, docId: str) -> ResumeData:
+async def _parse_resume_text(resume_text: str, docId: str) -> ResumeData:
     # Try cache first
     cache_key = f"resume-parsed-{docId}"
-    cached_resume = get_cache(cache_key)
+    cached_resume = await get_cache(cache_key)
     if cached_resume:
         return ResumeData(**json.loads(cached_resume))
 
@@ -68,7 +68,7 @@ def _parse_resume_text(resume_text: str, docId: str) -> ResumeData:
         resume_data = ResumeData(**parsed)
 
         # Cache the parsed resume data (24 hours)
-        set_cache(cache_key, json.dumps(parsed), ttl=86400)
+        await set_cache(cache_key, json.dumps(parsed), ttl=86400)
 
         return resume_data
 
@@ -106,12 +106,12 @@ async def download_resume_pdf(
     user_id = str(current_user.id)
     logger.info(f"PDF download requested | user={user_id} doc={docId}")
 
-    doc = _get_verified_doc(docId, user_id, db)
-    resume_data = _parse_resume_text(doc.resume_text, docId)
+    doc = await _get_verified_doc(docId, user_id, db)
+    resume_data = await _parse_resume_text(doc.resume_text, docId)
 
     # Try cache first for PDF bytes
     pdf_cache_key = f"resume-pdf-{docId}-{resume_type}"
-    cached_pdf = get_cache(pdf_cache_key)
+    cached_pdf = await get_cache(pdf_cache_key)
     if cached_pdf:
         logger.info(f"PDF served from cache | doc={docId} type={resume_type}")
         pdf_bytes = base64.b64decode(cached_pdf)
@@ -134,7 +134,7 @@ async def download_resume_pdf(
             )
 
         # Cache the PDF bytes (24 hours)
-        set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
+        await set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
 
     name_slug = resume_data.header.name.replace(" ", "_").lower()
     return _stream_pdf(pdf_bytes, f"{name_slug}_resume.pdf", inline=False)
@@ -150,12 +150,12 @@ async def preview_resume_pdf(
     user_id = str(current_user.id)
     logger.info(f"PDF preview requested | user={user_id} doc={docId}")
 
-    doc = _get_verified_doc(docId, user_id, db)
-    resume_data = _parse_resume_text(doc.resume_text, docId)
+    doc = await _get_verified_doc(docId, user_id, db)
+    resume_data = await _parse_resume_text(doc.resume_text, docId)
 
     # Try cache first for preview PDF
     pdf_cache_key = f"resume-pdf-{docId}-preview"
-    cached_pdf = get_cache(pdf_cache_key)
+    cached_pdf = await get_cache(pdf_cache_key)
     if cached_pdf:
         logger.info(f"PDF preview served from cache | doc={docId}")
         pdf_bytes = base64.b64decode(cached_pdf)
@@ -170,7 +170,7 @@ async def preview_resume_pdf(
             )
 
         # Cache the preview PDF (24 hours)
-        set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
+        await set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
 
     return _stream_pdf(pdf_bytes, "resume_preview.pdf", inline=True)
 
