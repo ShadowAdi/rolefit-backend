@@ -83,8 +83,11 @@ def build_resume_prompt(user_data: dict, user_specifications: str | None = None)
         if include_projects
         else "- Projects: Return empty array [] — candidate has sufficient experience."
     )
+    years_label = f"{years_experience}+" if years_experience >= 1 else "less than 1"
     summary_section = (
-        "- Summary: EXACTLY 2-3 sentences. First: years + core stack. Second: value for this role."
+        f"- Summary: EXACTLY 2-3 sentences. "
+        f"First: use EXACTLY '{years_label} years' of experience (do NOT change this number) + core stack. "
+        f"Second: value for this role."
         if include_summary
         else '- Summary: Return empty string "" — not needed for senior profiles.'
     )
@@ -121,6 +124,7 @@ Required Skills: {', '.join(jd.get('required_skills', [])[:10])}
 2. Include ONE metric per bullet (%, users, ms). If missing, add a realistic one.
 3. No sub-bullets. No filler phrases.
 4. Match keywords from tech_stack and required_skills naturally.
+5. NEVER fabricate years of experience. Use ONLY the exact figure provided in the summary instructions above.
 
 === SKILLS RULES ===
 - Include ALL skills and tools provided — do NOT drop any.
