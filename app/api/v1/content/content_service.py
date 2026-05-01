@@ -16,6 +16,7 @@ from app.response.GenerateDocument_responses import (
     DeleteDocumnetResponse,
 )
 from app.helpers.grok_ai_headers import grok_api_key_headers
+from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 from uuid import UUID
 from groq import Groq
 
@@ -59,9 +60,20 @@ class ContentServiceClass:
                     detail="Failed to generate content.",
                 )
 
-            job_profile_response = filter_jd(
-                jobId=jobId, userId=userId, db=db, content_type="Resume"
-            )
+            # Try cache first for job profile
+            job_profile_cache_key = f"job-profile-{jobId}-{userId}"
+            cached_profile = get_cache(job_profile_cache_key)
+            if cached_profile:
+                logger.info(f"Job profile retrieved from cache for jobId={jobId}")
+                job_profile_response = json.loads(cached_profile)
+            else:
+                job_profile_response = filter_jd(
+                    jobId=jobId, userId=userId, db=db, content_type="Resume"
+                )
+                # Cache job profile for 6 hours (won't change unless JD is updated)
+                set_cache(
+                    job_profile_cache_key, json.dumps(job_profile_response), ttl=21600
+                )
 
             genDocs = (
                 db.query(GeneratedDocumment)
@@ -371,9 +383,15 @@ class ContentServiceClass:
                 )
 
             docFoundId = docFound.id
+            docJobId = docFound.jobId
 
             db.delete(docFound)
             db.commit()
+
+            # Invalidate job profile cache when content is deleted (in case we delete all content)
+            job_profile_cache_key = f"job-profile-{docJobId}-{userId}"
+            delete_cache(job_profile_cache_key)
+            logger.debug(f"Invalidated job profile cache for jobId={docJobId}")
 
             return DeleteDocumnetResponse.model_validate(
                 {
@@ -430,11 +448,22 @@ class ContentServiceClass:
         db: Session,
     ):
         try:
-            logger.info(f"Starting resume generation for user: {userId}")
+            logger.info(f"Starting cover letter generation for user: {userId}")
 
-            job_profile_response = filter_jd(
-                jobId=jobId, userId=userId, db=db, content_type="cover_letter"
-            )
+            # Try cache first for job profile
+            job_profile_cache_key = f"job-profile-{jobId}-{userId}"
+            cached_profile = get_cache(job_profile_cache_key)
+            if cached_profile:
+                logger.info(f"Job profile retrieved from cache for jobId={jobId}")
+                job_profile_response = json.loads(cached_profile)
+            else:
+                job_profile_response = filter_jd(
+                    jobId=jobId, userId=userId, db=db, content_type="cover_letter"
+                )
+                # Cache job profile for 6 hours (won't change unless JD is updated)
+                set_cache(
+                    job_profile_cache_key, json.dumps(job_profile_response), ttl=21600
+                )
 
             genDocs = (
                 db.query(GeneratedDocumment)

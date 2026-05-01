@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
-from fastapi import HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from fastapi import HTTPException, status,ValidationError
 from uuid import UUID
+import json
 from app.models.JobDescription import JobDescription
 from app.models.User import User
 from app.core.logger import logger
@@ -16,6 +17,7 @@ from app.models.UserSkill import UserSkill
 from app.models.UserTool import UserTool
 from typing import Dict, Any
 from app.helpers.db_helpers import get_user_profile
+from app.helpers.redis_cache_helpers import get_cache, set_cache
 
 
 async def filter_jd(
@@ -40,6 +42,13 @@ async def filter_jd(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User ID is required and must be a valid string",
             )
+
+        # Try cache first - job profile is shared across all content for a job
+        cache_key = f"job-profile-data-{jobId}-{userId}"
+        cached_data = get_cache(cache_key)
+        if cached_data:
+            logger.info(f"Job profile data retrieved from cache for jobId={jobId}")
+            return json.loads(cached_data)
 
         user = db.query(User).filter(User.id == userId).first()
         if not user:
@@ -268,6 +277,9 @@ async def filter_jd(
             "Successfully compiled user data for resume/cover letter generation",
             extra={"userId": userId, "jobId": jobId},
         )
+
+        # Cache the compiled job profile data for 6 hours (won't change unless JD is updated)
+        set_cache(cache_key, json.dumps(user_data_dict), ttl=21600)
 
         return user_data_dict
 
