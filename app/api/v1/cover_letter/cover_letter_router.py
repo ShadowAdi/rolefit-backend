@@ -17,10 +17,10 @@ from app.core.logger import logger
 router = APIRouter(prefix="", tags=["Cover letter PDF"])
 
 
-def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
+async def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
     # Try cache first - only store userId for ownership verification (safe & lightweight)
     cache_key = f"doc-owner-{docId}"
-    cached_owner = get_cache(cache_key)
+    cached_owner = await get_cache(cache_key)
     if cached_owner:
         cached_user_id = json.loads(cached_owner).get("userId")
         if str(cached_user_id) != str(userId):
@@ -44,15 +44,17 @@ def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocummen
         )
 
     # Cache only ownership metadata - safe, lightweight JSON (1 hour)
-    set_cache(cache_key, json.dumps({"userId": str(doc.userId)}), ttl=3600)
+    await set_cache(cache_key, json.dumps({"userId": str(doc.userId)}), ttl=3600)
 
     return doc
 
 
-def _parse_cover_letter_text(cover_letter_text: str, docId: str) -> CoverLetterData:
+async def _parse_cover_letter_text(
+    cover_letter_text: str, docId: str
+) -> CoverLetterData:
     # Try cache first
     cache_key = f"cover-letter-parsed-{docId}"
-    cached_cover_letter = get_cache(cache_key)
+    cached_cover_letter = await get_cache(cache_key)
     if cached_cover_letter:
         return CoverLetterData(**json.loads(cached_cover_letter))
 
@@ -68,7 +70,7 @@ def _parse_cover_letter_text(cover_letter_text: str, docId: str) -> CoverLetterD
         cover_letter_data = CoverLetterData(**parsed)
 
         # Cache the parsed cover letter data (24 hours)
-        set_cache(cache_key, json.dumps(parsed), ttl=86400)
+        await set_cache(cache_key, json.dumps(parsed), ttl=86400)
 
         return cover_letter_data
 
@@ -119,7 +121,7 @@ async def download_cover_letter_pdf(
 
     # Try cache first for PDF bytes
     pdf_cache_key = f"cover-letter-pdf-{docId}"
-    cached_pdf = get_cache(pdf_cache_key)
+    cached_pdf = await get_cache(pdf_cache_key)
     if cached_pdf:
         logger.info(f"Cover letter PDF served from cache | doc={docId}")
         pdf_bytes = base64.b64decode(cached_pdf)
@@ -136,7 +138,7 @@ async def download_cover_letter_pdf(
             )
 
         # Cache the PDF bytes (24 hours)
-        set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
+        await set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
 
     name_slug = cover_letter_data.candidate.name.replace(" ", "_").lower()
     return _stream_pdf(pdf_bytes, f"{name_slug}_cover_letter.pdf", inline=False)
@@ -157,7 +159,7 @@ async def preview_cover_letter_pdf(
 
     # Try cache first for preview PDF
     pdf_cache_key = f"cover-letter-pdf-{docId}-preview"
-    cached_pdf = get_cache(pdf_cache_key)
+    cached_pdf = await get_cache(pdf_cache_key)
     if cached_pdf:
         logger.info(f"Cover letter PDF preview served from cache | doc={docId}")
         pdf_bytes = base64.b64decode(cached_pdf)
@@ -172,6 +174,6 @@ async def preview_cover_letter_pdf(
             )
 
         # Cache the preview PDF (24 hours)
-        set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
+        await set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
 
     return _stream_pdf(pdf_bytes, "cover_letter_preview.pdf", inline=True)
