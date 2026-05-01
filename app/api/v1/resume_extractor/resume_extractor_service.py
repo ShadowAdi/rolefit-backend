@@ -127,7 +127,6 @@ class ResumeExtractorServiceClass:
             raise
 
         except AppError as e:
-            # sarvam_api_key_headers() raises this if API key is missing
             logger.error(f"App config error during resume import: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
