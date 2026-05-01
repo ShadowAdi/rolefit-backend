@@ -42,6 +42,19 @@ class ResumeExtractorServiceClass:
                     detail="resume_url is required",
                 )
 
+            existing_profile = (
+                db.query(Profile).filter(Profile.userId == userId).first()
+            )
+            if existing_profile:
+                logger.warning(
+                    f"Profile already exists for user {userId}",
+                    extra={"userId": userId, "profileId": str(existing_profile.id)},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Profile already exists for this user. Please update the existing profile or contact support.",
+                )
+
             parsed = urlparse(resume_url.strip())
             if parsed.scheme not in ("http", "https"):
                 raise HTTPException(
@@ -76,19 +89,6 @@ class ResumeExtractorServiceClass:
             logger.info(
                 f"Groq AI data processed for user {userId}", extra={"userId": userId}
             )
-
-            existing_profile = (
-                db.query(Profile).filter(Profile.userId == userId).first()
-            )
-            if existing_profile:
-                logger.warning(
-                    f"Profile already exists for user {userId}",
-                    extra={"userId": userId, "profileId": str(existing_profile.id)},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Profile already exists for this user. Please update the existing profile or contact support.",
-                )
 
             profile = _save_profile(db, userId, resume_url.strip(), groq_data)
 
