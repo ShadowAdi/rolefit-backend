@@ -218,7 +218,7 @@ class JobDescriptionClass:
                 )
 
             # Try cache first
-            cache_key = f"jd-{jd_id}"
+            cache_key = f"jd-{userId}-{jd_id}"
             cached_jd = await get_cache(cache_key)
             if cached_jd:
                 logger.info(
@@ -460,7 +460,7 @@ class JobDescriptionClass:
             db.refresh(jd)
 
             # Invalidate caches
-            await delete_cache(f"jd-{jd_id}")
+            await delete_cache(f"jd-{userId}-{jd_id}")
             await delete_cache(f"jds-{userId}")
 
             logger.info(
@@ -555,7 +555,7 @@ class JobDescriptionClass:
             db.commit()
 
             # Invalidate caches
-            await delete_cache(f"jd-{jd_id}")
+            await delete_cache(f"jd-{userId}-{jd_id}")
             await delete_cache(f"jds-{userId}")
 
             logger.info(
@@ -680,7 +680,7 @@ class JobDescriptionClass:
                 },
             )
 
-            return self.create_jd(db, userId, jd_payload)
+            return await self.create_jd(db, userId, jd_payload)
 
         except HTTPException:
             raise
