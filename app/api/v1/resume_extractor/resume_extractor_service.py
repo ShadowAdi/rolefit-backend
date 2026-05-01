@@ -66,7 +66,7 @@ class ResumeExtractorServiceClass:
                 f"{extracted['page_count']} pages, {len(resume_text)} chars"
             )
 
-            groq_data = _call_groq(
+            groq_data = await _call_groq(
                 resume_text=resume_text,
                 extracted_links=pdf_links,
                 resume_url=resume_url.strip(),
