@@ -66,7 +66,11 @@ class ResumeExtractorServiceClass:
                 f"{extracted['page_count']} pages, {len(resume_text)} chars"
             )
 
-            groq_data = _call_groq(resume_text=resume_text, extracted_links=pdf_links)
+            groq_data = _call_groq(
+                resume_text=resume_text,
+                extracted_links=pdf_links,
+                resume_url=resume_url.strip(),
+            )
 
             logger.info(
                 f"Groq AI data processed for user {userId}", extra={"userId": userId}

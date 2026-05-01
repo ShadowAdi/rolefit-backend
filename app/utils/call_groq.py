@@ -1,11 +1,20 @@
 import re
 import json
+import hashlib
+from groq import Groq
 from fastapi import HTTPException, status
 from app.helpers.grok_ai_headers import grok_api_key_headers
 from .build_user_prompt import _build_user_prompt
+from app.helpers.redis_cache_helpers import get_cache, set_cache
 from .create_profile_by_resume import CREATE_PROFILE_BY_RESUME_PROMPT
 from app.core.logger import logger
-from groq import Groq
+
+RESUME_CACHE_TTL = 60 * 60 * 24
+
+
+def _make_resume_cache_keys(resume_url) -> str:
+    url_hash = hashlib.sha256(resume_url.encode()).hexdigest()[:16]
+    return f"resume-groq:{url_hash}"
 
 
 def _extract_clean_json(text: str) -> dict:
@@ -34,9 +43,21 @@ def _extract_clean_json(text: str) -> dict:
     raise ValueError("Could not extract valid JSON from model output")
 
 
-def _call_groq(resume_text: str, extracted_links: list[str]) -> dict:
+async def _call_groq(
+    resume_text: str, extracted_links: list[str], resume_url: str
+) -> dict:
     api_key = grok_api_key_headers()
     groq_client = Groq(api_key=api_key)
+
+    cache_key = _make_resume_cache_keys(resume_url)
+
+    try:
+        cached += get_cache(cache_key)
+        if cached:
+            logger.info(f"Resume cache HIT for URL hash {cache_key}")
+            return json.loads(cached)
+    except Exception as e:
+        logger.warning(f"Cache read failed, proceeding without cache: {e}")
 
     logger.info("Calling Groq API for resume parsing")
 
@@ -91,4 +112,10 @@ def _call_groq(resume_text: str, extracted_links: list[str]) -> dict:
     logger.info(
         f"Groq resume parsing successful. Top-level keys: {list(parsed_json.keys())}"
     )
+    try:
+        await set_cache(cache_key, json.dumps(parsed_json), ttl=RESUME_CACHE_TTL)
+        logger.info(f"Resume content cached with key {cache_key}")
+    except Exception as e:
+        logger.warning(f"Cache write failed, result not cached: {e}")
+
     return parsed_json
