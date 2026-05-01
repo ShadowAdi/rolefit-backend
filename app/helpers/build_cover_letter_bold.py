@@ -13,14 +13,11 @@ Structural differences from Classic:
 """
 
 import io
-import re
 from reportlab.platypus import (
     Paragraph,
     SimpleDocTemplate,
     Spacer,
     HRFlowable,
-    Table,
-    TableStyle,
     Flowable,
 )
 from reportlab.lib.units import inch
