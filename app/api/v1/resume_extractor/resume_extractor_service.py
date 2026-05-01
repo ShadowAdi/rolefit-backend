@@ -42,25 +42,6 @@ class ResumeExtractorServiceClass:
                     detail="resume_url is required",
                 )
 
-            user = db.query(User).filter(User.id == userId).first()
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found",
-                )
-
-            logger.info(
-                f"User {userId} found, proceeding with resume extraction",
-                extra={"userId": userId},
-            )
-
-            user_profile = await get_user_profile(db, userId)
-
-            logger.info(
-                f"No existing profile for user {userId}, proceeding",
-                extra={"userId": userId},
-            )
-
             parsed = urlparse(resume_url.strip())
             if parsed.scheme not in ("http", "https"):
                 raise HTTPException(
