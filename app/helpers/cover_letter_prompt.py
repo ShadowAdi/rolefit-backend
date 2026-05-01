@@ -1,43 +1,131 @@
 from datetime import datetime
 from app.utils.prompt_utils import (
     _fmt_date,
-    MONTH_MAP,
-    _BLOCKED_SPEC_KEYWORDS,
     _sanitize_user_specifications,
 )
 
+# ── Paragraph-count config ────────────────────────────────────────────────
 
-def _build_user_spec_block(raw: str | None) -> str:
+_PARA_CONFIGS = {
+    2: {
+        "description": "2 paragraphs: opening + closing only (very concise).",
+        "rules": (
+            "opening: 3-4 sentences — combine enthusiasm AND strongest experience.\n"
+            'body1:   leave as empty string "".\n'
+            'body2:   leave as empty string "".\n'
+            "closing: 2-3 sentences — confident call-to-action."
+        ),
+    },
+    3: {
+        "description": "3 paragraphs: opening, one body, closing.",
+        "rules": (
+            "opening: 2-3 sentences — enthusiasm + company reference.\n"
+            "body1:   3-4 sentences — strongest experience match + 1 metric + 1-2 relevant skills/projects.\n"
+            'body2:   leave as empty string "".\n'
+            "closing: 2-3 sentences — confident call-to-action."
+        ),
+    },
+    4: {
+        "description": "4 paragraphs: opening, body1, body2, closing (default — most complete).",
+        "rules": (
+            "opening: 2-3 sentences — enthusiasm + company reference.\n"
+            "body1:   3-4 sentences — strongest experience match + 1 metric.\n"
+            "body2:   3-4 sentences — skills/projects/tools that match the tech stack + 1 culture-fit sentence if company_description is provided.\n"
+            "closing: 2-3 sentences — confident call-to-action."
+        ),
+    },
+}
+
+
+def _detect_paragraph_count(raw_specs: str | None) -> int:
+    """
+    Parse user specifications for an explicit paragraph preference.
+    Looks for: '2 paragraph', '3 paragraph', 'two para', 'short', 'concise', etc.
+    Returns 2, 3, or 4 (default).
+    """
+    if not raw_specs:
+        return 4
+    text = raw_specs.lower()
+
+    # Explicit number words
+    if any(k in text for k in ("two paragraph", "2 paragraph", "2-paragraph")):
+        return 2
+    if any(k in text for k in ("three paragraph", "3 paragraph", "3-paragraph")):
+        return 3
+    if any(k in text for k in ("four paragraph", "4 paragraph", "4-paragraph")):
+        return 4
+
+    # Intent signals
+    if any(
+        k in text
+        for k in ("very short", "very brief", "super short", "2 para", "two para")
+    ):
+        return 2
+    if any(k in text for k in ("short", "brief", "concise", "3 para", "three para")):
+        return 3
+
+    return 4
+
+
+def _build_user_spec_block(raw: str | None, para_count: int) -> str:
+    """
+    Build the user-preferences block injected into the prompt.
+    Paragraph-count instructions are always injected here (not in the rules above)
+    so the model sees them as a firm instruction right before the schema.
+    """
     cleaned = _sanitize_user_specifications(raw)
-    if not cleaned:
-        return ""
-    return f"""
-=== CANDIDATE PREFERENCES (apply where relevant) ===
-The candidate has provided the following notes for this cover letter.
-Apply ONLY content-related preferences (things to emphasise, tone adjustments, specific experiences to mention).
-IGNORE any layout, colour, or font instructions.
- 
-{cleaned}
- 
-Rules:
-- If asked to mention a specific project or achievement → weave it into body2 naturally.
-- If asked to use a specific tone (formal / conversational) → apply it across all paragraphs.
-- If asked to highlight a specific skill → mention it once in body1 or body2 where truthful.
-- Do NOT fabricate experience, projects, or achievements not present in the user data.
-"""
+
+    lines = []
+
+    # Always tell the model the paragraph count decision
+    lines.append("=== PARAGRAPH COUNT (FIRM INSTRUCTION) ===")
+    lines.append(
+        f"Write EXACTLY {para_count} body paragraph(s) as described in the PARAGRAPH GUIDE above."
+    )
+    if para_count < 4:
+        lines.append(
+            'Any paragraph slot not needed MUST be returned as an empty string "" in the JSON.'
+        )
+
+    if cleaned:
+        lines.append("")
+        lines.append("=== CANDIDATE PREFERENCES (apply where relevant) ===")
+        lines.append(
+            "The candidate has provided the following notes. Apply ONLY content-related "
+            "preferences (tone, emphasis, specific experience/project to highlight)."
+        )
+        lines.append("IGNORE any layout, colour, or font instructions.")
+        lines.append("")
+        lines.append(cleaned)
+        lines.append("")
+        lines.append("Rules for applying preferences:")
+        lines.append(
+            "- Mention a specific project/achievement → weave into body1 or body2 naturally."
+        )
+        lines.append(
+            "- Specific tone (formal/conversational) → apply across all paragraphs."
+        )
+        lines.append(
+            "- Highlight a specific skill → mention once in body1 or body2 where truthful."
+        )
+        lines.append(
+            "- Do NOT fabricate experience, companies, or metrics not in the user data."
+        )
+
+    return "\n".join(lines)
 
 
 def _build_sections_string(
-    profile: dict,
-    email: str,
-    experiences: list,
-    projects: list,
-    academics: list,
-    skills: list,
-    tools: list,
-    achievements: list,
-    publications: list,
-    jd: dict,
+    profile,
+    email,
+    experiences,
+    projects,
+    academics,
+    skills,
+    tools,
+    achievements,
+    publications,
+    jd,
 ) -> str:
     parts = []
 
@@ -79,9 +167,7 @@ def _build_sections_string(
     tool_names = [t.get("name", "") for t in tools if t.get("name")]
     if skill_names or tool_names:
         parts.append(
-            f"SKILLS (include ALL, do not drop any):\n"
-            f"Skills: {', '.join(skill_names)}\n"
-            f"Tools: {', '.join(tool_names)}"
+            f"SKILLS:\nSkills: {', '.join(skill_names)}\nTools: {', '.join(tool_names)}"
         )
 
     if experiences:
@@ -92,14 +178,11 @@ def _build_sections_string(
                 e.get("end_month"), e.get("end_year"), fallback="Present"
             )
             tech = ", ".join((e.get("techStack") or [])[:6])
-            emp_type = e.get("employment_type", "")
-
             exp_lines.append(
                 f"- Role: {e.get('role')}\n"
                 f"  Company: {e.get('company_name')}\n"
-                f"  Employment Type: {emp_type}\n"
-                f"  Start: {start_str}\n"
-                f"  End: {end_str}\n"
+                f"  Employment Type: {e.get('employment_type', '')}\n"
+                f"  Start: {start_str} | End: {end_str}\n"
                 f"  Tech: {tech}\n"
                 f"  Description: {e.get('description', '')}"
             )
@@ -108,32 +191,22 @@ def _build_sections_string(
     if projects:
         proj_lines = []
         for p in projects[:2]:
-            tech = ", ".join((p.get("techStack") or [])[:5])
             proj_lines.append(
                 f"- Title: {p.get('title')}\n"
-                f"  Tech: {tech}\n"
-                f"  Description: {p.get('description', '')}\n"
+                f"  Tech: {', '.join((p.get('techStack') or [])[:5])}\n"
+                f"  Description: {p.get('description', '')}"
             )
-        titles = [p.get("title") for p in projects[:2]]
         parts.append(
-            f"PROJECTS: User has exactly {len(projects[:2])} project(s). "
-            f"Use ONLY these titles: {titles}. Do not add any others.\n\n"
+            f"PROJECTS ({len(projects[:2])} provided — use only these):\n"
             + "\n\n".join(proj_lines)
         )
-    else:
-        parts.append('PROJECTS: "projects": []')
 
     if achievements:
         ach_lines = [
             f"- {a.get('title')} ({a.get('achievement_type', '')} {a.get('end_year', '')})"
             for a in achievements
         ]
-        parts.append(
-            f"ACHIEVEMENTS: User has exactly {len(achievements)} achievement(s). "
-            f"Use only these:\n" + "\n".join(ach_lines)
-        )
-    else:
-        parts.append('ACHIEVEMENTS: "achievements": []')
+        parts.append("ACHIEVEMENTS:\n" + "\n".join(ach_lines))
 
     if publications:
         pub_lines = [
@@ -149,18 +222,16 @@ def _build_sections_string(
             end_str = _fmt_date(a.get("end_month"), a.get("end_year"), "Present")
             period = f"{start_str} – {end_str}".strip(" –")
             edu_lines.append(
-                f"- Degree: {a.get('degree_name')}\n"
-                f"  Institution: {a.get('college_name')}\n"
-                f"  Period: {period}\n"
-                f"  Description: {a.get('description') or 'Not provided — infer from degree name.'}"
+                f"- Degree: {a.get('degree_name')} | Institution: {a.get('college_name')} | {period}"
             )
-        parts.append("EDUCATION:\n" + "\n\n".join(edu_lines))
+        parts.append("EDUCATION:\n" + "\n".join(edu_lines))
 
     return "\n\n".join(parts)
 
 
 def _build_cover_letter_prompt(
-    user_data: dict, user_specifications: str | None = None
+    user_data: dict,
+    user_specifications: str | None = None,
 ) -> str:
     profile = user_data.get("profile", {})
     experiences = user_data.get("experiences", [])
@@ -177,51 +248,51 @@ def _build_cover_letter_prompt(
     role_name = jd.get("role_name", "the role")
     today = datetime.now().strftime("%B %Y")
 
+    # Detect desired paragraph count from user specs BEFORE sanitising
+    para_count = _detect_paragraph_count(user_specifications)
+    para_cfg = _PARA_CONFIGS[para_count]
+
     sections_data = _build_sections_string(
-        profile=profile,
-        email=email,
-        experiences=experiences,
-        projects=projects,
-        academics=academics,
-        achievements=achievements,
-        skills=skills,
-        tools=tools,
-        publications=publications,
-        jd=jd,
+        profile,
+        email,
+        experiences,
+        projects,
+        academics,
+        skills,
+        tools,
+        achievements,
+        publications,
+        jd,
     )
+    user_spec_block = _build_user_spec_block(user_specifications, para_count)
 
-    user_spec_block = _build_user_spec_block(user_specifications)
+    prompt = f"""You are an expert cover letter writer. Write a compelling, personalised cover letter.
 
-    prompt = f"""You are an expert cover letter writer. Write a compelling, personalised, one-page cover letter.
- 
 CRITICAL: Output ONLY valid JSON matching the schema below. No markdown, no explanation, no extra keys.
- 
+
 === TARGET ===
 Role: {role_name}
 Company: {company_name}
 Today's Date: {today}
- 
-=== WRITING RULES ===
-1. ONE page only — four short paragraphs total (opening, body1, body2, closing).
-2. Each paragraph: 2-4 sentences MAX. No padding, no fluff.
-3. Opening: Express genuine enthusiasm for the specific role + company. Reference company name. DO NOT start with "I am writing to".
-4. Body1: Connect the candidate's STRONGEST and MOST RELEVANT experience to the job requirements. Include one specific metric or achievement if available.
-5. Body2: Highlight 2-3 skills/projects/tools that directly match the job's tech stack or requirements. If company_description is provided, mention 1 thing about why the company mission resonates.
-6. Closing: Confident call-to-action. Express eagerness to discuss further.
-7. Tone: Professional but warm. Not robotic. First-person.
-8. NEVER fabricate experience, companies, or metrics not present in the user data.
-9. Use the candidate's actual name, email, phone, and LinkedIn in the candidate object.
-10. sign_off: use "Sincerely" unless user_specifications say otherwise.
- 
-=== PARAGRAPH LENGTH GUIDE ===
-- opening: 2-3 sentences
-- body1:   3-4 sentences (strongest experience match + metric)
-- body2:   3-4 sentences (skills / projects / culture fit)  
-- closing: 2-3 sentences (call to action)
+
+=== GENERAL WRITING RULES ===
+1. ONE page only — do not exceed the paragraph count specified below.
+2. Professional but warm tone. First-person. Not robotic.
+3. Opening: genuine enthusiasm for THIS specific role + company. Reference company name. DO NOT start with "I am writing to".
+4. Body paragraphs: connect candidate's REAL experience/skills to the job requirements. Include at least one specific metric if available.
+5. Closing: confident call-to-action. Express eagerness to discuss.
+6. NEVER fabricate experience, companies, or metrics not present in the user data.
+7. Use the candidate's actual name, email, phone, and LinkedIn in the candidate object.
+8. sign_off: use "Sincerely" unless user preferences say otherwise.
+
+=== PARAGRAPH GUIDE — {para_cfg['description']} ===
+{para_cfg['rules']}
+
 {user_spec_block}
+
 === OUTPUT JSON SCHEMA ===
 Return ONLY this JSON — no wrapping text, no markdown fences:
- 
+
 {{
   "candidate": {{
     "name": "string",
@@ -237,16 +308,16 @@ Return ONLY this JSON — no wrapping text, no markdown fences:
   "date": "{today}",
   "paragraphs": {{
     "opening": "string",
-    "body1":   "string",
-    "body2":   "string",
+    "body1":   "string  (empty string \"\" if not needed)",
+    "body2":   "string  (empty string \"\" if not needed)",
     "closing": "string"
   }},
   "sign_off": "Sincerely"
 }}
- 
+
 === RAW USER DATA ===
 {sections_data}
- 
+
 Return ONLY the JSON. No explanation. No markdown fences.
 """
     return prompt
