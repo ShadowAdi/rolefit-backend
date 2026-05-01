@@ -39,7 +39,7 @@ async def get_user_profile(db: Session, userId: str) -> Profile:
 
     if not user_profile:
         logger.warning(
-            f"Creation failed: User profile not found",
+            f"User profile not found",
             extra={"userId": userId},
         )
         raise HTTPException(
