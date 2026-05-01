@@ -30,7 +30,7 @@ from typing import List
 
 
 class JobDescriptionClass:
-    def create_jd(
+    async def create_jd(
         self, db: Session, userId: str, payload: JobDescriptionCreate
     ) -> JobDescriptionResponse:
 
@@ -147,7 +147,7 @@ class JobDescriptionClass:
             db.refresh(new_jd)
 
             # Invalidate user's JDs list cache since we added a new one
-            delete_cache(f"jds-{userId}")
+            await delete_cache(f"jds-{userId}")
 
             logger.info(
                 f"Job description created successfully for user {userId}",
@@ -206,7 +206,9 @@ class JobDescriptionClass:
                 detail="An unexpected error occurred while creating job description",
             )
 
-    def get_jd(self, db: Session, jd_id: str, userId: str) -> JobDescriptionResponse:
+    async def get_jd(
+        self, db: Session, jd_id: str, userId: str
+    ) -> JobDescriptionResponse:
 
         try:
             if not jd_id or not userId:
@@ -217,7 +219,7 @@ class JobDescriptionClass:
 
             # Try cache first
             cache_key = f"jd-{jd_id}"
-            cached_jd = get_cache(cache_key)
+            cached_jd = await get_cache(cache_key)
             if cached_jd:
                 logger.info(
                     f"Job description retrieved from cache",
@@ -250,7 +252,7 @@ class JobDescriptionClass:
             )
 
             response = format_job_description_response(jd)
-            set_cache(cache_key, json.dumps(response), ttl=3600)
+            await set_cache(cache_key, json.dumps(response), ttl=3600)
             return response
 
         except HTTPException:
@@ -285,7 +287,9 @@ class JobDescriptionClass:
                 detail="Error retrieving job description",
             )
 
-    def get_all_jds(self, db: Session, userId: str) -> List[JobDescriptionResponse]:
+    async def get_all_jds(
+        self, db: Session, userId: str
+    ) -> List[JobDescriptionResponse]:
 
         try:
             if not userId:
@@ -296,7 +300,7 @@ class JobDescriptionClass:
 
             # Try cache first
             cache_key = f"jds-{userId}"
-            cached_jds = get_cache(cache_key)
+            cached_jds = await get_cache(cache_key)
             if cached_jds:
                 logger.info(
                     f"Retrieved job descriptions from cache for user",
@@ -317,7 +321,7 @@ class JobDescriptionClass:
             )
 
             response = format_job_descriptions_response(jds)
-            set_cache(cache_key, json.dumps(response), ttl=1800)
+            await set_cache(cache_key, json.dumps(response), ttl=1800)
             return response
 
         except HTTPException:
@@ -352,7 +356,7 @@ class JobDescriptionClass:
                 detail="Error retrieving job descriptions",
             )
 
-    def update_jd(
+    async def update_jd(
         self, db: Session, jd_id: str, userId: str, payload: JobDescriptionUpdate
     ) -> JobDescriptionResponse:
 
@@ -456,8 +460,8 @@ class JobDescriptionClass:
             db.refresh(jd)
 
             # Invalidate caches
-            delete_cache(f"jd-{jd_id}")
-            delete_cache(f"jds-{userId}")
+            await delete_cache(f"jd-{jd_id}")
+            await delete_cache(f"jds-{userId}")
 
             logger.info(
                 f"Job description updated successfully",
@@ -520,7 +524,7 @@ class JobDescriptionClass:
                 detail="An unexpected error occurred while updating job description",
             )
 
-    def delete_jd(self, db: Session, jd_id: str, userId: str) -> dict:
+    async def delete_jd(self, db: Session, jd_id: str, userId: str) -> dict:
         try:
             if not jd_id or not userId:
                 raise HTTPException(
@@ -551,8 +555,8 @@ class JobDescriptionClass:
             db.commit()
 
             # Invalidate caches
-            delete_cache(f"jd-{jd_id}")
-            delete_cache(f"jds-{userId}")
+            await delete_cache(f"jd-{jd_id}")
+            await delete_cache(f"jds-{userId}")
 
             logger.info(
                 f"Job description deleted successfully",
@@ -595,7 +599,7 @@ class JobDescriptionClass:
                 detail="An unexpected error occurred while deleting job description",
             )
 
-    def generate_jd(
+    async def generate_jd(
         self, db: Session, userId: str, raw_jd: str
     ) -> JobDescriptionResponse:
 
@@ -627,7 +631,7 @@ class JobDescriptionClass:
             cache_key = f"jd-parse-{raw_jd_hash}"
 
             # Try to get cached parse result
-            cached_parse = get_cache(cache_key)
+            cached_parse = await get_cache(cache_key)
             if cached_parse:
                 parsed_data = json.loads(cached_parse)
                 logger.info(
@@ -637,7 +641,7 @@ class JobDescriptionClass:
             else:
                 parsed_data = parse_jd_with_ai(raw_jd)
                 # Cache the parse result for 24 hours (expensive AI operation)
-                set_cache(cache_key, json.dumps(parsed_data), ttl=86400)
+                await set_cache(cache_key, json.dumps(parsed_data), ttl=86400)
 
             logger.debug(f"Parsed role_name: {parsed_data.get('role_name')}")
 
