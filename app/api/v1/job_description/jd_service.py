@@ -2,6 +2,7 @@ import os
 import requests
 import json
 import re
+import hashlib
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
@@ -24,6 +25,7 @@ from app.validators.job_description_validators import (
     validate_job_description_update,
 )
 from app.helpers.jd_parser import JDParseError, parse_jd_with_ai
+from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 from typing import List
 
 
@@ -144,6 +146,9 @@ class JobDescriptionClass:
             db.commit()
             db.refresh(new_jd)
 
+            # Invalidate user's JDs list cache since we added a new one
+            delete_cache(f"jds-{userId}")
+
             logger.info(
                 f"Job description created successfully for user {userId}",
                 extra={
@@ -210,6 +215,16 @@ class JobDescriptionClass:
                     detail="Job Description ID and User ID are required",
                 )
 
+            # Try cache first
+            cache_key = f"jd-{jd_id}"
+            cached_jd = get_cache(cache_key)
+            if cached_jd:
+                logger.info(
+                    f"Job description retrieved from cache",
+                    extra={"userId": userId, "jd_id": jd_id},
+                )
+                return json.loads(cached_jd)
+
             jd = (
                 db.query(JobDescription)
                 .filter(
@@ -234,7 +249,9 @@ class JobDescriptionClass:
                 extra={"userId": userId, "jd_id": jd_id},
             )
 
-            return format_job_description_response(jd)
+            response = format_job_description_response(jd)
+            set_cache(cache_key, json.dumps(response), ttl=3600)
+            return response
 
         except HTTPException:
             raise
@@ -277,6 +294,16 @@ class JobDescriptionClass:
                     detail="User ID is required",
                 )
 
+            # Try cache first
+            cache_key = f"jds-{userId}"
+            cached_jds = get_cache(cache_key)
+            if cached_jds:
+                logger.info(
+                    f"Retrieved job descriptions from cache for user",
+                    extra={"userId": userId},
+                )
+                return json.loads(cached_jds)
+
             jds = (
                 db.query(JobDescription)
                 .filter(JobDescription.userId == UUID(userId))
@@ -289,7 +316,9 @@ class JobDescriptionClass:
                 extra={"userId": userId, "count": len(jds)},
             )
 
-            return format_job_descriptions_response(jds)
+            response = format_job_descriptions_response(jds)
+            set_cache(cache_key, json.dumps(response), ttl=1800)
+            return response
 
         except HTTPException:
             raise
@@ -426,6 +455,10 @@ class JobDescriptionClass:
             db.commit()
             db.refresh(jd)
 
+            # Invalidate caches
+            delete_cache(f"jd-{jd_id}")
+            delete_cache(f"jds-{userId}")
+
             logger.info(
                 f"Job description updated successfully",
                 extra={"userId": userId, "jd_id": jd_id},
@@ -517,6 +550,10 @@ class JobDescriptionClass:
             db.delete(jd)
             db.commit()
 
+            # Invalidate caches
+            delete_cache(f"jd-{jd_id}")
+            delete_cache(f"jds-{userId}")
+
             logger.info(
                 f"Job description deleted successfully",
                 extra={"userId": userId, "jd_id": jd_id},
@@ -583,21 +620,24 @@ class JobDescriptionClass:
                     detail="Raw job description cannot be empty",
                 )
 
-            try:
-                user_uuid = UUID(str(userId))
-            except (TypeError, ValueError) as e:
-                logger.warning(
-                    "Invalid userId format for JD generation",
-                    extra={"userId": userId, "error": str(e)},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid User ID format {userId}",
-                )
-
             logger.info(f"Generating job description from raw JD for user: {userId}")
 
-            parsed_data = parse_jd_with_ai(raw_jd)
+            # Create hash of raw JD for caching parsed results
+            raw_jd_hash = hashlib.md5(raw_jd.strip().encode()).hexdigest()
+            cache_key = f"jd-parse-{raw_jd_hash}"
+
+            # Try to get cached parse result
+            cached_parse = get_cache(cache_key)
+            if cached_parse:
+                parsed_data = json.loads(cached_parse)
+                logger.info(
+                    f"Using cached JD parse result for user: {userId}",
+                    extra={"userId": userId},
+                )
+            else:
+                parsed_data = parse_jd_with_ai(raw_jd)
+                # Cache the parse result for 24 hours (expensive AI operation)
+                set_cache(cache_key, json.dumps(parsed_data), ttl=86400)
 
             logger.debug(f"Parsed role_name: {parsed_data.get('role_name')}")
 
