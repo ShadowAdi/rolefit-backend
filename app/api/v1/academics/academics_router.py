@@ -48,7 +48,7 @@ async def create_academic(
             extra={"userId": str(current_user.id)},
         )
 
-        academic = AcademicService.create_academic(
+        academic = await AcademicService.create_academic(
             db=db, payload=data, userId=str(current_user.id)
         )
 
@@ -104,7 +104,9 @@ async def list_academics(
             extra={"userId": str(current_user.id)},
         )
 
-        academics = AcademicService.list_academics(db=db, userId=str(current_user.id))
+        academics = await AcademicService.list_academics(
+            db=db, userId=str(current_user.id)
+        )
 
         logger.info(
             f"Academic list retrieval endpoint completed successfully for user: {current_user.id}",
@@ -161,7 +163,7 @@ async def get_academic(
             extra={"userId": str(current_user.id), "academicId": academicId},
         )
 
-        academic = AcademicService.get_academic(
+        academic = await AcademicService.get_academic(
             db=db, userId=str(current_user.id), academicId=academicId
         )
 
@@ -226,7 +228,7 @@ async def update_academic(
             extra={"userId": str(current_user.id), "academicId": academicId},
         )
 
-        academic = AcademicService.update_academic(
+        academic = await AcademicService.update_academic(
             db=db, payload=data, userId=str(current_user.id), academicId=academicId
         )
 
@@ -288,7 +290,7 @@ async def delete_academic(
             extra={"userId": str(current_user.id), "academicId": academicId},
         )
 
-        response = AcademicService.delete_academic(
+        response = await AcademicService.delete_academic(
             db=db, userId=str(current_user.id), academicId=academicId
         )
 

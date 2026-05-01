@@ -23,7 +23,7 @@ async def resume_extractor(
     db: Session = Depends(get_db),
 ):
     try:
-        resume_extractor = ResumeExtractorService.resumeextractor(
+        resume_extractor = await ResumeExtractorService.resumeextractor(
             db=db, resume_url=resume_url, userId=str(current_user.id)
         )
 

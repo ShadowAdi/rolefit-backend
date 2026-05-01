@@ -16,7 +16,7 @@ from app.helpers.db_helpers import get_user_profile
 
 
 class PublicationServiceClass:
-    def create_publication(
+    async def create_publication(
         self, db: Session, payload: PublicationCreateRequest, userId
     ) -> PublicationCreateResponse:
         """
@@ -93,7 +93,7 @@ class PublicationServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId).first()
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -177,7 +177,7 @@ class PublicationServiceClass:
                 detail="An unexpected error occurred while creating the publication record.",
             )
 
-    def list_publications(
+    async def list_publications(
         self, db: Session, userId: str
     ) -> list[PublicationGetResponse]:
         """
@@ -228,7 +228,7 @@ class PublicationServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId).first()
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -288,7 +288,7 @@ class PublicationServiceClass:
                 detail="An unexpected error occurred while retrieving publication records.",
             )
 
-    def get_publication(
+    async def get_publication(
         self, db: Session, userId: str, publicationId: str
     ) -> PublicationGetResponse:
         """
@@ -354,7 +354,7 @@ class PublicationServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId).first()
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -437,7 +437,7 @@ class PublicationServiceClass:
                 detail="An unexpected error occurred while retrieving publication record.",
             )
 
-    def update_publication(
+    async def update_publication(
         self,
         db: Session,
         userId: str,
@@ -542,7 +542,7 @@ class PublicationServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId).first()
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -700,7 +700,9 @@ class PublicationServiceClass:
                 detail="An unexpected error occurred while updating publication record.",
             )
 
-    def delete_publication(self, db: Session, userId: str, publicationId: str) -> dict:
+    async def delete_publication(
+        self, db: Session, userId: str, publicationId: str
+    ) -> dict:
         """
         Delete a specific publication record for an authenticated user.
 
@@ -765,7 +767,7 @@ class PublicationServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId).first()
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 

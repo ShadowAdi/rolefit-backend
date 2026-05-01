@@ -19,7 +19,7 @@ from sqlalchemy.orm.session import make_transient
 
 async def get_user_profile(db: Session, userId: str) -> Profile:
     cached_profile_key = f"authenticated-profile-{userId}"
-    cached_profile = get_cache(cached_profile_key)
+    cached_profile = await get_cache(cached_profile_key)
 
     if cached_profile:
         logger.debug(f"User retrieved from cache: {userId}")

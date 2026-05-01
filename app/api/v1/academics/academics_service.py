@@ -16,7 +16,7 @@ from app.helpers.db_helpers import get_user_profile
 
 
 class AcademicServiceClass:
-    def create_academic(
+    async def create_academic(
         self, db: Session, payload: AcademicCreateRequest, userId
     ) -> AcademicCreateResponse:
         """
@@ -99,7 +99,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -185,7 +185,9 @@ class AcademicServiceClass:
                 detail="An unexpected error occurred while creating the academic record.",
             )
 
-    def list_academics(self, db: Session, userId: str) -> list[AcademicGetResponse]:
+    async def list_academics(
+        self, db: Session, userId: str
+    ) -> list[AcademicGetResponse]:
         """
         Retrieve all academic records for an authenticated user.
 
@@ -234,7 +236,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -289,7 +291,7 @@ class AcademicServiceClass:
                 detail="An unexpected error occurred while retrieving academic records.",
             )
 
-    def get_academic(
+    async def get_academic(
         self, db: Session, userId: str, academicId: str
     ) -> AcademicGetResponse:
         """
@@ -355,7 +357,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -438,7 +440,7 @@ class AcademicServiceClass:
                 detail="An unexpected error occurred while retrieving academic record.",
             )
 
-    def update_academic(
+    async def update_academic(
         self,
         db: Session,
         userId: str,
@@ -559,7 +561,7 @@ class AcademicServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -725,7 +727,7 @@ class AcademicServiceClass:
                 detail="An unexpected error occurred while updating academic record.",
             )
 
-    def delete_academic(self, db: Session, userId: str, academicId: str) -> dict:
+    async def delete_academic(self, db: Session, userId: str, academicId: str) -> dict:
         """
         Delete a specific academic record for an authenticated user.
 
@@ -791,7 +793,7 @@ class AcademicServiceClass:
 
             logger.info(f"Verifying user profile exists for user: {userId}")
 
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 

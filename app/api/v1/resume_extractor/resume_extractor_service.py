@@ -21,7 +21,7 @@ from app.helpers.db_helpers import get_user_profile
 
 
 class ResumeExtractorServiceClass:
-    def resumeextractor(self, db: Session, resume_url: str, userId: str):
+    async def resumeextractor(self, db: Session, resume_url: str, userId: str):
         if not userId:
             logger.error(
                 f"Project creation failed: Missing user ID",
@@ -54,7 +54,7 @@ class ResumeExtractorServiceClass:
                 extra={"userId": userId},
             )
 
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(
                 f"No existing profile for user {userId}, proceeding",

@@ -19,7 +19,7 @@ from app.helpers.db_helpers import get_user_profile
 
 
 class ExperienceServiceClass:
-    def create_experience(
+    async def create_experience(
         self, db: Session, payload: ExperienceCreateRequest, userId
     ) -> ExperienceCreateResponse:
         """
@@ -117,7 +117,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -217,7 +217,9 @@ class ExperienceServiceClass:
                 detail="An unexpected error occurred while creating the experience.",
             )
 
-    def list_experiences(self, db: Session, userId: str) -> list[ExperienceGetResponse]:
+    async def list_experiences(
+        self, db: Session, userId: str
+    ) -> list[ExperienceGetResponse]:
         """
         Retrieve all experiences for an authenticated user.
 
@@ -266,7 +268,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -334,7 +336,7 @@ class ExperienceServiceClass:
                 detail="An unexpected error occurred while retrieving experiences.",
             )
 
-    def get_experience(
+    async def get_experience(
         self, db: Session, userId: str, experienceId: str
     ) -> ExperienceGetResponse:
         """
@@ -400,7 +402,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -493,7 +495,7 @@ class ExperienceServiceClass:
                 detail="An unexpected error occurred while retrieving experience.",
             )
 
-    def update_experience(
+    async def update_experience(
         self,
         db: Session,
         userId: str,
@@ -639,7 +641,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -829,7 +831,9 @@ class ExperienceServiceClass:
                 detail="An unexpected error occurred while updating experience.",
             )
 
-    def delete_experience(self, db: Session, userId: str, experienceId: str) -> dict:
+    async def delete_experience(
+        self, db: Session, userId: str, experienceId: str
+    ) -> dict:
         """
         Delete a specific experience for an authenticated user.
 
@@ -894,7 +898,7 @@ class ExperienceServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(

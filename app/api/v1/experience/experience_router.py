@@ -48,7 +48,7 @@ async def create_experience(
             extra={"userId": str(current_user.id)},
         )
 
-        experience = ExperienceService.create_experience(
+        experience = await ExperienceService.create_experience(
             db=db, payload=data, userId=str(current_user.id)
         )
 
@@ -104,7 +104,7 @@ async def list_experiences(
             extra={"userId": str(current_user.id)},
         )
 
-        experiences = ExperienceService.list_experiences(
+        experiences = await ExperienceService.list_experiences(
             db=db, userId=str(current_user.id)
         )
 
@@ -163,7 +163,7 @@ async def get_experience(
             extra={"userId": str(current_user.id), "experienceId": experienceId},
         )
 
-        experience = ExperienceService.get_experience(
+        experience = await ExperienceService.get_experience(
             db=db, userId=str(current_user.id), experienceId=experienceId
         )
 
@@ -228,7 +228,7 @@ async def update_experience(
             extra={"userId": str(current_user.id), "experienceId": experienceId},
         )
 
-        experience = ExperienceService.update_experience(
+        experience = await ExperienceService.update_experience(
             db=db, payload=data, userId=str(current_user.id), experienceId=experienceId
         )
 
@@ -290,7 +290,7 @@ async def delete_experience(
             extra={"userId": str(current_user.id), "experienceId": experienceId},
         )
 
-        response = ExperienceService.delete_experience(
+        response = await ExperienceService.delete_experience(
             db=db, userId=str(current_user.id), experienceId=experienceId
         )
 

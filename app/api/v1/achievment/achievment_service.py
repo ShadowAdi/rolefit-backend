@@ -16,7 +16,7 @@ from app.helpers.db_helpers import get_user_profile
 
 
 class AchievementServiceClass:
-    def create_achievement(
+    async def create_achievement(
         self, db: Session, payload: AchievementCreateRequest, userId
     ) -> AchievementCreateResponse:
         """
@@ -102,7 +102,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             logger.info(f"User profile verified successfully for user: {userId}")
 
@@ -189,7 +189,7 @@ class AchievementServiceClass:
                 detail="An unexpected error occurred while creating the achievement record.",
             )
 
-    def list_achievements(
+    async def list_achievements(
         self, db: Session, userId: str
     ) -> list[AchievementGetResponse]:
         """
@@ -240,7 +240,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -310,7 +310,7 @@ class AchievementServiceClass:
                 detail="An unexpected error occurred while retrieving achievement records.",
             )
 
-    def get_achievement(
+    async def get_achievement(
         self, db: Session, userId: str, achievementId: str
     ) -> AchievementGetResponse:
         """
@@ -376,7 +376,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -469,7 +469,7 @@ class AchievementServiceClass:
                 detail="An unexpected error occurred while retrieving achievement record.",
             )
 
-    def update_achievement(
+    async def update_achievement(
         self,
         db: Session,
         userId: str,
@@ -594,7 +594,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(
@@ -774,7 +774,9 @@ class AchievementServiceClass:
                 detail="An unexpected error occurred while updating achievement record.",
             )
 
-    def delete_achievement(self, db: Session, userId: str, achievementId: str) -> dict:
+    async def delete_achievement(
+        self, db: Session, userId: str, achievementId: str
+    ) -> dict:
         """
         Delete a specific achievement record for an authenticated user.
 
@@ -839,7 +841,7 @@ class AchievementServiceClass:
             logger.info(f"User verified successfully: {userId}")
 
             logger.info(f"Verifying user profile exists for user: {userId}")
-            user_profile = get_user_profile(db, userId)
+            user_profile = await get_user_profile(db, userId)
 
             if not user_profile:
                 logger.warning(

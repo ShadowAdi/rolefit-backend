@@ -48,7 +48,7 @@ async def create_achievement(
             extra={"userId": str(current_user.id)},
         )
 
-        achievement = AchievementService.create_achievement(
+        achievement = await AchievementService.create_achievement(
             db=db, payload=data, userId=str(current_user.id)
         )
 
@@ -107,7 +107,7 @@ async def list_achievements(
             extra={"userId": str(current_user.id)},
         )
 
-        achievements = AchievementService.list_achievements(
+        achievements = await AchievementService.list_achievements(
             db=db, userId=str(current_user.id)
         )
 
@@ -169,7 +169,7 @@ async def get_achievement(
             extra={"userId": str(current_user.id), "achievementId": achievementId},
         )
 
-        achievement = AchievementService.get_achievement(
+        achievement = await AchievementService.get_achievement(
             db=db, userId=str(current_user.id), achievementId=achievementId
         )
 
@@ -237,7 +237,7 @@ async def update_achievement(
             extra={"userId": str(current_user.id), "achievementId": achievementId},
         )
 
-        achievement = AchievementService.update_achievement(
+        achievement = await AchievementService.update_achievement(
             db=db,
             payload=data,
             userId=str(current_user.id),
@@ -305,7 +305,7 @@ async def delete_achievement(
             extra={"userId": str(current_user.id), "achievementId": achievementId},
         )
 
-        response = AchievementService.delete_achievement(
+        response = await AchievementService.delete_achievement(
             db=db, userId=str(current_user.id), achievementId=achievementId
         )
 

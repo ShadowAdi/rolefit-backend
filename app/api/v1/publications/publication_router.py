@@ -51,7 +51,7 @@ async def create_publication(
             extra={"userId": str(current_user.id)},
         )
 
-        publication = PublicationService.create_publication(
+        publication = await PublicationService.create_publication(
             db=db, payload=data, userId=str(current_user.id)
         )
 
@@ -110,7 +110,7 @@ async def list_publications(
             extra={"userId": str(current_user.id)},
         )
 
-        publications = PublicationService.list_publications(
+        publications = await PublicationService.list_publications(
             db=db, userId=str(current_user.id)
         )
 
@@ -172,7 +172,7 @@ async def get_publication(
             extra={"userId": str(current_user.id), "publicationId": publicationId},
         )
 
-        publication = PublicationService.get_publication(
+        publication = await PublicationService.get_publication(
             db=db, userId=str(current_user.id), publicationId=publicationId
         )
 
@@ -240,7 +240,7 @@ async def update_publication(
             extra={"userId": str(current_user.id), "publicationId": publicationId},
         )
 
-        publication = PublicationService.update_publication(
+        publication = await PublicationService.update_publication(
             db=db,
             payload=data,
             userId=str(current_user.id),
@@ -308,7 +308,7 @@ async def delete_publication(
             extra={"userId": str(current_user.id), "publicationId": publicationId},
         )
 
-        response = PublicationService.delete_publication(
+        response = await PublicationService.delete_publication(
             db=db, userId=str(current_user.id), publicationId=publicationId
         )
 
