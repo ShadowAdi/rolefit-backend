@@ -53,7 +53,6 @@ class BoldCLHeader(Flowable):
 
     def draw(self):
         c = self.canv
-        c.rect(0, 0, self._width, self._height, fill=1, stroke=0)
 
         inner_w = self._width - 2 * self.PAD_H
         name_w = inner_w * 0.6
@@ -62,7 +61,6 @@ class BoldCLHeader(Flowable):
         _, nh = self._name_para.wrap(name_w, 9999)
         _, ch = self._contact_para.wrap(contact_w, 9999)
 
-        # Vertically centre both in the block
         name_y = (self._height - nh) / 2
         contact_y = (self._height - ch) / 2
 
