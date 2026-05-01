@@ -53,7 +53,6 @@ class BoldCLHeader(Flowable):
 
     def draw(self):
         c = self.canv
-        c.setFillColor(BOLD_BG)
         c.rect(0, 0, self._width, self._height, fill=1, stroke=0)
 
         inner_w = self._width - 2 * self.PAD_H
