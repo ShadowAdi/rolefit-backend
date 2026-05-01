@@ -63,13 +63,12 @@ async def get_my_profile(
     Returns:
         GetUserApiResponse: Current user profile data
     """
-    user = UserService.get_current_user(db, current_user.id)
 
     return GetUserApiResponse(
         success=True,
         status_code=status.HTTP_200_OK,
         message="User profile fetched successfully",
-        data=user,
+        data=current_user,
         timestamp=datetime.now(timezone.utc),
     )
 
