@@ -52,7 +52,7 @@ class ResumeExtractorServiceClass:
                 f"Resume URL validated for user {userId}", extra={"userId": userId}
             )
 
-            extracted = extract_resume_content(resume_url=resume_url.strip())
+            extracted = await extract_resume_content(resume_url=resume_url.strip())
 
             logger.info(
                 f"Resume content extracted for user {userId}", extra={"userId": userId}
