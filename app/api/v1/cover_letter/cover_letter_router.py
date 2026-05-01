@@ -105,10 +105,13 @@ def _stream_pdf(pdf_bytes: bytes, filename: str, inline: bool) -> StreamingRespo
     )
 
 
-@router.get("/{docId}/{cover_letter_type}/download")
+@router.get("/{docId}/download")
 async def download_cover_letter_pdf(
     docId: str,
-    cover_letter_type: Literal["classic", "bold", "minimal"] = Query(default="classic"),
+    cover_letter_type: str = Query(
+        default="classic",
+        description="Cover letter template: classic, bold, or minimal",
+    ),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
