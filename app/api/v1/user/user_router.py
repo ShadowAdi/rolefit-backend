@@ -34,6 +34,7 @@ def register(data: UserCreateRequest, db: Session = Depends(get_db)):
     Returns:
         RegisterApiResponse: User account created with success status
     """
+    data.email = data.email.lower().strip()
     user = UserService.register(db=db, data=data)
 
     return RegisterApiResponse(
