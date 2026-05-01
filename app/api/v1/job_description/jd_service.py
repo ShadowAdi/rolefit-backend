@@ -3,6 +3,7 @@ import requests
 import json
 import re
 import hashlib
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
@@ -27,6 +28,15 @@ from app.validators.job_description_validators import (
 from app.helpers.jd_parser import JDParseError, parse_jd_with_ai
 from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 from typing import List
+
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles datetime objects"""
+
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 class JobDescriptionClass:
@@ -258,7 +268,9 @@ class JobDescriptionClass:
                 if hasattr(response, "model_dump")
                 else response.dict()
             )
-            await set_cache(cache_key, json.dumps(response_dict), ttl=3600)
+            await set_cache(
+                cache_key, json.dumps(response_dict, cls=DateTimeEncoder), ttl=3600
+            )
             return response
 
         except HTTPException:
@@ -332,7 +344,9 @@ class JobDescriptionClass:
                 item.model_dump() if hasattr(item, "model_dump") else item.dict()
                 for item in response
             ]
-            await set_cache(cache_key, json.dumps(response_dicts), ttl=3600)
+            await set_cache(
+                cache_key, json.dumps(response_dicts, cls=DateTimeEncoder), ttl=3600
+            )
             return response
 
         except HTTPException:
