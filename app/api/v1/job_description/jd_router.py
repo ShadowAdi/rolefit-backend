@@ -44,7 +44,7 @@ async def generate_job_description(
 ):
     user_id = current_user.id
     logger.info(f"Generating job description from raw JD for user: {current_user.id}")
-    return jd_service.generate_jd(db, str(user_id), body.payload)
+    return await jd_service.generate_jd(db, str(user_id), body.payload)
 
 
 @router.get(
