@@ -43,7 +43,7 @@ def _extract_clean_json(text: str) -> dict:
 
 
 class ContentServiceClass:
-    def generate_resume_content(
+    async def generate_resume_content(
         self,
         userId: str,
         jobId: str,
@@ -62,7 +62,7 @@ class ContentServiceClass:
 
             # Try cache first for job profile
             job_profile_cache_key = f"job-profile-{jobId}-{userId}"
-            cached_profile = get_cache(job_profile_cache_key)
+            cached_profile = await get_cache(job_profile_cache_key)
             if cached_profile:
                 logger.info(f"Job profile retrieved from cache for jobId={jobId}")
                 job_profile_response = json.loads(cached_profile)
@@ -71,7 +71,7 @@ class ContentServiceClass:
                     jobId=jobId, userId=userId, db=db, content_type="Resume"
                 )
                 # Cache job profile for 6 hours (won't change unless JD is updated)
-                set_cache(
+                await set_cache(
                     job_profile_cache_key, json.dumps(job_profile_response), ttl=21600
                 )
 
@@ -440,7 +440,7 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while deleting content.",
             )
 
-    def generate_cover_letter_content(
+    async def generate_cover_letter_content(
         self,
         userId: str,
         jobId: str,
@@ -452,7 +452,7 @@ class ContentServiceClass:
 
             # Try cache first for job profile
             job_profile_cache_key = f"job-profile-{jobId}-{userId}"
-            cached_profile = get_cache(job_profile_cache_key)
+            cached_profile = await get_cache(job_profile_cache_key)
             if cached_profile:
                 logger.info(f"Job profile retrieved from cache for jobId={jobId}")
                 job_profile_response = json.loads(cached_profile)
@@ -461,7 +461,7 @@ class ContentServiceClass:
                     jobId=jobId, userId=userId, db=db, content_type="cover_letter"
                 )
                 # Cache job profile for 6 hours (won't change unless JD is updated)
-                set_cache(
+                await set_cache(
                     job_profile_cache_key, json.dumps(job_profile_response), ttl=21600
                 )
 

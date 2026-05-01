@@ -22,7 +22,7 @@ async def generate_resume_content(
 ):
     user_id = current_user.id
     logger.info(f"Creating job description for user: {user_id}")
-    return content_service.generate_resume_content(
+    return await content_service.generate_resume_content(
         userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
     )
 
@@ -83,6 +83,6 @@ async def generate_cover_letter_content(
 ):
     user_id = current_user.id
     logger.info(f"Creating cover letter content for user: {user_id}")
-    return content_service.generate_cover_letter_content(
+    return await content_service.generate_cover_letter_content(
         userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
     )
