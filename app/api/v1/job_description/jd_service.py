@@ -595,17 +595,6 @@ class JobDescriptionClass:
                     detail=f"Invalid User ID format {userId}",
                 )
 
-            user = db.query(User).filter(User.id == user_uuid).first()
-            if not user:
-                logger.warning(
-                    "JD Generation failed: User not found",
-                    extra={"userId": userId},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User does not exist",
-                )
-
             logger.info(f"Generating job description from raw JD for user: {userId}")
 
             parsed_data = parse_jd_with_ai(raw_jd)
@@ -613,7 +602,7 @@ class JobDescriptionClass:
             logger.debug(f"Parsed role_name: {parsed_data.get('role_name')}")
 
             jd_payload = JobDescriptionCreate(
-                user_id=str(user.id),
+                user_id=userId,
                 role_name=parsed_data.get("role_name"),
                 company=parsed_data.get("company"),
                 role_type=parsed_data.get("role_type"),
