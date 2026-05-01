@@ -1,6 +1,8 @@
 from app.utils.redis_keys import REDIS_URL
 from redis.asyncio import Redis
 
+redis: Redis | None = None
+
 
 async def init_redis():
     global redis
