@@ -1,4 +1,6 @@
 import json
+import pickle
+import base64
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -13,6 +15,7 @@ from app.helpers.build_pdf import build_pdf
 from app.helpers.build_pdf_bold import build_pdf_bold
 from app.helpers.build_pdf_minimalist import build_pdf_minimalist
 from app.helpers.build_pdf_sidebar import build_pdf_sidebar
+from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 
 from app.core.logger import logger
 
@@ -20,6 +23,17 @@ router = APIRouter(prefix="", tags=["Resume PDF"])
 
 
 def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocumment:
+    cache_key = f"doc-{docId}"
+    cached_doc = get_cache(cache_key)
+    if cached_doc:
+        doc = pickle.loads(base64.b64decode(cached_doc))
+        if str(doc.userId) != str(userId):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have access to this document.",
+            )
+        return doc
+
     doc = db.query(GeneratedDocumment).filter(GeneratedDocumment.id == docId).first()
     if not doc:
         raise HTTPException(
@@ -33,10 +47,19 @@ def _get_verified_doc(docId: str, userId: str, db: Session) -> GeneratedDocummen
             detail="You do not have access to this document.",
         )
 
+    # Cache the doc object (1 hour)
+    set_cache(cache_key, base64.b64encode(pickle.dumps(doc)).decode(), ttl=3600)
+
     return doc
 
 
-def _parse_resume_text(resume_text: str) -> ResumeData:
+def _parse_resume_text(resume_text: str, docId: str) -> ResumeData:
+    # Try cache first
+    cache_key = f"resume-parsed-{docId}"
+    cached_resume = get_cache(cache_key)
+    if cached_resume:
+        return ResumeData(**json.loads(cached_resume))
+
     try:
         raw = resume_text.strip()
         if raw.startswith("```"):
@@ -44,7 +67,12 @@ def _parse_resume_text(resume_text: str) -> ResumeData:
             raw = "\n".join(lines[1:-1]).strip()
 
         parsed = json.loads(raw)
-        return ResumeData(**parsed)
+        resume_data = ResumeData(**parsed)
+
+        # Cache the parsed resume data (24 hours)
+        set_cache(cache_key, json.dumps(parsed), ttl=86400)
+
+        return resume_data
 
     except (json.JSONDecodeError, ValueError) as e:
         logger.error(f"Failed to parse resume_text as JSON: {e}")
@@ -81,24 +109,34 @@ async def download_resume_pdf(
     logger.info(f"PDF download requested | user={user_id} doc={docId}")
 
     doc = _get_verified_doc(docId, user_id, db)
-    resume_data = _parse_resume_text(doc.resume_text)
+    resume_data = _parse_resume_text(doc.resume_text, docId)
 
-    try:
-        if resume_type == "minimalist":
-            pdf_bytes = build_pdf_minimalist(resume_data)
-        elif resume_type == "bold":
-            pdf_bytes = build_pdf_bold(resume_data)
-        elif resume_type == "two-column":
-            pdf_bytes = build_pdf_sidebar(resume_data)
-        else:
-            pdf_bytes = build_pdf(resume_data)
+    # Try cache first for PDF bytes
+    pdf_cache_key = f"resume-pdf-{docId}-{resume_type}"
+    cached_pdf = get_cache(pdf_cache_key)
+    if cached_pdf:
+        logger.info(f"PDF served from cache | doc={docId} type={resume_type}")
+        pdf_bytes = base64.b64decode(cached_pdf)
+    else:
+        try:
+            if resume_type == "minimalist":
+                pdf_bytes = build_pdf_minimalist(resume_data)
+            elif resume_type == "bold":
+                pdf_bytes = build_pdf_bold(resume_data)
+            elif resume_type == "two-column":
+                pdf_bytes = build_pdf_sidebar(resume_data)
+            else:
+                pdf_bytes = build_pdf(resume_data)
 
-    except Exception as e:
-        logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate PDF. Please try again.",
-        )
+        except Exception as e:
+            logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate PDF. Please try again.",
+            )
+
+        # Cache the PDF bytes (24 hours)
+        set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
 
     name_slug = resume_data.header.name.replace(" ", "_").lower()
     return _stream_pdf(pdf_bytes, f"{name_slug}_resume.pdf", inline=False)
@@ -115,16 +153,26 @@ async def preview_resume_pdf(
     logger.info(f"PDF preview requested | user={user_id} doc={docId}")
 
     doc = _get_verified_doc(docId, user_id, db)
-    resume_data = _parse_resume_text(doc.resume_text)
+    resume_data = _parse_resume_text(doc.resume_text, docId)
 
-    try:
-        pdf_bytes = build_pdf(resume_data)
-    except Exception as e:
-        logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate PDF. Please try again.",
-        )
+    # Try cache first for preview PDF
+    pdf_cache_key = f"resume-pdf-{docId}-preview"
+    cached_pdf = get_cache(pdf_cache_key)
+    if cached_pdf:
+        logger.info(f"PDF preview served from cache | doc={docId}")
+        pdf_bytes = base64.b64decode(cached_pdf)
+    else:
+        try:
+            pdf_bytes = build_pdf(resume_data)
+        except Exception as e:
+            logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to generate PDF. Please try again.",
+            )
+
+        # Cache the preview PDF (24 hours)
+        set_cache(pdf_cache_key, base64.b64encode(pdf_bytes).decode(), ttl=86400)
 
     return _stream_pdf(pdf_bytes, "resume_preview.pdf", inline=True)
 
