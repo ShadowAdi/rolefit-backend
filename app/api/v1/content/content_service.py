@@ -15,6 +15,7 @@ from app.response.GenerateDocument_responses import (
     GeneratedDocumnetResponse,
     DeleteDocumnetResponse,
 )
+from app.tasks.ai_tasks import generate_resume_task, generate_cover_letter_task
 from app.helpers.grok_ai_headers import grok_api_key_headers
 from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 from app.utils.extract_clean_json_content import _extract_clean_json
@@ -40,7 +41,36 @@ class ContentServiceClass:
                     detail="Failed to generate content.",
                 )
 
-            # Try cache first for job profile
+            existing = (
+                db.query(GeneratedDocumment)
+                .filter(
+                    GeneratedDocumment.jobId == jobId,
+                    GeneratedDocumment.userId == userId,
+                    GeneratedDocumment.gen_doc_type == "Resume",
+                )
+                .count()
+            )
+
+            if existing >= 3:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="A single job can't have more than 3 generated resumes. Delete one first.",
+                )
+
+            gen_doc = GeneratedDocumment(
+                userId=UUID(userId),
+                jobId=UUID(jobId),
+                user_specifications=user_specifications,
+                resume_text=None,
+                gen_doc_type="Resume",
+                status="pending",
+            )
+            db.add(gen_doc)
+            db.commit()
+            db.refresh(gen_doc)
+
+            doc_id = str(gen_doc.id)
+
             job_profile_cache_key = f"job-profile-{jobId}-{userId}"
             cached_profile = await get_cache(job_profile_cache_key)
             if cached_profile:
@@ -50,90 +80,25 @@ class ContentServiceClass:
                 job_profile_response = await filter_jd(
                     jobId=jobId, userId=userId, db=db, content_type="Resume"
                 )
-                # Cache job profile for 6 hours (won't change unless JD is updated)
                 await set_cache(
                     job_profile_cache_key, json.dumps(job_profile_response), ttl=21600
                 )
 
-            genDocs = (
-                db.query(GeneratedDocumment)
-                .filter(
-                    GeneratedDocumment.jobId == jobId,
-                    GeneratedDocumment.userId == userId,
-                    GeneratedDocumment.gen_doc_type == "Resume",
-                )
-                .all()
-            )
-            if len(genDocs) > 3:
-                logger.error("One Job cant have more than 3 Docs")
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=f"A Single Job cant have more than 3 Generated Content. Delete the previous or use already existing ones to generate resume",
-                )
-
-            prompt = build_resume_prompt(job_profile_response)
-
-            logger.debug("Calling Groq API for resume generation")
-
-            api_key = grok_api_key_headers()
-            groq_client = Groq(api_key=api_key)
-
-            chat_completion = groq_client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a JSON-only resume writer. "
-                            "Output ONLY valid JSON. No markdown, no explanation, no extra text."
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    },
-                ],
-                model="llama-3.3-70b-versatile",
-                max_tokens=4000,
-                temperature=0.3,
+            task = generate_resume_task.delay(
+                doc_id=doc_id,
+                user_id=userId,
+                job_id=jobId,
+                user_specifications=user_specifications or "",
             )
 
-            message_content = chat_completion.choices[0].message.content
+            logger.info(f"Resume task queued | doc={doc_id} celery_task={task.id}")
 
-            if not message_content:
-                logger.error("Groq returned empty content")
-                raise ValueError("No content in Groq API response")
-
-            try:
-                clean_json = _extract_clean_json(message_content)
-            except (ValueError, json.JSONDecodeError) as e:
-                logger.error(
-                    f"Groq returned invalid JSON for user={userId} job={jobId}: {e}",
-                    extra={"raw_response": message_content[:500]},
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=(
-                        "The AI returned an unexpected format. "
-                        "Please try generating again."
-                    ),
-                )
-
-            logger.debug(f"Resume JSON generated successfully for user={userId}")
-
-            gen_doc = GeneratedDocumment(
-                userId=UUID(userId),
-                jobId=UUID(jobId),
-                user_specifications=user_specifications,
-                resume_text=json.dumps(clean_json),
-                gen_doc_type="Resume",
-                status="completed",
-            )
-
-            db.add(gen_doc)
-            db.commit()
-            db.refresh(gen_doc)
-
-            return GenerateDocCreateResponse.model_validate(gen_doc)
+            return {
+                "doc_id": doc_id,
+                "task_id": task.id,
+                "status": "pending",
+                "message": "Resume generation queued. Poll /status/{doc_id} for updates.",
+            }
 
         except HTTPException:
             raise
