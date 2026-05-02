@@ -7,7 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from groq import Groq
 
-from celery_app import celery_app
+from app.core.celery_app import celery_app
 from app.helpers.grok_ai_headers import grok_api_key_headers
 from app.utils.extract_clean_json_content import _extract_clean_json
 from app.db.db import SessionLocal

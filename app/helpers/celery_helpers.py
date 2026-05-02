@@ -1,5 +1,5 @@
 from celery import Celery
-from app.celery_app import celery_app
+from app.core.celery_app import celery_app
 from app.core.logger import logger
 from celery.result import AsyncResult
 from typing import Any, Dict
