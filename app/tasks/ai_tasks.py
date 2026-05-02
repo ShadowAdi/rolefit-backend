@@ -110,6 +110,68 @@ def generate_resume_task(
         db.close()
 
 
+@celery_app.task(
+    name="app.tasks.ai_tasks.generate_cover_letter_task",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=10,
+    acks_late=True,
+)
+def generate_cover_letter_task(
+    self,
+    doc_id: str,
+    user_id: str,
+    job_id: str,
+    user_specifications: str,
+):
+    """
+    Worker task: build cover letter content via Groq and save to DB.
+
+    Called by: ContentService.generate_cover_letter_content()
+    """
+    logger.info(
+        f"[cover_letter] Starting task doc={doc_id} user={user_id} job={job_id}"
+    )
+    db = SessionLocal()
+
+    try:
+        _mark_processing(db, doc_id)
+
+        job_profile = filter_jd_sync(
+            job_id=job_id, user_id=user_id, db=db, content_type="cover_letter"
+        )
+
+        prompt = _build_cover_letter_prompt(job_profile, user_specifications)
+        clean_json = _call_groq(prompt)
+
+        doc = (
+            db.query(GeneratedDocumment).filter(GeneratedDocumment.id == doc_id).first()
+        )
+        if not doc:
+            raise ValueError(f"Doc {doc_id} not found in DB")
+
+        doc.cover_letter_text = json.dumps(clean_json)
+        doc.status = "completed"
+        db.commit()
+
+        logger.info(f"[cover_letter] Completed doc={doc_id}")
+        return {"status": "completed", "doc_id": doc_id}
+
+    except Exception as exc:
+        db.rollback()
+        logger.error(f"[cover_letter] Failed doc={doc_id}: {exc}", exc_info=True)
+
+        try:
+            raise self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            _mark_failed(db, doc_id, str(exc))
+            logger.error(f"[cover_letter] Max retries exceeded doc={doc_id}")
+            return {"status": "failed", "doc_id": doc_id}
+
+    finally:
+        db.close()
+
+
 @celery_app.task(name="app.tasks.ai_tasks.cleanup_old_tasks")
 def cleanup_old_tasks():
     db = SessionLocal()
