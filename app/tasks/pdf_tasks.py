@@ -17,7 +17,7 @@ import os
 
 
 @shared_task(bind=True, name="app.tasks.pdf_tasks.generate_resume_pdf")
-def generate_resume_pdf(
+async def generate_resume_pdf(
     self, user_id: str, resume_data: dict, template: str = "default"
 ):
     """
@@ -63,7 +63,7 @@ def generate_resume_pdf(
 
 
 @shared_task(bind=True, name="app.tasks.pdf_tasks.generate_cover_letter_pdf")
-def generate_cover_letter_pdf(
+async def generate_cover_letter_pdf(
     self, user_id: str, cover_letter_data: dict, template: str = "default"
 ):
     """
