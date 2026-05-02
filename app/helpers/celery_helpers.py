@@ -61,3 +61,47 @@ class TaskHelper:
         except Exception as e:
             logger.error(f"Failed to revoke task {task_id}: {str(e)}")
             return False
+
+
+class QuickTask:
+
+    @staticmethod
+    def generate_resume(user_data: dict, jd_content: str) -> str:
+        return TaskHelper.submit_task(
+            "app.tasks.ai_tasks.generate_resume_with_ai", user_data, jd_content
+        )
+
+    @staticmethod
+    def generate_cover_letter(user_data: Dict, jd_content: str) -> str:
+        """Submit cover letter generation task and return task ID"""
+        return TaskHelper.submit_task(
+            "app.tasks.ai_tasks.generate_cover_letter_with_ai", user_data, jd_content
+        )
+
+    @staticmethod
+    def generate_resume_pdf(
+        user_id: str, resume_data: Dict, template: str = "default"
+    ) -> str:
+        """Submit resume PDF generation task and return task ID"""
+        return TaskHelper.submit_task(
+            "app.tasks.pdf_tasks.generate_resume_pdf", user_id, resume_data, template
+        )
+
+    @staticmethod
+    def generate_cover_letter_pdf(
+        user_id: str, cover_letter_data: Dict, template: str = "default"
+    ) -> str:
+        """Submit cover letter PDF generation task and return task ID"""
+        return TaskHelper.submit_task(
+            "app.tasks.pdf_tasks.generate_cover_letter_pdf",
+            user_id,
+            cover_letter_data,
+            template,
+        )
+
+    @staticmethod
+    def parse_jd(jd_content: str) -> str:
+        """Submit JD parsing task and return task ID"""
+        return TaskHelper.submit_task(
+            "app.tasks.ai_tasks.parse_job_description", jd_content
+        )
