@@ -385,6 +385,74 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while deleting content.",
             )
 
+    def get_document_status(
+        self,
+        doc_id: str,
+        userId: str,
+        db: Session,
+    ):
+        try:
+            if not doc_id or not userId:
+                logger.error("Failed to fetch document status. No doc id and user id")
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Failed to fetch document status.",
+                )
+
+            doc = (
+                db.query(GeneratedDocumment)
+                .filter(
+                    GeneratedDocumment.id == doc_id,
+                    GeneratedDocumment.userId == userId,
+                )
+                .first()
+            )
+
+            if not doc:
+                logger.warning(f"Document not found: {doc_id}")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Document not found.",
+                )
+
+            response = {
+                "doc_id": doc_id,
+                "status": doc.status,
+                "type": doc.gen_doc_type,
+            }
+
+            if doc.status == "failed" and getattr(doc, "error", None):
+                response["error"] = doc.error
+
+            return response
+
+        except HTTPException:
+            raise
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"DB error for fetching document status doc={doc_id}",
+                extra={"error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while fetching document status.",
+            )
+
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error for user={userId}",
+                extra={"error": str(e), "errorType": type(e).__name__},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while fetching document status.",
+            )
+
     async def generate_cover_letter_content(
         self,
         userId: str,

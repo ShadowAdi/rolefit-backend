@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 from app.dependency.dependencies import get_db, get_current_user
 from app.api.v1.content.content_service import ContentServiceClass
@@ -85,4 +85,21 @@ async def generate_cover_letter_content(
     logger.info(f"Creating cover letter content for user: {user_id}")
     return await content_service.generate_cover_letter_content(
         userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
+    )
+
+
+@router.get("/{doc_id}/status")
+async def get_document_status(
+    doc_id: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Poll after POST /generate.
+    When status == "completed" → call /preview or /download.
+    When status == "failed"    → show error, offer retry.
+    """
+    user_id = current_user.id
+    return content_service.get_document_status(
+        doc_id=doc_id, userId=str(user_id), db=db
     )
