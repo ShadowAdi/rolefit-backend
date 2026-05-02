@@ -23,7 +23,7 @@ celery_app.conf.update(
     task_autoretry_for={"exc": Exception, "max_retries": 3, "countdown": 5},
 )
 
-celery_app.conf.celery_app.conf.beat_schedule = {
+celery_app.conf.beat_schedule = {
     "cleanup-old-tasks": {
         "task": "app.tasks.ai_tasks.cleanup_old_tasks",
         "schedule": crontab(minute=0),
