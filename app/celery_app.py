@@ -12,11 +12,13 @@ load_dotenv()
 
 # Get Redis URL from environment
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_CELERY_URL = os.getenv("REDIS_CELERY_URL", "redis://localhost:6379/0")
+
 
 # Create Celery app
 celery_app = Celery(
     "rolefit",
-    broker=REDIS_URL,  # Where tasks are stored (Redis)
+    broker=REDIS_CELERY_URL,  # Where tasks are stored (Redis)
     backend=REDIS_URL,  # Where results are stored (Redis)
 )
 
