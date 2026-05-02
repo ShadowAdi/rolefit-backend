@@ -4,8 +4,6 @@ from app.utils.prompt_utils import (
     _sanitize_user_specifications,
 )
 
-# ── Paragraph-count config ────────────────────────────────────────────────
-
 _PARA_CONFIGS = {
     2: {
         "description": "2 paragraphs: opening + closing only (very concise).",

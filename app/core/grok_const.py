@@ -1,0 +1,3 @@
+GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MAX_TOKENS = 4000
+GROQ_TEMP = 0.3

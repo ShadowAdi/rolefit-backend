@@ -17,29 +17,9 @@ from app.response.GenerateDocument_responses import (
 )
 from app.helpers.grok_ai_headers import grok_api_key_headers
 from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
+from app.utils.extract_clean_json_content import _extract_clean_json
 from uuid import UUID
 from groq import Groq
-
-
-def _extract_clean_json(text: str) -> dict:
-    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
-
-    text = re.sub(r"^```(?:json)?\s*", "", text).strip()
-    text = re.sub(r"\s*```$", "", text).strip()
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        try:
-            return json.loads(match.group())
-        except json.JSONDecodeError:
-            pass
-
-    raise ValueError("Could not extract valid JSON from model output")
 
 
 class ContentServiceClass:
