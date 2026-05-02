@@ -108,3 +108,32 @@ def generate_resume_task(
 
     finally:
         db.close()
+
+
+@celery_app.task(name="app.tasks.ai_tasks.cleanup_old_tasks")
+def cleanup_old_tasks():
+    db = SessionLocal()
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
+
+    try:
+        stuck = (
+            db.query(GeneratedDocumment)
+            .filter(
+                GeneratedDocumment.status == "processing",
+                GeneratedDocumment.created_at < cutoff,
+            )
+            .all()
+        )
+        for doc in stuck:
+            doc.status = "failed"
+            doc.error = "Task timed out — please regenerate."
+            logger.warning(f"[cleanup] Marked stuck doc={doc.id} as failed")
+        db.commit()
+        logger.info(f"[cleanup] Cleaned {len(stuck)} stuck tasks")
+        return {"cleaned": len(stuck)}
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error(f"[cleanup] DB error: {e}")
+    finally:
+        db.close()
