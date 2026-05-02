@@ -42,3 +42,12 @@ class TaskHelper:
             return {"status": "RETRY", "message": "Task is being retried"}
         else:
             return {"status": result.state, "info": str(result.info)}
+
+    @staticmethod
+    def wait_for_task(task_id: str, timeout: int = 3000) -> Any:
+        result = AsyncResult(task_id, app=celery_app)
+        try:
+            return result.get(timeout=timeout)
+        except Exception as e:
+            logger.error(f"Error waiting for task {task_id}: {str(e)}")
+            raise
