@@ -1,4 +1,4 @@
-from app.utils.redis_keys import REDIS_URL
+from app.core.redis_keys import REDIS_URL
 from redis.asyncio import Redis
 
 redis: Redis | None = None
