@@ -51,3 +51,13 @@ class TaskHelper:
         except Exception as e:
             logger.error(f"Error waiting for task {task_id}: {str(e)}")
             raise
+
+    @staticmethod
+    def revoke_task(task_id: str) -> bool:
+        try:
+            celery_app.control.revoke(task_id, terminate=True)
+            logger.info(f"Task revoked: {task_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to revoke task {task_id}: {str(e)}")
+            return False
