@@ -1,34 +1,34 @@
-from app.db.redis_db import redis
+from app.db import redis_db
 from app.core.logger import logger
 
 
 async def get_cache(key: str):
-    if not redis:
+    if not redis_db.redis:
         logger.warning("Redis not initialized. Cache retrieval skipped.")
         return None
     try:
-        return await redis.get(key)
+        return await redis_db.redis.get(key)
     except Exception as e:
         logger.error(f"Error retrieving cache for key {key}: {str(e)}")
         return None
 
 
 async def set_cache(key: str, value: str, ttl: int = 300):
-    if not redis:
+    if not redis_db.redis:
         logger.warning("Redis not initialized. Cache write skipped.")
         return
     try:
-        await redis.set(key, value, ex=ttl)
+        await redis_db.redis.set(key, value, ex=ttl)
     except Exception as e:
         logger.error(f"Error setting cache for key {key}: {str(e)}")
 
 
 async def delete_cache(key: str):
-    if not redis:
+    if not redis_db.redis:
         logger.warning("Redis not initialized. Cache deletion skipped.")
         return
     try:
-        await redis.delete(key)
+        await redis_db.redis.delete(key)
     except Exception as e:
         logger.error(f"Error deleting cache for key {key}: {str(e)}")
 
