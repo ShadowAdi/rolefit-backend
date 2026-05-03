@@ -1,9 +1,4 @@
 from fastapi import FastAPI
-from sqlalchemy import text
-import feedparser
-import requests
-import os
-import json
 from dotenv import load_dotenv
 
 from app.db import db as database
