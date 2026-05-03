@@ -14,6 +14,9 @@ celery_app = Celery(name="Rolefit_worker", broker=REDIS_CELERY_URL, backend=REDI
 # Register tasks from app.tasks module
 celery_app.autodiscover_tasks(["app.tasks"])
 
+# Explicitly import task modules to ensure they're registered
+from app.tasks import pdf_task, cover_letter_task
+
 celery_app.conf.update(
     result_expires=3600,
     task_serializer="json",
