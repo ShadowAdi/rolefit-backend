@@ -38,7 +38,7 @@ async def start_redis_subscriber():
                     logger.warning("[Redis subscriber] Event missing user_id — skipped")
                     continue
 
-                await message.send(user_id, event)
+                await manager.send(user_id, event)
 
         except asyncio.CancelledError:
             logger.info("[Redis subscriber] Cancelled — shutting down")
