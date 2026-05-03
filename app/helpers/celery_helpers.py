@@ -1,4 +1,3 @@
-from celery import Celery
 from app.core.celery_app import celery_app
 from app.core.logger import logger
 from celery.result import AsyncResult
@@ -68,14 +67,14 @@ class QuickTask:
     @staticmethod
     def generate_resume(user_data: dict, jd_content: str) -> str:
         return TaskHelper.submit_task(
-            "app.tasks.ai_tasks.generate_resume_with_ai", user_data, jd_content
+            "app.tasks.ai_tasks.generate_resume_task", user_data, jd_content
         )
 
     @staticmethod
     def generate_cover_letter(user_data: Dict, jd_content: str) -> str:
         """Submit cover letter generation task and return task ID"""
         return TaskHelper.submit_task(
-            "app.tasks.ai_tasks.generate_cover_letter_with_ai", user_data, jd_content
+            "app.tasks.ai_tasks.generate_cover_letter_task", user_data, jd_content
         )
 
     @staticmethod
