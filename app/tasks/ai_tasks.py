@@ -13,7 +13,6 @@ from app.models.GeneratedDocument import GeneratedDocumment
 from app.utils.extract_clean_json_content import _extract_clean_json
 from app.helpers.resume_prompt import build_resume_prompt
 from app.helpers.cover_letter_prompt import _build_cover_letter_prompt
-from app.helpers.filter_jd import filter_jd_sync
 from app.core.logger import logger
 from app.core.grok_const import GROQ_MAX_TOKENS, GROQ_MODEL, GROQ_TEMP
 
