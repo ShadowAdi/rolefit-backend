@@ -14,14 +14,12 @@ if not DATABASE_URL:
         message="Database configuration is missing",
         status_code=500,
         error_code="DB_CONFIG_ERROR",
-        details={"issue": "DATABASE_URL environment variable not found"}
+        details={"issue": "DATABASE_URL environment variable not found"},
     )
 
 
 async def connect_with_retry(
-    database_url: str,
-    max_retries: int = 5,
-    initial_delay: float = 2
+    database_url: str, max_retries: int = 5, initial_delay: float = 2
 ):
     """
     Async database connection with exponential backoff.
@@ -35,7 +33,9 @@ async def connect_with_retry(
 
     while retry_count < max_retries:
         try:
-            logger.info(f"Attempting to connect to database (attempt {retry_count + 1}/{max_retries})...")
+            logger.info(
+                f"Attempting to connect to database (attempt {retry_count + 1}/{max_retries})..."
+            )
 
             engine = create_engine(
                 url=database_url,
@@ -56,14 +56,16 @@ async def connect_with_retry(
 
         except SQLAlchemyError as e:
             retry_count += 1
-            logger.warning(f"DB connection failed (attempt {retry_count}/{max_retries}): {type(e).__name__}")
+            logger.warning(
+                f"DB connection failed (attempt {retry_count}/{max_retries}): {type(e).__name__}"
+            )
 
             if retry_count >= max_retries:
                 logger.exception("Max retries reached. Could not connect to database.")
                 raise AppError(
                     message="Failed to connect to database after multiple attempts",
                     status_code=500,
-                    error_code="DB_CONNECTION_ERROR"
+                    error_code="DB_CONNECTION_ERROR",
                 ) from e
 
             await asyncio.sleep(delay)
@@ -79,7 +81,7 @@ async def connect_with_retry(
                     message="Unexpected error connecting to database",
                     status_code=500,
                     error_code="DB_UNEXPECTED_ERROR",
-                    details={"error": str(e)}
+                    details={"error": str(e)},
                 ) from e
 
             await asyncio.sleep(delay)
@@ -89,6 +91,51 @@ async def connect_with_retry(
 engine = None
 SessionLocal = None
 Base = declarative_base()
+
+
+def init_db_sync():
+    """Initialize database synchronously for Celery workers"""
+    global engine, SessionLocal
+
+    if engine is not None:
+        return  # Already initialized
+
+    try:
+        logger.info("Initializing database for Celery worker...")
+
+        connect_args = {}
+        if "postgresql" in DATABASE_URL.lower():
+            connect_args["sslmode"] = "disable"
+
+        engine = create_engine(
+            url=DATABASE_URL,
+            echo=False,
+            pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
+            connect_args=connect_args,
+        )
+
+        # Test connection
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+
+        logger.info("Database connection successful (sync)")
+
+        # Create all tables
+        Base.metadata.create_all(engine)
+
+        SessionLocal = sessionmaker(
+            bind=engine,
+            autoflush=False,
+            autocommit=False,
+        )
+        logger.info("Database initialized successfully (sync)")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize database (sync): {str(e)}", exc_info=True)
+        raise
 
 
 async def init_db():

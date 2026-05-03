@@ -7,7 +7,7 @@ from groq import Groq
 
 from app.core.celery_app import celery_app
 from app.helpers.grok_ai_headers import grok_api_key_headers
-from app.db.db import engine, Base, sessionmaker
+from app.db.db import init_db_sync, engine, Base, sessionmaker
 from app.helpers.filter_jd_sync import filter_jd_sync
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.utils.extract_clean_json_content import _extract_clean_json
@@ -19,6 +19,9 @@ from app.core.grok_const import GROQ_MAX_TOKENS, GROQ_MODEL, GROQ_TEMP
 
 def _get_session() -> Session:
     """Get a database session for Celery tasks"""
+    # Ensure database is initialized
+    init_db_sync()
+
     Session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return Session()
 
