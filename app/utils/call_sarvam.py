@@ -6,7 +6,7 @@ from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 from .build_user_prompt import _build_user_prompt
 from .create_profile_by_resume import CREATE_PROFILE_BY_RESUME_PROMPT
 from app.core.logger import logger
-from app.utils.sarvam_const import RESUME_GEN_TIMEOUT, SARVAM_API_URL
+from app.core.sarvam_const import RESUME_GEN_TIMEOUT, SARVAM_API_URL
 
 
 def _strip_think_block(text: str) -> str:
