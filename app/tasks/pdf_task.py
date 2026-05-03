@@ -99,6 +99,14 @@ def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
 
             logger.info(f"PDF generated successfully | doc={docId} type={resume_type}")
 
+            _push_event(
+                user_id=userId,
+                doc_id=docId,
+                event_type="resume_pdf_generated",
+                status="completed",
+                message="Resume pdf has been generated based on choosen template.",
+            )
+
         except Exception as e:
             logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
             raise
@@ -115,6 +123,14 @@ def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
 
     except (ValueError, PermissionError) as e:
         logger.error(f"[resume] Validation failed doc={docId}: {e}")
+        _push_event(
+            userId=userId,
+            docId=docId,
+            event_type="resume_pdf_error",
+            status="failed",
+            message="Resume PDF generation failed due to validation error.",
+            error=str(e),
+        )
         return {"status": "failed", "docId": docId, "error": str(e)}
 
     except Exception as exc:
@@ -125,6 +141,14 @@ def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
             raise self.retry(exc=exc)
         except self.MaxRetriesExceededError:
             logger.error(f"[resume] Max retries exceeded doc={docId}")
+            _push_event(
+                userId=userId,
+                docId=docId,
+                event_type="resume_pdf_error",
+                status="failed",
+                message="Resume PDF generation failed after maximum retries.",
+                error="Max retries exceeded",
+            )
             return {"status": "failed", "docId": docId, "error": "Max retries exceeded"}
 
     finally:
