@@ -3,24 +3,17 @@ import json
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException, status
-from app.models.JobDescription import JobDescription
 from app.models.User import User
 from app.core.logger import logger
 from app.helpers.filter_jd import filter_jd
-from app.helpers.resume_prompt import build_resume_prompt
-from app.helpers.cover_letter_prompt import _build_cover_letter_prompt
 from app.models.GeneratedDocument import GeneratedDocumment, GeneratedDocumentEnumType
 from app.response.GenerateDocument_responses import (
-    GenerateDocCreateResponse,
     GeneratedDocumnetResponse,
     DeleteDocumnetResponse,
 )
 from app.tasks.ai_tasks import generate_resume_task, generate_cover_letter_task
-from app.helpers.grok_ai_headers import grok_api_key_headers
 from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
-from app.utils.extract_clean_json_content import _extract_clean_json
 from uuid import UUID
-from groq import Groq
 
 
 class ContentServiceClass:

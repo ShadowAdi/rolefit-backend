@@ -1,10 +1,9 @@
 import json
 from fastapi import HTTPException, status
 from app.core.logger import logger
-from app.helpers.sarvam_ai_headers import sarvam_api_key_headers
 from app.helpers.grok_ai_headers import grok_api_key_headers
 from groq import Groq
-from app.utils.call_groq import _extract_clean_json
+from app.utils.extract_clean_json_content import _extract_clean_json
 
 
 class JDParseError(ValueError):

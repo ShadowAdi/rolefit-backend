@@ -1,19 +1,16 @@
 import json
-from uuid import UUID
 from datetime import datetime, timedelta, timezone
 
-from celery import shared_task
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from groq import Groq
 
 from app.core.celery_app import celery_app
 from app.helpers.grok_ai_headers import grok_api_key_headers
-from app.utils.extract_clean_json_content import _extract_clean_json
 from app.db.db import SessionLocal
 from app.helpers.filter_jd_sync import filter_jd_sync
 from app.models.GeneratedDocument import GeneratedDocumment
-from app.utils.prompt_utils import _extract_clean_json
+from app.utils.extract_clean_json_content import _extract_clean_json
 from app.helpers.resume_prompt import build_resume_prompt
 from app.helpers.cover_letter_prompt import _build_cover_letter_prompt
 from app.helpers.filter_jd import filter_jd_sync
