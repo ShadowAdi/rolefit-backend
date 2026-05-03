@@ -1,5 +1,6 @@
 import json
 import base64
+import os
 from sqlalchemy.orm import Session
 from app.db import db as db_module
 from app.schema.pdf_resume import ResumeData
@@ -12,6 +13,33 @@ from app.helpers.redis_cache_helpers import set_cache
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.core.celery_app import celery_app
 from app.core.logger import logger
+from app.websockets.redis_subscriber import publish_event_sync
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+
+def _push_event(
+    userId: str,
+    docId: str,
+    event_type: str,
+    status: str,
+    message: str,
+    error: str = None,
+):
+    event = {
+        "user_id": userId,
+        "doc_id": docId,
+        "type": event_type,
+        "status": status,
+        "message": message,
+    }
+
+    if error:
+        event["error"] = error
+    try:
+        publish_event_sync(redis_url=REDIS_URL, event=event)
+    except Exception as e:
+        logger.warning(f"[WS event] Failed to publish: {e}")
 
 
 def _get_session() -> Session:

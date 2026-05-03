@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -15,14 +16,39 @@ from app.helpers.resume_prompt import build_resume_prompt
 from app.helpers.cover_letter_prompt import _build_cover_letter_prompt
 from app.core.logger import logger
 from app.core.grok_const import GROQ_MAX_TOKENS, GROQ_MODEL, GROQ_TEMP
+from app.websockets.redis_subscriber import publish_event_sync
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+
+def _push_event(
+    userId: str,
+    docId: str,
+    event_type: str,
+    status: str,
+    message: str,
+    error: str = None,
+):
+    event = {
+        "user_id": userId,
+        "doc_id": docId,
+        "type": event_type,
+        "status": status,
+        "message": message,
+    }
+
+    if error:
+        event["error"] = error
+    try:
+        publish_event_sync(redis_url=REDIS_URL, event=event)
+    except Exception as e:
+        logger.warning(f"[WS event] Failed to publish: {e}")
 
 
 def _get_session() -> Session:
     """Get a database session for Celery tasks"""
-    # Ensure database is initialized
     db_module.init_db_sync()
 
-    # Use the initialized SessionLocal from db module
     if db_module.SessionLocal is None:
         raise RuntimeError("Database not initialized. SessionLocal is None")
 
@@ -109,6 +135,14 @@ def generate_resume_task(
         doc.status = "completed"
         db.commit()
 
+        _push_event(
+            userId=user_id,
+            docId=doc_id,
+            event_type="generate_resume_content",
+            status="completed",
+            message="Your resume is ready. Choose a template to download.",
+        )
+
         logger.info(f"[resume] Completed doc={doc_id}")
         return {"status": "completed", "doc_id": doc_id}
     except Exception as exc:
@@ -119,6 +153,14 @@ def generate_resume_task(
             raise self.retry(exc=exc)
         except self.MaxRetriesExceededError:
             _mark_failed(db, doc_id, str(exc))
+            _push_event(
+                user_id=user_id,
+                doc_id=doc_id,
+                event_type="generate_resume_content_failed",
+                status="failed",
+                message="Resume generation failed. Please try again.",
+                error=str(exc),
+            )
             logger.error(f"[resume] Max retries exceeded doc={doc_id}")
             return {"status": "failed", "doc_id": doc_id}
 
@@ -170,6 +212,14 @@ def generate_cover_letter_task(
         doc.status = "completed"
         db.commit()
 
+        _push_event(
+            userId=user_id,
+            docId=doc_id,
+            event_type="cover_letter_generation_completed",
+            status="completed",
+            message="Your cover letter is ready. Choose a template to download.",
+        )
+
         logger.info(f"[cover_letter] Completed doc={doc_id}")
         return {"status": "completed", "doc_id": doc_id}
 
@@ -181,6 +231,14 @@ def generate_cover_letter_task(
             raise self.retry(exc=exc)
         except self.MaxRetriesExceededError:
             _mark_failed(db, doc_id, str(exc))
+            _push_event(
+                userId=user_id,
+                docId=doc_id,
+                event_type="cover_letter_failed",
+                status="failed",
+                message="Cover letter generation failed. Please try again.",
+                error=str(exc),
+            )
             logger.error(f"[cover_letter] Max retries exceeded doc={doc_id}")
             return {"status": "failed", "doc_id": doc_id}
 
@@ -208,6 +266,18 @@ def cleanup_old_tasks():
             logger.warning(f"[cleanup] Marked stuck doc={doc.id} as failed")
         db.commit()
         logger.info(f"[cleanup] Cleaned {len(stuck)} stuck tasks")
+        _push_event(
+            userId=str(doc.userId),
+            docId=str(doc.id),
+            event_type=(
+                "resume_failed"
+                if doc.gen_doc_type == "Resume"
+                else "cover_letter_failed"
+            ),
+            status="failed",
+            message="Generation timed out. Please try again.",
+            error="Task timed out after 30 minutes.",
+        )
         return {"cleaned": len(stuck)}
 
     except SQLAlchemyError as e:
