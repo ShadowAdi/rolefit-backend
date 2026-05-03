@@ -79,14 +79,22 @@ def _mark_failed(db, doc_id: str, error: str):
 def generate_resume_task(
     self, doc_id: str, user_id: str, job_id: str, user_specifications: str
 ):
+    logger.info(f"[resume] Task started - doc={doc_id} user={user_id} job={job_id}")
     db = _get_session()
     try:
         _mark_processing(db, doc_id)
+        logger.info(f"[resume] Marked as processing - doc={doc_id}")
+
         job_profile = filter_jd_sync(
             job_id=job_id, user_id=user_id, db=db, content_type="Resume"
         )
+        logger.info(f"[resume] Got job profile - doc={doc_id}")
+
         prompt = build_resume_prompt(job_profile, user_specifications)
+        logger.info(f"[resume] Built prompt - doc={doc_id}")
+
         clean_json = _call_groq(prompt)
+        logger.info(f"[resume] Got response from Groq - doc={doc_id}")
 
         doc = (
             db.query(GeneratedDocumment).filter(GeneratedDocumment.id == doc_id).first()
