@@ -137,7 +137,6 @@ async def get_pdf_generation_status(
     """
     user_id = str(current_user.id)
 
-    # Verify document access
     await get_verified_doc(docId, user_id, db)
 
     from app.core.celery_app import celery_app
