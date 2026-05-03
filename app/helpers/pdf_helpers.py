@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.schema.pdf_resume import ResumeData
+from app.schema.CoverLetterData import CoverLetterData
 from app.helpers.redis_cache_helpers import get_cache, set_cache
 from app.core.logger import logger
 
@@ -67,6 +68,48 @@ async def parse_resume_text(resume_text: str, docId: str) -> ResumeData:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
                 "The stored resume content is not valid JSON. "
+                "Please regenerate the document."
+            ),
+        )
+
+
+async def parse_cover_letter_text(
+    cover_letter_text: str, docId: str
+) -> CoverLetterData:
+    """Parse and cache cover letter JSON data."""
+    cache_key = f"cover-letter-parsed-{docId}"
+    cached_cover_letter = await get_cache(cache_key)
+    if cached_cover_letter:
+        return CoverLetterData(**json.loads(cached_cover_letter))
+
+    try:
+        raw = cover_letter_text.strip()
+        if raw.startswith("```"):
+            lines = raw.splitlines()
+            raw = "\n".join(lines[1:-1]).strip()
+
+        parsed = json.loads(raw)
+        cover_letter_data = CoverLetterData(**parsed)
+
+        await set_cache(cache_key, json.dumps(parsed), ttl=86400)
+
+        return cover_letter_data
+
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse cover letter text as JSON: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "The stored cover letter content is not valid JSON. "
+                "Please regenerate the document."
+            ),
+        )
+    except ValueError as e:
+        logger.error(f"Failed to validate cover letter data against schema: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "The cover letter content doesn't match the expected format. "
                 "Please regenerate the document."
             ),
         )

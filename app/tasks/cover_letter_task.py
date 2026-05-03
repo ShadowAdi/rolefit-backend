@@ -2,12 +2,11 @@ import json
 import base64
 from sqlalchemy.orm import Session
 from app.db import db as db_module
-from app.schema.pdf_resume import ResumeData
+from app.schema.CoverLetterData import CoverLetterData
 
-from app.helpers.build_pdf import build_pdf
-from app.helpers.build_pdf_bold import build_pdf_bold
-from app.helpers.build_pdf_minimalist import build_pdf_minimalist
-from app.helpers.build_pdf_sidebar import build_pdf_sidebar
+from app.helpers.buid_cover_letter_pdf import build_cover_letter_pdf
+from app.helpers.build_cover_letter_bold import build_cover_letter_pdf_bold
+from app.helpers.build_cover_letter_minimal import build_cover_letter_pdf_minimal
 from app.helpers.redis_cache_helpers import set_cache
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.core.celery_app import celery_app
@@ -22,22 +21,22 @@ def _get_session() -> Session:
 
 
 @celery_app.task(
-    name="app.tasks.pdf_task.generate_resume_pdf",
+    name="app.tasks.cover_letter_task.generate_cover_letter_pdf",
     bind=True,
     max_retries=3,
     default_retry_delay=10,
     acks_late=True,
 )
-def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
-    """Generate resume PDF in background task. Returns base64-encoded PDF."""
+def generate_cover_letter_pdf(self, docId: str, userId: str, cover_letter_type: str):
+    """Generate cover letter PDF in background task. Returns base64-encoded PDF."""
     logger.info(
-        f"[resume] Task started - doc={docId} user={userId} resume_type={resume_type}"
+        f"[cover_letter] Task started - doc={docId} user={userId} type={cover_letter_type}"
     )
     db = _get_session()
 
     try:
         logger.info(
-            f"PDF generation started | user={userId} doc={docId} type={resume_type}"
+            f"Cover letter PDF generation started | user={userId} doc={docId} type={cover_letter_type}"
         )
 
         doc = (
@@ -49,30 +48,32 @@ def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
         if str(doc.userId) != str(userId):
             raise PermissionError(f"User {userId} does not own document {docId}")
 
-        raw = doc.resume_text.strip()
+        raw = doc.cover_letter_text.strip()
         if raw.startswith("```"):
             lines = raw.splitlines()
             raw = "\n".join(lines[1:-1]).strip()
 
         parsed = json.loads(raw)
-        resume_data = ResumeData(**parsed)
+        cover_letter_data = CoverLetterData(**parsed)
 
-        pdf_cache_key = f"resume-pdf-{docId}-{resume_type}"
+        pdf_cache_key = f"cover-letter-pdf-{docId}-{cover_letter_type}"
 
         try:
-            if resume_type == "minimalist":
-                pdf_bytes = build_pdf_minimalist(resume_data)
-            elif resume_type == "bold":
-                pdf_bytes = build_pdf_bold(resume_data)
-            elif resume_type == "two-column":
-                pdf_bytes = build_pdf_sidebar(resume_data)
+            if cover_letter_type == "minimalist":
+                pdf_bytes = build_cover_letter_pdf_minimal(cover_letter_data)
+            elif cover_letter_type == "bold":
+                pdf_bytes = build_cover_letter_pdf_bold(cover_letter_data)
             else:
-                pdf_bytes = build_pdf(resume_data)
+                pdf_bytes = build_cover_letter_pdf(cover_letter_data)
 
-            logger.info(f"PDF generated successfully | doc={docId} type={resume_type}")
+            logger.info(
+                f"Cover letter PDF generated successfully | doc={docId} type={cover_letter_type}"
+            )
 
         except Exception as e:
-            logger.error(f"PDF build failed for doc={docId}: {e}", exc_info=True)
+            logger.error(
+                f"Cover letter PDF build failed for doc={docId}: {e}", exc_info=True
+            )
             raise
 
         pdf_b64 = base64.b64encode(pdf_bytes).decode()
@@ -81,22 +82,22 @@ def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
         return {
             "status": "completed",
             "docId": docId,
-            "resumeType": resume_type,
+            "coverLetterType": cover_letter_type,
             "pdf_b64": pdf_b64,
         }
 
     except (ValueError, PermissionError) as e:
-        logger.error(f"[resume] Validation failed doc={docId}: {e}")
+        logger.error(f"[cover_letter] Validation failed doc={docId}: {e}")
         return {"status": "failed", "docId": docId, "error": str(e)}
 
     except Exception as exc:
         db.rollback()
-        logger.error(f"[resume] Failed doc={docId}: {exc}", exc_info=True)
+        logger.error(f"[cover_letter] Failed doc={docId}: {exc}", exc_info=True)
 
         try:
             raise self.retry(exc=exc)
         except self.MaxRetriesExceededError:
-            logger.error(f"[resume] Max retries exceeded doc={docId}")
+            logger.error(f"[cover_letter] Max retries exceeded doc={docId}")
             return {"status": "failed", "docId": docId, "error": "Max retries exceeded"}
 
     finally:
