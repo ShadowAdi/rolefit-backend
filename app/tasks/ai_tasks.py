@@ -7,7 +7,7 @@ from groq import Groq
 
 from app.core.celery_app import celery_app
 from app.helpers.grok_ai_headers import grok_api_key_headers
-from app.db.db import SessionLocal
+from app.db.db import engine, Base, sessionmaker
 from app.helpers.filter_jd_sync import filter_jd_sync
 from app.models.GeneratedDocument import GeneratedDocumment
 from app.utils.extract_clean_json_content import _extract_clean_json
@@ -15,6 +15,12 @@ from app.helpers.resume_prompt import build_resume_prompt
 from app.helpers.cover_letter_prompt import _build_cover_letter_prompt
 from app.core.logger import logger
 from app.core.grok_const import GROQ_MAX_TOKENS, GROQ_MODEL, GROQ_TEMP
+
+
+def _get_session() -> Session:
+    """Get a database session for Celery tasks"""
+    Session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    return Session()
 
 
 def _get_groq_client() -> Groq:
@@ -70,7 +76,7 @@ def _mark_failed(db, doc_id: str, error: str):
 def generate_resume_task(
     self, doc_id: str, user_id: str, job_id: str, user_specifications: str
 ):
-    db = SessionLocal()
+    db = _get_session()
     try:
         _mark_processing(db, doc_id)
         job_profile = filter_jd_sync(
@@ -128,7 +134,7 @@ def generate_cover_letter_task(
     logger.info(
         f"[cover_letter] Starting task doc={doc_id} user={user_id} job={job_id}"
     )
-    db = SessionLocal()
+    db = _get_session()
 
     try:
         _mark_processing(db, doc_id)
@@ -170,7 +176,7 @@ def generate_cover_letter_task(
 
 @celery_app.task(name="app.tasks.ai_tasks.cleanup_old_tasks")
 def cleanup_old_tasks():
-    db = SessionLocal()
+    db = _get_session()
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=30)
 
     try:
