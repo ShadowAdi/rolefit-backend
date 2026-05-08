@@ -18,7 +18,7 @@ class ProfileCreateRequest(BaseModel):
     summary: Optional[str] = Field(
         None, max_length=2000, description="Professional summary or bio"
     )
-    resume_link: str = Field(..., description="Link to user's resume")
+    resume_link: Optional[str] = Field(..., description="Link to user's resume")
     cover_letter_link: Optional[str] = Field(
         None, description="Link to user's cover letter"
     )

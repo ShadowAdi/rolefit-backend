@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from dotenv import load_dotenv
 
 import asyncio
@@ -6,7 +7,7 @@ import asyncio
 from app.db import db as database
 from app.db import redis_db as redis_database
 from app.core.logger import logger
-from app.core.AppError import AppError, app_error_handler
+from app.core.AppError import AppError, app_error_handler, validation_error_handler
 from contextlib import asynccontextmanager
 from app.core.cors import setup_cors
 from app.api.router import api_router
@@ -50,6 +51,7 @@ app = FastAPI(lifespan=lifespan)
 
 setup_cors(app=app)
 app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.include_router(api_router, prefix="/api")
 
 

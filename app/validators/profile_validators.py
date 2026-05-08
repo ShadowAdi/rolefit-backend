@@ -1,6 +1,6 @@
 import re
 from typing import Optional, Dict, Any
-from pydantic import ValidationError, field_validator, BaseModel
+from pydantic import BaseModel
 
 
 class ProfileValidator(BaseModel):
@@ -56,14 +56,17 @@ class ProfileValidator(BaseModel):
         return v.strip()
 
     @staticmethod
-    def validate_resume_link(v: str) -> str:
+    def validate_resume_link(v: Optional[str]) -> Optional[str]:
         """Validate resume link format"""
-        if not v or not v.strip():
-            raise None
+        if v is None:
+            return None
+
+        if not v.strip():
+            return None
 
         url_pattern = r"^https?://[^\s/$.?#].[^\s]*$"
         if not re.match(url_pattern, v):
-            raise ValueError(f"Invalid URL format for resume link: {v}")
+            raise ValueError(f"Invalid URL format for resume letter link: {v}")
 
         return v.strip()
 
