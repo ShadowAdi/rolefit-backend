@@ -14,7 +14,7 @@ class Profile(Base):
     full_name = Column(String, nullable=False, index=True)
     summary = Column(String, nullable=True)
     headline = Column(String, nullable=True)
-    resume_link = Column(String, nullable=False)
+    resume_link = Column(String, nullable=True)
     cover_letter_link = Column(String, nullable=True)
     links = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

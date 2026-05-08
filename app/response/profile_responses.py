@@ -11,12 +11,14 @@ class ProfileCreateResponse(BaseModel):
 
     id: UUID = Field(..., description="Profile unique identifier")
     userId: UUID = Field(..., description="Associated user ID")
-    full_name: str = Field(..., description="User full name")
+    full_name: str = Field(..., desscription="User full name")
     headline: Optional[str] = Field(None, description="Professional headline")
     resume_link: str = Field(..., description="Link to user's resume")
     cover_letter_link: Optional[str] = Field(
         None, description="Link to user's cover letter"
     )
+    summary: Optional[str] = Field(None, description="Professional summary or bio")
+    links: Optional[Dict[str, Any]] = Field(None, description="Social profile links")
     created_at: datetime = Field(..., description="Profile creation timestamp")
 
 
