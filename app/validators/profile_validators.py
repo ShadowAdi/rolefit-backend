@@ -59,7 +59,7 @@ class ProfileValidator(BaseModel):
     def validate_resume_link(v: str) -> str:
         """Validate resume link format"""
         if not v or not v.strip():
-            raise ValueError("Resume link cannot be empty")
+            raise None
 
         url_pattern = r"^https?://[^\s/$.?#].[^\s]*$"
         if not re.match(url_pattern, v):
