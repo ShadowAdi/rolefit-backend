@@ -13,7 +13,7 @@ class ProfileCreateResponse(BaseModel):
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., desscription="User full name")
     headline: Optional[str] = Field(None, description="Professional headline")
-    resume_link: str = Field(..., description="Link to user's resume")
+    resume_link: Optional[str] = Field(None, description="Link to user's resume")
     cover_letter_link: Optional[str] = Field(
         None, description="Link to user's cover letter"
     )
@@ -32,7 +32,7 @@ class ProfileGetResponse(BaseModel):
     full_name: str = Field(..., description="User full name")
     headline: Optional[str] = Field(None, description="Professional headline")
     summary: Optional[str] = Field(None, description="Professional summary or bio")
-    resume_link: str = Field(..., description="Link to user's resume")
+    resume_link: Optional[str] = Field(None, description="Link to user's resume")
     cover_letter_link: Optional[str] = Field(
         None, description="Link to user's cover letter"
     )
@@ -51,7 +51,7 @@ class ProfileUpdateResponse(BaseModel):
     full_name: str = Field(..., description="User full name")
     headline: Optional[str] = Field(None, description="Professional headline")
     summary: Optional[str] = Field(None, description="Professional summary or bio")
-    resume_link: str = Field(..., description="Link to user's resume")
+    resume_link: Optional[str] = Field(None, description="Link to user's resume")
     cover_letter_link: Optional[str] = Field(
         None, description="Link to user's cover letter"
     )
@@ -78,7 +78,7 @@ class ProfileListResponse(BaseModel):
     userId: UUID = Field(..., description="Associated user ID")
     full_name: str = Field(..., description="User full name")
     headline: Optional[str] = Field(None, description="Professional headline")
-    resume_link: str = Field(..., description="Link to user's resume")
+    resume_link: Optional[str] = Field(None, description="Link to user's resume")
     cover_letter_link: Optional[str] = Field(
         None, description="Link to user's cover letter"
     )
