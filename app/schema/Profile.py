@@ -60,7 +60,7 @@ class ProfileResponse(BaseModel):
     full_name: str = Field(..., description="User full name")
     headline: Optional[str] = Field(None, description="Professional headline")
     summary: Optional[str] = Field(None, description="Professional summary or bio")
-    resume_link: str = Field(..., description="Link to user's resume")
+    resume_link: Optional[str] = Field(None, description="Link to user's resume")
     cover_letter_link: Optional[str] = Field(
         None, description="Link to user's cover letter"
     )
