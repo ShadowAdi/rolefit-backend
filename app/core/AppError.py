@@ -48,6 +48,18 @@ def validation_error_handler(request: Request, exc: ValidationError) -> JSONResp
     """Handler for FastAPI/Pydantic validation errors"""
     logger.error(f"Validation error: {exc.errors()}")
 
+    # Clean up error details to remove "body" from location
+    cleaned_errors = []
+    for error in exc.errors():
+        cleaned_error = {
+            "field": (
+                error["loc"][-1] if error["loc"] else "unknown"
+            ),  # Get the actual field name
+            "type": error["type"],
+            "message": error["msg"],
+        }
+        cleaned_errors.append(cleaned_error)
+
     return JSONResponse(
         status_code=422,
         content={
@@ -55,7 +67,7 @@ def validation_error_handler(request: Request, exc: ValidationError) -> JSONResp
             "error": "Validation error",
             "error_code": "VALIDATION_ERROR",
             "status_code": 422,
-            "details": exc.errors(),
+            "details": cleaned_errors,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )
