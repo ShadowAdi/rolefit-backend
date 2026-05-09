@@ -21,7 +21,7 @@ AchievementService = AchievementServiceClass()
 
 @router.post(
     "/",
-    response_model=AchievementCreateResponse,
+    response_model=APIResponse[AchievementCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_achievement(
@@ -88,7 +88,7 @@ async def create_achievement(
 
 @router.get(
     "/",
-    response_model=List[AchievementGetResponse],
+    response_model=APIResponse[List[AchievementGetResponse]],
     status_code=status.HTTP_200_OK,
 )
 async def list_achievements(
@@ -152,7 +152,7 @@ async def list_achievements(
 
 @router.get(
     "/{achievementId}",
-    response_model=AchievementGetResponse,
+    response_model=APIResponse[AchievementGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_achievement(
@@ -223,7 +223,7 @@ async def get_achievement(
 
 @router.patch(
     "/{achievementId}",
-    response_model=AchievementUpdateResponse,
+    response_model=APIResponse[AchievementUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_achievement(

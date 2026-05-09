@@ -26,7 +26,7 @@ SkillService = SkillServiceClass()
 
 @router.post(
     "/",
-    response_model=SkillCreateResponse,
+    response_model=APIResponse[SkillCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_skill(
@@ -93,7 +93,7 @@ async def create_skill(
 
 @router.get(
     "/",
-    response_model=List[SkillListResponse],
+    response_model=APIResponse[List[SkillListResponse]],
     status_code=status.HTTP_200_OK,
 )
 async def list_skills(
@@ -155,7 +155,7 @@ async def list_skills(
 
 @router.get(
     "/{skillId}",
-    response_model=SkillGetResponse,
+    response_model=APIResponse[SkillGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_skill(
@@ -224,7 +224,7 @@ async def get_skill(
 
 @router.patch(
     "/{skillId}",
-    response_model=SkillUpdateResponse,
+    response_model=APIResponse[SkillUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_skill(

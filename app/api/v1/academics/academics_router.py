@@ -21,7 +21,7 @@ AcademicService = AcademicServiceClass()
 
 @router.post(
     "/",
-    response_model=AcademicCreateResponse,
+    response_model=APIResponse[AcademicCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_academic(
@@ -85,7 +85,7 @@ async def create_academic(
 
 @router.get(
     "/",
-    response_model=List[AcademicGetResponse],
+    response_model=APIResponse[List[AcademicGetResponse]],
     status_code=status.HTTP_200_OK,
 )
 async def list_academics(
@@ -146,7 +146,7 @@ async def list_academics(
 
 @router.get(
     "/{academicId}",
-    response_model=AcademicGetResponse,
+    response_model=APIResponse[AcademicGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_academic(
@@ -214,7 +214,7 @@ async def get_academic(
 
 @router.patch(
     "/{academicId}",
-    response_model=AcademicUpdateResponse,
+    response_model=APIResponse[AcademicUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_academic(

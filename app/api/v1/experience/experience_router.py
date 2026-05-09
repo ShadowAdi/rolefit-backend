@@ -21,7 +21,7 @@ ExperienceService = ExperienceServiceClass()
 
 @router.post(
     "/",
-    response_model=ExperienceCreateResponse,
+    response_model=APIResponse[ExperienceCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_experience(
@@ -85,7 +85,7 @@ async def create_experience(
 
 @router.get(
     "/",
-    response_model=List[ExperienceGetResponse],
+    response_model=APIResponse[List[ExperienceGetResponse]],
     status_code=status.HTTP_200_OK,
 )
 async def list_experiences(
@@ -146,7 +146,7 @@ async def list_experiences(
 
 @router.get(
     "/{experienceId}",
-    response_model=ExperienceGetResponse,
+    response_model=APIResponse[ExperienceGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_experience(
@@ -214,7 +214,7 @@ async def get_experience(
 
 @router.patch(
     "/{experienceId}",
-    response_model=ExperienceUpdateResponse,
+    response_model=APIResponse[ExperienceUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_experience(

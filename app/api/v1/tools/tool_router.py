@@ -26,7 +26,7 @@ ToolService = ToolServiceClass()
 
 @router.post(
     "/",
-    response_model=ToolCreateResponse,
+    response_model=APIResponse[ToolCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_tool(
@@ -88,7 +88,7 @@ async def create_tool(
 
 @router.get(
     "/",
-    response_model=List[ToolListResponse],
+    response_model=APIResponse[List[ToolListResponse]],
     status_code=status.HTTP_200_OK,
 )
 async def list_tools(
@@ -150,7 +150,7 @@ async def list_tools(
 
 @router.get(
     "/{toolId}",
-    response_model=ToolGetResponse,
+    response_model=APIResponse[ToolGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_tool(
@@ -219,7 +219,7 @@ async def get_tool(
 
 @router.patch(
     "/{toolId}",
-    response_model=ToolUpdateResponse,
+    response_model=APIResponse[ToolUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_tool(

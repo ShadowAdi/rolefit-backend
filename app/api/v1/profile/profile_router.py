@@ -24,7 +24,7 @@ service = ProfileServiceClass()
 
 @router.post(
     "/",
-    response_model=ProfileCreateResponse,
+    response_model=APIResponse[ProfileCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_profile(
@@ -88,7 +88,7 @@ async def create_profile(
 
 @router.get(
     "/",
-    response_model=ProfileGetResponse,
+    response_model=APIResponse[ProfileGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_profile(
@@ -147,7 +147,7 @@ async def get_profile(
 
 @router.patch(
     "/",
-    response_model=ProfileUpdateResponse,
+    response_model=APIResponse[ProfileUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_profile(
@@ -214,7 +214,7 @@ async def update_profile(
 
 @router.delete(
     "/",
-    response_model=ProfileDeleteResponse,
+    response_model=APIResponse[ProfileDeleteResponse],
     status_code=status.HTTP_200_OK,
 )
 async def delete_profile(

@@ -23,7 +23,7 @@ router = APIRouter(prefix="", tags=["Project"])
 
 @router.post(
     "/",
-    response_model=ProjectCreateResponse,
+    response_model=APIResponse[ProjectCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_project(
@@ -87,7 +87,7 @@ async def create_project(
 
 @router.get(
     "/",
-    response_model=List[ProjectListResponse],
+    response_model=APIResponse[List[ProjectListResponse]],
     status_code=status.HTTP_200_OK,
 )
 async def list_projects(
@@ -146,7 +146,7 @@ async def list_projects(
 
 @router.get(
     "/{projectId}",
-    response_model=ProjectGetResponse,
+    response_model=APIResponse[ProjectGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_project(
@@ -214,7 +214,7 @@ async def get_project(
 
 @router.patch(
     "/{projectId}",
-    response_model=ProjectUpdateResponse,
+    response_model=APIResponse[ProjectUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_project(

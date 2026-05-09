@@ -24,7 +24,7 @@ PublicationService = PublicationServiceClass()
 
 @router.post(
     "/",
-    response_model=PublicationCreateResponse,
+    response_model=APIResponse[PublicationCreateResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_publication(
@@ -91,7 +91,7 @@ async def create_publication(
 
 @router.get(
     "/",
-    response_model=List[PublicationGetResponse],
+    response_model=APIResponse[List[PublicationGetResponse]],
     status_code=status.HTTP_200_OK,
 )
 async def list_publications(
@@ -155,7 +155,7 @@ async def list_publications(
 
 @router.get(
     "/{publicationId}",
-    response_model=PublicationGetResponse,
+    response_model=APIResponse[PublicationGetResponse],
     status_code=status.HTTP_200_OK,
 )
 async def get_publication(
@@ -226,7 +226,7 @@ async def get_publication(
 
 @router.patch(
     "/{publicationId}",
-    response_model=PublicationUpdateResponse,
+    response_model=APIResponse[PublicationUpdateResponse],
     status_code=status.HTTP_200_OK,
 )
 async def update_publication(
