@@ -5,6 +5,7 @@ from app.response.academic_responses import (
     AcademicGetResponse,
     AcademicUpdateResponse,
 )
+from app.response.base import APIResponse
 from sqlalchemy.orm import Session
 from app.db.db import get_db
 from .academics_service import AcademicServiceClass
@@ -57,7 +58,12 @@ async def create_academic(
             extra={"userId": str(current_user.id), "academicId": str(academic.id)},
         )
 
-        return academic
+        return APIResponse(
+            status_code=201,
+            success=True,
+            message="Academic Created Successfully",
+            data=academic,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -113,7 +119,12 @@ async def list_academics(
             extra={"userId": str(current_user.id), "academicCount": len(academics)},
         )
 
-        return academics
+        return APIResponse(
+            status_code=200,
+            success=True,
+            message="Academic Fetched Successfully",
+            data=academics,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -172,7 +183,12 @@ async def get_academic(
             extra={"userId": str(current_user.id), "academicId": str(academic.id)},
         )
 
-        return academic
+        return APIResponse(
+            status_code=200,
+            success=True,
+            message="Academic Fetched Successfully",
+            data=academic,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -237,7 +253,12 @@ async def update_academic(
             extra={"userId": str(current_user.id), "academicId": str(academic.id)},
         )
 
-        return academic
+        return APIResponse(
+            status_code=200,
+            success=True,
+            message="Academic Updated Successfully",
+            data=academic,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -299,7 +320,16 @@ async def delete_academic(
             extra={"userId": str(current_user.id), "academicId": academicId},
         )
 
-        return response
+        return APIResponse(
+            status_code=200,
+            success=response.get("success"),
+            message=response.get("message"),
+            data={
+                "deletedAcademicId": response.get("deletedAcademicId"),
+                "degree": response.get("degree"),
+                "college": response.get("college"),
+            },
+        )
 
     except HTTPException as http_exc:
         logger.warning(
