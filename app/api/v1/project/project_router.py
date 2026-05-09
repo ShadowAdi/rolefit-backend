@@ -15,6 +15,7 @@ from .project_service import ProjectService
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
+from app.response.base import APIResponse
 from typing import List
 
 router = APIRouter(prefix="", tags=["Project"])
@@ -59,7 +60,12 @@ async def create_project(
             extra={"userId": str(current_user.id), "projectId": str(project.id)},
         )
 
-        return project
+        return APIResponse(
+            status_code=201,
+            message="Project Created Successfully",
+            success=True,
+            data=project,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -113,7 +119,12 @@ async def list_projects(
             extra={"userId": str(current_user.id), "projectCount": len(projects)},
         )
 
-        return projects
+        return APIResponse(
+            status_code=200,
+            message="Project Fetched Successfully",
+            success=True,
+            data=projects,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -172,7 +183,12 @@ async def get_project(
             extra={"userId": str(current_user.id), "projectId": str(project.id)},
         )
 
-        return project
+        return APIResponse(
+            status_code=200,
+            message="Project Fetched Successfully",
+            success=True,
+            data=project,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -237,7 +253,12 @@ async def update_project(
             extra={"userId": str(current_user.id), "projectId": str(project.id)},
         )
 
-        return project
+        return APIResponse(
+            status_code=200,
+            message="Project Updated Successfully",
+            success=True,
+            data=project,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -299,7 +320,12 @@ async def delete_project(
             extra={"userId": str(current_user.id), "projectId": projectId},
         )
 
-        return response
+        return APIResponse(
+            status_code=200,
+            message="Project Deleted Successfully",
+            success=True,
+            data=response,
+        )
 
     except HTTPException as http_exc:
         logger.warning(

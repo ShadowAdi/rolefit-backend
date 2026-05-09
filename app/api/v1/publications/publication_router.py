@@ -15,6 +15,7 @@ from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
 from typing import List
+from app.response.base import APIResponse
 
 router = APIRouter(prefix="", tags=["Publications"])
 
@@ -63,7 +64,12 @@ async def create_publication(
             },
         )
 
-        return publication
+        return APIResponse(
+            status_code=201,
+            message="Publication Created Successfully",
+            success=True,
+            data=publication,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -122,7 +128,12 @@ async def list_publications(
             },
         )
 
-        return publications
+        return APIResponse(
+            status_code=200,
+            message="Publication Fetched Successfully",
+            success=True,
+            data=publications,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -184,7 +195,12 @@ async def get_publication(
             },
         )
 
-        return publication
+        return APIResponse(
+            status_code=200,
+            message="Publication Fetched Successfully",
+            success=True,
+            data=publication,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -255,7 +271,12 @@ async def update_publication(
             },
         )
 
-        return publication
+        return APIResponse(
+            status_code=200,
+            message="Publication Updated Successfully",
+            success=True,
+            data=publication,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -317,7 +338,12 @@ async def delete_publication(
             extra={"userId": str(current_user.id), "publicationId": publicationId},
         )
 
-        return response
+        return APIResponse(
+            status_code=200,
+            message="Publication Deleted Successfully",
+            success=True,
+            data=response,
+        )
 
     except HTTPException as http_exc:
         logger.warning(

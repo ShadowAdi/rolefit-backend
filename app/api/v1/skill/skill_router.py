@@ -16,6 +16,7 @@ from .skill_service import SkillServiceClass
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
+from app.response.base import APIResponse
 from typing import List
 
 router = APIRouter(prefix="", tags=["Skills"])
@@ -65,7 +66,12 @@ async def create_skill(
             },
         )
 
-        return skill
+        return APIResponse(
+            data=skill,
+            message="Skill Created Successfully",
+            status_code=201,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -122,7 +128,12 @@ async def list_skills(
             },
         )
 
-        return skills
+        return APIResponse(
+            data=skills,
+            message="Skill Fetched Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -182,7 +193,12 @@ async def get_skill(
             },
         )
 
-        return skill
+        return APIResponse(
+            data=skill,
+            message="Skill Fetched Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -253,7 +269,12 @@ async def update_skill(
             },
         )
 
-        return skill
+        return APIResponse(
+            data=skill,
+            message="Skill Updated Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -315,7 +336,12 @@ async def delete_skill(
             extra={"userId": str(current_user.id), "skillId": skillId},
         )
 
-        return response
+        return APIResponse(
+            data=response,
+            message="Skill Deleted Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -388,7 +414,12 @@ async def add_skill_to_user(
             },
         )
 
-        return response
+        return APIResponse(
+            data=response,
+            message="Skill Added Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -446,7 +477,12 @@ async def remove_skill_from_user(
             extra={"userId": str(current_user.id), "skillId": skillId},
         )
 
-        return response
+        return APIResponse(
+            data=response,
+            message="Skill Removed Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(

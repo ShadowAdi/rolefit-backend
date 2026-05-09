@@ -147,6 +147,7 @@ async def get_pdf_generation_status(
         "task_id": task_id,
         "status": task.status,
         "result": task.result if task.successful() else None,
+        "success": True,
     }
 
 

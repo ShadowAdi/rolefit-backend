@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.db.db import get_db
 from .tools_service import ToolServiceClass
 from app.models.User import User
+from app.response.base import APIResponse
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
 from typing import List
@@ -63,7 +64,9 @@ async def create_tool(
             },
         )
 
-        return tool
+        return APIResponse(
+            data=tool, message="Tool Added Successfully", status_code=201, success=True
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -120,7 +123,12 @@ async def list_tools(
             },
         )
 
-        return tools
+        return APIResponse(
+            data=tools,
+            message="Tool Fetched Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -180,7 +188,12 @@ async def get_tool(
             },
         )
 
-        return tool
+        return APIResponse(
+            data=tool,
+            message="Tool Fetched Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -251,7 +264,12 @@ async def update_tool(
             },
         )
 
-        return tool
+        return APIResponse(
+            data=tool,
+            message="Tool Updated Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -313,7 +331,12 @@ async def delete_tool(
             extra={"userId": str(current_user.id), "toolId": toolId},
         )
 
-        return response
+        return APIResponse(
+            data=tool,
+            message="Tool Deleted Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -386,7 +409,12 @@ async def add_tool_to_user(
             },
         )
 
-        return response
+        return APIResponse(
+            data=response,
+            message="Tool added Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -444,7 +472,12 @@ async def remove_tool_from_user(
             extra={"userId": str(current_user.id), "toolId": toolId},
         )
 
-        return response
+        return APIResponse(
+            data=response,
+            message="Tool removed Successfully",
+            status_code=200,
+            success=True,
+        )
 
     except HTTPException as http_exc:
         logger.warning(

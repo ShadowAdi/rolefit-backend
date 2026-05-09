@@ -12,6 +12,7 @@ from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
 from typing import List
+from app.response.base import APIResponse
 
 router = APIRouter(prefix="", tags=["Experience"])
 
@@ -57,7 +58,12 @@ async def create_experience(
             extra={"userId": str(current_user.id), "experienceId": str(experience.id)},
         )
 
-        return experience
+        return APIResponse(
+            status_code=201,
+            message="Experience Created Successfully",
+            success=True,
+            data=experience,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -113,7 +119,12 @@ async def list_experiences(
             extra={"userId": str(current_user.id), "experienceCount": len(experiences)},
         )
 
-        return experiences
+        return APIResponse(
+            status_code=200,
+            message="Experiences Fetched Successfully",
+            success=True,
+            data=experiences,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -172,7 +183,12 @@ async def get_experience(
             extra={"userId": str(current_user.id), "experienceId": str(experience.id)},
         )
 
-        return experience
+        return APIResponse(
+            status_code=200,
+            message="Experiences Fetched Successfully",
+            success=True,
+            data=experience,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -237,7 +253,12 @@ async def update_experience(
             extra={"userId": str(current_user.id), "experienceId": str(experience.id)},
         )
 
-        return experience
+        return APIResponse(
+            status_code=200,
+            message="Experiences Update Successfully",
+            success=True,
+            data=experience,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -299,7 +320,12 @@ async def delete_experience(
             extra={"userId": str(current_user.id), "experienceId": experienceId},
         )
 
-        return response
+        return APIResponse(
+            status_code=200,
+            message="Experiences Deleted Successfully",
+            success=True,
+            data=response,
+        )
 
     except HTTPException as http_exc:
         logger.warning(

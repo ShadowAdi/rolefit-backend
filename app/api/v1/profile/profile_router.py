@@ -9,6 +9,7 @@ from app.response.profile_responses import (
     ProfileUpdateResponse,
     ProfileDeleteResponse,
 )
+from app.response.base import APIResponse
 from sqlalchemy.orm import Session
 from app.db.db import get_db
 from .profile_service import ProfileServiceClass
@@ -60,7 +61,12 @@ async def create_profile(
             extra={"userId": str(current_user.id), "profileId": str(profile.id)},
         )
 
-        return profile
+        return APIResponse(
+            status_code=201,
+            message="Profile Created Successfully",
+            success=True,
+            data=profile,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -114,7 +120,12 @@ async def get_profile(
             extra={"userId": str(current_user.id), "profileId": str(profile.id)},
         )
 
-        return profile
+        return APIResponse(
+            status_code=200,
+            message="Profile fetched Successfully",
+            success=True,
+            data=profile,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -176,7 +187,12 @@ async def update_profile(
             extra={"userId": str(current_user.id), "profileId": str(profile.id)},
         )
 
-        return profile
+        return APIResponse(
+            status_code=200,
+            message="Profile Updated Successfully",
+            success=True,
+            data=profile,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -233,7 +249,12 @@ async def delete_profile(
             extra={"userId": str(current_user.id), "profileId": str(response.id)},
         )
 
-        return response
+        return APIResponse(
+            status_code=200,
+            message="Profile Deleted Successfully",
+            success=True,
+            data=response,
+        )
 
     except HTTPException as http_exc:
         logger.warning(

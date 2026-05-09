@@ -11,6 +11,7 @@ from .achievment_service import AchievementServiceClass
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
+from app.response.base import APIResponse
 from typing import List
 
 router = APIRouter(prefix="", tags=["Achievements"])
@@ -60,7 +61,12 @@ async def create_achievement(
             },
         )
 
-        return achievement
+        return APIResponse(
+            status_code=201,
+            success=True,
+            message="Achievment Created Successfully",
+            data=achievement,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -119,7 +125,12 @@ async def list_achievements(
             },
         )
 
-        return achievements
+        return APIResponse(
+            status_code=200,
+            success=True,
+            message="Achievment Fetched Successfully",
+            data=achievements,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -181,7 +192,12 @@ async def get_achievement(
             },
         )
 
-        return achievement
+        return APIResponse(
+            status_code=200,
+            success=True,
+            message="Achievment Fetched Successfully",
+            data=achievement,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -252,7 +268,12 @@ async def update_achievement(
             },
         )
 
-        return achievement
+        return APIResponse(
+            status_code=200,
+            success=True,
+            message="Achievment Fetched Successfully",
+            data=achievement,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
@@ -314,7 +335,12 @@ async def delete_achievement(
             extra={"userId": str(current_user.id), "achievementId": achievementId},
         )
 
-        return response
+        return APIResponse(
+            status_code=200,
+            success=True,
+            message="Achievment Fetched Successfully",
+            data=response,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
