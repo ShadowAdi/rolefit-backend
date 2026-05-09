@@ -104,11 +104,6 @@ async def delete_my_profile(
         success=True,
         status_code=status.HTTP_200_OK,
         message="User profile deleted successfully",
-        data=UserDeleteResponse(
-            success=True,
-            message="User account deleted successfully",
-            deleted_user_id=deleted_user_id,
-            deleted_at=datetime.now(timezone.utc),
-        ),
+        data=deleted_user_id,
         timestamp=datetime.now(timezone.utc),
     )
