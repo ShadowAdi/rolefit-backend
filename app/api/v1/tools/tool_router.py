@@ -87,6 +87,68 @@ async def create_tool(
 
 
 @router.get(
+    "/user/me",
+    response_model=APIResponse[List[ToolListResponse]],
+    status_code=status.HTTP_200_OK,
+)
+async def list_user_tools(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """
+    Get the authenticated user's own tool.
+
+    Args:
+        current_user: Current authenticated user from JWT token
+        db: Database session
+
+    Returns:
+        List[ToolListResponse]: List of the current user's tools
+
+    Raises:
+        HTTPException: If database error occurs
+    """
+    try:
+        logger.info(
+            f"User tool list retrieval request received for user: {current_user.id}",
+            extra={"userId": str(current_user.id)},
+        )
+
+        tools = ToolService.list_tools(db=db, userId=str(current_user.id))
+
+        logger.info(
+            f"User tool list retrieval endpoint completed successfully for user: {current_user.id}",
+            extra={
+                "userId": str(current_user.id),
+                "toolCount": len(tools),
+            },
+        )
+
+        return APIResponse(
+            data=tools,
+            message="User Tools Fetched Successfully",
+            status_code=200,
+            success=True,
+        )
+
+    except HTTPException as http_exc:
+        logger.warning(
+            f"HTTP exception in user tool list retrieval: {http_exc.detail}",
+            extra={"userId": str(current_user.id)},
+        )
+        raise
+    except Exception as e:
+        logger.error(
+            f"Unexpected error in user tool list retrieval endpoint: {str(e)}",
+            extra={"userId": str(current_user.id), "error": str(e)},
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred",
+        )
+
+
+@router.get(
     "/",
     response_model=APIResponse[List[ToolListResponse]],
     status_code=status.HTTP_200_OK,
