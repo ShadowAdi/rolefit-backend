@@ -106,16 +106,18 @@ class ProjectServiceClass:
             )
 
             numberOfProjects = (
-                db.query(Project.profileId == user_profile.id).all().count()
+                db.query(Project)
+                .filter(Project.profileId == user_profile.id)
+                .count()
             )
-            if numberOfProjects > 5:
+            if numberOfProjects >= 5:
                 logger.warning(
                     f"Project creation failed: Cant have more than 5 Projects. Choose only the best project.",
-                    extra={"userId": userId},
+                    extra={"userId": userId, "currentCount": numberOfProjects},
                 )
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Project creation failed: Cant have more than 5 Projects. Choose only the best project.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot have more than 5 projects. Choose only your best projects.",
                 )
             project = Project(
                 title=payload.title,
