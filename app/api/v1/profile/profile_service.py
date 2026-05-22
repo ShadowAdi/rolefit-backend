@@ -13,6 +13,7 @@ from app.response.profile_responses import (
     ProfileGetResponse,
     ProfileUpdateResponse,
     ProfileDeleteResponse,
+    ProfileOnboardingResponse,
 )
 from app.core.logger import logger
 from app.validators.profile_validators import ProfileValidator
@@ -419,6 +420,93 @@ class ProfileServiceClass:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while updating profile",
+            )
+
+    def complete_onboarding(
+        self, db: Session, userId: str
+    ) -> ProfileOnboardingResponse:
+        """
+        Mark the user's profile as having completed onboarding.
+
+        Args:
+            db: Database session
+            userId: User ID whose onboarding status to update
+
+        Returns:
+            ProfileOnboardingResponse: Updated isOnboarded flag
+
+        Raises:
+            HTTPException: If user not found or profile doesn't exist
+        """
+        try:
+            if not userId:
+                logger.error(
+                    f"Complete onboarding failed: Missing user ID",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User ID is required",
+                )
+
+            user = db.query(User).filter(User.id == userId).first()
+            if not user:
+                logger.warning(
+                    f"Complete onboarding failed: User not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist",
+                )
+
+            user_profile = (
+                db.query(Profile).filter(Profile.userId == user.id).first()
+            )
+            if not user_profile:
+                logger.warning(
+                    f"Complete onboarding failed: User profile not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User profile does not exist. Please create a profile first.",
+                )
+
+            user_profile.isOnboarded = True
+            db.commit()
+            db.refresh(user_profile)
+
+            logger.info(
+                f"Onboarding marked complete for user: {userId}",
+                extra={"userId": userId, "profileId": str(user_profile.id)},
+            )
+
+            return ProfileOnboardingResponse.model_validate(user_profile)
+
+        except HTTPException:
+            raise
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"Database error during complete onboarding for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while updating onboarding status",
+            )
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error during complete onboarding for user {userId}: {str(e)}",
+                extra={"userId": userId, "error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while updating onboarding status",
             )
 
     def delete_profile(self, db: Session, userId: str) -> ProfileDeleteResponse:

@@ -1,5 +1,13 @@
 from app.db.db import Base
-from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    String,
+    DateTime,
+    Boolean,
+    ForeignKey,
+    JSON,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import timezone, datetime
 import uuid
@@ -17,6 +25,9 @@ class Profile(Base):
     resume_link = Column(String, nullable=True)
     cover_letter_link = Column(String, nullable=True)
     links = Column(JSON, nullable=True)
+    isOnboarded = Column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,

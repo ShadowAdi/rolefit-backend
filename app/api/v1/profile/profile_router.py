@@ -8,6 +8,7 @@ from app.response.profile_responses import (
     ProfileGetResponse,
     ProfileUpdateResponse,
     ProfileDeleteResponse,
+    ProfileOnboardingResponse,
 )
 from app.response.base import APIResponse
 from sqlalchemy.orm import Session
@@ -203,6 +204,68 @@ async def update_profile(
     except Exception as e:
         logger.error(
             f"Unexpected error in profile update endpoint: {str(e)}",
+            extra={"userId": str(current_user.id), "error": str(e)},
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred",
+        )
+
+
+@router.post(
+    "/complete-onboarding",
+    response_model=APIResponse[ProfileOnboardingResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def complete_onboarding(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Mark the authenticated user's profile as having completed onboarding.
+
+    Args:
+        current_user: Current authenticated user from JWT token
+        db: Database session
+
+    Returns:
+        ProfileOnboardingResponse: Updated isOnboarded flag
+
+    Raises:
+        HTTPException: If user not found or profile doesn't exist
+    """
+    try:
+        logger.info(
+            f"Complete onboarding request received for user: {current_user.id}",
+            extra={"userId": str(current_user.id)},
+        )
+
+        response = service.complete_onboarding(db=db, userId=str(current_user.id))
+
+        await invalidate_user_cache(str(current_user.id))
+
+        logger.info(
+            f"Complete onboarding endpoint completed successfully for user: {current_user.id}",
+            extra={"userId": str(current_user.id), "profileId": str(response.id)},
+        )
+
+        return APIResponse(
+            status_code=200,
+            message="Onboarding marked complete",
+            success=True,
+            data=response,
+        )
+
+    except HTTPException as http_exc:
+        logger.warning(
+            f"HTTP exception in complete onboarding: {http_exc.detail}",
+            extra={"userId": str(current_user.id)},
+        )
+        raise
+    except Exception as e:
+        logger.error(
+            f"Unexpected error in complete onboarding endpoint: {str(e)}",
             extra={"userId": str(current_user.id), "error": str(e)},
             exc_info=True,
         )
