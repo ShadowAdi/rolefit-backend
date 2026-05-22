@@ -5,6 +5,7 @@ from app.api.v1.auth import auth_router
 from app.api.v1.profile import profile_router
 from app.api.v1.project import project_router
 from app.api.v1.experience import experience_router
+from app.api.v1.publications import publication_router
 from app.api.v1.academics import academics_router
 from app.api.v1.skill import skill_router
 from app.api.v1.tools import tool_router
@@ -24,6 +25,7 @@ v1_router.include_router(profile_router.router, prefix="/profile")
 v1_router.include_router(project_router.router, prefix="/project")
 v1_router.include_router(experience_router.router, prefix="/experience")
 v1_router.include_router(academics_router.router, prefix="/academics")
+v1_router.include_router(publication_router.router, prefix="/publications")
 v1_router.include_router(skill_router.router, prefix="/skills")
 v1_router.include_router(tool_router.router, prefix="/tools")
 v1_router.include_router(jd_router.router, prefix="/job-descriptions")
