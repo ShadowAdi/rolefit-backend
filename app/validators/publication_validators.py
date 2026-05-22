@@ -1,6 +1,6 @@
 import re
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import ValidationError, field_validator, BaseModel
 
 
@@ -41,8 +41,16 @@ class PublicationValidator(BaseModel):
         if not isinstance(v, datetime):
             raise ValueError("Publication date must be a datetime object")
 
+        # Get current time in UTC for comparison
+        now_utc = datetime.now(timezone.utc)
+
+        # Ensure the datetime is timezone-aware
+        if v.tzinfo is None:
+            # If naive, assume UTC
+            v = v.replace(tzinfo=timezone.utc)
+
         # Publication date should not be in the future
-        if v > datetime.now():
+        if v > now_utc:
             raise ValueError("Publication date cannot be in the future")
 
         return v
