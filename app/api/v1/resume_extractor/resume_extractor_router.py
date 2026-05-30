@@ -6,6 +6,7 @@ from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
 from app.schema.ResumeExtractorResponse import ResumeExtractorResponse
+from app.response.base import APIResponse
 
 router = APIRouter(prefix="", tags=["Resume Extractor"])
 
@@ -14,7 +15,7 @@ ResumeExtractorService = ResumeExtractorServiceClass()
 
 @router.post(
     "/",
-    response_model=ResumeExtractorResponse,
+    response_model=APIResponse[ResumeExtractorResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def resume_extractor(
@@ -27,7 +28,12 @@ async def resume_extractor(
             db=db, resume_url=resume_url, userId=str(current_user.id)
         )
 
-        return resume_extractor
+        return APIResponse(
+            status_code=201,
+            message="Resume extracted successfully",
+            success=True,
+            data=resume_extractor,
+        )
 
     except HTTPException as http_exc:
         logger.warning(
