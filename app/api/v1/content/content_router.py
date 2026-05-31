@@ -4,91 +4,19 @@ from app.dependency.dependencies import get_db, get_current_user
 from app.api.v1.content.content_service import ContentServiceClass
 from app.core.logger import logger
 from app.models.GeneratedDocument import GeneratedDocumentEnumType
+from app.schema.GeneratedDocument import (
+    GeneratedDocumentApiResponse,
+    GeneratedDocumentListApiResponse,
+    DeleteDocumentApiResponse,
+    DocumentStatusApiResponse,
+)
 
-router = APIRouter(prefix="", tags=["Content"])
+router = APIRouter(prefix="/content", tags=["Content"])
 
 content_service = ContentServiceClass()
 
 
-@router.post(
-    "/{jobId}",
-    status_code=status.HTTP_201_CREATED,
-)
-async def generate_resume_content(
-    jobId: str,
-    user_specifications: str = Query(None),
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    logger.info(f"Creating job description for user: {user_id}")
-    return await content_service.generate_resume_content(
-        userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
-    )
-
-
-@router.get(
-    "/{jobId}",
-    status_code=status.HTTP_200_OK,
-)
-async def get_all_contents(
-    jobId: str,
-    content_type: GeneratedDocumentEnumType = Query(...),
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    return content_service.get_all_contents(
-        userId=str(user_id), jobId=jobId, content_type=content_type, db=db
-    )
-
-
-@router.get(
-    "/{contentId}",
-    status_code=status.HTTP_200_OK,
-)
-async def get_content(
-    contentId: str,
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    return content_service.get_content(userId=str(user_id), contentId=contentId, db=db)
-
-
-@router.delete(
-    "/{contentId}",
-    status_code=status.HTTP_200_OK,
-)
-async def delete_content(
-    contentId: str,
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    return content_service.delete_content(
-        userId=str(user_id), contentId=contentId, db=db
-    )
-
-
-@router.post(
-    "/cover-letter/{jobId}",
-    status_code=status.HTTP_201_CREATED,
-)
-async def generate_cover_letter_content(
-    jobId: str,
-    user_specifications: str = Query(None),
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    logger.info(f"Creating cover letter content for user: {user_id}")
-    return await content_service.generate_cover_letter_content(
-        userId=str(user_id), jobId=jobId, user_specifications=user_specifications, db=db
-    )
-
-
-@router.get("/{doc_id}/status")
+@router.get("/{doc_id}/status", response_model=DocumentStatusApiResponse)
 async def get_document_status(
     doc_id: str,
     current_user=Depends(get_current_user),
@@ -100,6 +28,162 @@ async def get_document_status(
     When status == "failed"    → show error, offer retry.
     """
     user_id = current_user.id
-    return content_service.get_document_status(
-        doc_id=doc_id, userId=str(user_id), db=db
-    )
+    try:
+        result = content_service.get_document_status(
+            doc_id=doc_id, userId=str(user_id), db=db
+        )
+        return DocumentStatusApiResponse(
+            success=True,
+            status_code=200,
+            message="Document status retrieved",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching document status: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/{jobId}",
+    status_code=status.HTTP_201_CREATED,
+    response_model=GeneratedDocumentApiResponse,
+)
+async def generate_resume_content(
+    jobId: str,
+    user_specifications: str = Query(None),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    logger.info(f"Creating resume content for user: {user_id}")
+    try:
+        result = await content_service.generate_resume_content(
+            userId=str(user_id),
+            jobId=jobId,
+            user_specifications=user_specifications,
+            db=db,
+        )
+        return GeneratedDocumentApiResponse(
+            success=True,
+            status_code=201,
+            message="Resume generation queued. Poll /status/{doc_id} for updates.",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error generating resume: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Cover letter generation - POST to /content/cover-letter/{jobId}
+@router.post(
+    "/cover-letter/{jobId}",
+    status_code=status.HTTP_201_CREATED,
+    response_model=GeneratedDocumentApiResponse,
+)
+async def generate_cover_letter_content(
+    jobId: str,
+    user_specifications: str = Query(None),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    logger.info(f"Creating cover letter content for user: {user_id}")
+    try:
+        result = await content_service.generate_cover_letter_content(
+            userId=str(user_id),
+            jobId=jobId,
+            user_specifications=user_specifications,
+            db=db,
+        )
+        return GeneratedDocumentApiResponse(
+            success=True,
+            status_code=201,
+            message="Cover letter generation queued. Poll /status/{doc_id} for updates.",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error generating cover letter: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Get all contents for a job - GET /content/{jobId}?content_type=...
+@router.get(
+    "/{jobId}",
+    status_code=status.HTTP_200_OK,
+    response_model=GeneratedDocumentListApiResponse,
+)
+async def get_all_contents(
+    jobId: str,
+    content_type: GeneratedDocumentEnumType = Query(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    try:
+        result = content_service.get_all_contents(
+            userId=str(user_id), jobId=jobId, content_type=content_type, db=db
+        )
+        return GeneratedDocumentListApiResponse(
+            success=True,
+            status_code=200,
+            message="Contents retrieved successfully",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching contents: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Get specific content - GET /content/{contentId}
+# Note: This endpoint uses a different context - when retrieving a specific content item
+@router.get(
+    "/item/{contentId}",
+    status_code=status.HTTP_200_OK,
+    response_model=GeneratedDocumentApiResponse,
+)
+async def get_content(
+    contentId: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    try:
+        result = content_service.get_content(
+            userId=str(user_id), contentId=contentId, db=db
+        )
+        return GeneratedDocumentApiResponse(
+            success=True,
+            status_code=200,
+            message="Content retrieved successfully",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching content: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Delete content - DELETE /content/item/{contentId}
+@router.delete(
+    "/item/{contentId}",
+    status_code=status.HTTP_200_OK,
+    response_model=DeleteDocumentApiResponse,
+)
+async def delete_content(
+    contentId: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    try:
+        result = content_service.delete_content(
+            userId=str(user_id), contentId=contentId, db=db
+        )
+        return DeleteDocumentApiResponse(
+            success=True,
+            status_code=200,
+            message="Content deleted successfully",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error deleting content: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
