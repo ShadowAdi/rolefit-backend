@@ -20,14 +20,14 @@ class GeneratedDocumentStatusEnumType(str, Enum):
 
 class CreateGeneratedDocumnet(BaseModel):
 
-    resume_text: Optional[str]
-    cover_letter_text: Optional[str]
-    userId: str = Field(None)
-    jobId: str = Field(None)
-    user_specifications = Field(..., max_length=1000)
+    resume_text: Optional[str] = None
+    cover_letter_text: Optional[str] = None
+    userId: Optional[str] = Field(None)
+    jobId: Optional[str] = Field(None)
+    user_specifications: Optional[str] = Field(None, max_length=1000)
     gen_doc_type: Optional[GeneratedDocumentEnumType] = None
     status: Optional[GeneratedDocumentStatusEnumType] = None
-    error_message: Optional[str]
+    error_message: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
