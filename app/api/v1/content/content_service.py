@@ -152,13 +152,11 @@ class ContentServiceClass:
                 GeneratedDocumment.jobId == jobId,
             )
 
-            # Only filter by content_type if provided
             if content_type:
                 query = query.filter(GeneratedDocumment.gen_doc_type == content_type)
 
             genDocs = query.all()
 
-            # Return empty array if no contents exist - this is not an error
             if not genDocs:
                 logger.info(f"No content found for jobId={jobId}, userId={userId}")
                 return []

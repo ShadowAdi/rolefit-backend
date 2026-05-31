@@ -34,6 +34,7 @@ class GeneratedDocumnetResponse(BaseModel):
     userId: UUID
     jobId: UUID
     gen_doc_type: str
+    status: str
     user_specifications: Optional[str]
     created_at: datetime
     updated_at: datetime
