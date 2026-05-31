@@ -16,6 +16,89 @@ router = APIRouter(prefix="/content", tags=["Content"])
 content_service = ContentServiceClass()
 
 
+@router.get(
+    "/{contentId}",
+    status_code=status.HTTP_200_OK,
+    response_model=GeneratedDocumentApiResponse,
+)
+async def get_content(
+    contentId: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    try:
+        result = content_service.get_content(
+            userId=str(user_id), contentId=contentId, db=db
+        )
+        return GeneratedDocumentApiResponse(
+            success=True,
+            status_code=200,
+            message="Content retrieved successfully",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching content: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete(
+    "/{contentId}",
+    status_code=status.HTTP_200_OK,
+    response_model=DeleteDocumentApiResponse,
+)
+async def delete_content(
+    contentId: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    try:
+        result = content_service.delete_content(
+            userId=str(user_id), contentId=contentId, db=db
+        )
+        return DeleteDocumentApiResponse(
+            success=True,
+            status_code=200,
+            message="Content deleted successfully",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error deleting content: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/cover-letter/{jobId}",
+    status_code=status.HTTP_201_CREATED,
+    response_model=GeneratedDocumentApiResponse,
+)
+async def generate_cover_letter_content(
+    jobId: str,
+    user_specifications: str = Query(None),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    user_id = current_user.id
+    logger.info(f"Creating cover letter content for user: {user_id}")
+    try:
+        result = await content_service.generate_cover_letter_content(
+            userId=str(user_id),
+            jobId=jobId,
+            user_specifications=user_specifications,
+            db=db,
+        )
+        return GeneratedDocumentApiResponse(
+            success=True,
+            status_code=201,
+            message="Cover letter generation queued. Poll /status/{doc_id} for updates.",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error generating cover letter: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{doc_id}/status", response_model=DocumentStatusApiResponse)
 async def get_document_status(
     doc_id: str,
@@ -74,39 +157,6 @@ async def generate_resume_content(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Cover letter generation - POST to /content/cover-letter/{jobId}
-@router.post(
-    "/cover-letter/{jobId}",
-    status_code=status.HTTP_201_CREATED,
-    response_model=GeneratedDocumentApiResponse,
-)
-async def generate_cover_letter_content(
-    jobId: str,
-    user_specifications: str = Query(None),
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    logger.info(f"Creating cover letter content for user: {user_id}")
-    try:
-        result = await content_service.generate_cover_letter_content(
-            userId=str(user_id),
-            jobId=jobId,
-            user_specifications=user_specifications,
-            db=db,
-        )
-        return GeneratedDocumentApiResponse(
-            success=True,
-            status_code=201,
-            message="Cover letter generation queued. Poll /status/{doc_id} for updates.",
-            data=result,
-        )
-    except Exception as e:
-        logger.error(f"Error generating cover letter: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Get all contents for a job - GET /content/{jobId}?content_type=...
 @router.get(
     "/{jobId}",
     status_code=status.HTTP_200_OK,
@@ -114,7 +164,7 @@ async def generate_cover_letter_content(
 )
 async def get_all_contents(
     jobId: str,
-    content_type: GeneratedDocumentEnumType = Query(...),
+    content_type: GeneratedDocumentEnumType = Query(None),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -131,59 +181,4 @@ async def get_all_contents(
         )
     except Exception as e:
         logger.error(f"Error fetching contents: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Get specific content - GET /content/{contentId}
-# Note: This endpoint uses a different context - when retrieving a specific content item
-@router.get(
-    "/item/{contentId}",
-    status_code=status.HTTP_200_OK,
-    response_model=GeneratedDocumentApiResponse,
-)
-async def get_content(
-    contentId: str,
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    try:
-        result = content_service.get_content(
-            userId=str(user_id), contentId=contentId, db=db
-        )
-        return GeneratedDocumentApiResponse(
-            success=True,
-            status_code=200,
-            message="Content retrieved successfully",
-            data=result,
-        )
-    except Exception as e:
-        logger.error(f"Error fetching content: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# Delete content - DELETE /content/item/{contentId}
-@router.delete(
-    "/item/{contentId}",
-    status_code=status.HTTP_200_OK,
-    response_model=DeleteDocumentApiResponse,
-)
-async def delete_content(
-    contentId: str,
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    user_id = current_user.id
-    try:
-        result = content_service.delete_content(
-            userId=str(user_id), contentId=contentId, db=db
-        )
-        return DeleteDocumentApiResponse(
-            success=True,
-            status_code=200,
-            message="Content deleted successfully",
-            data=result,
-        )
-    except Exception as e:
-        logger.error(f"Error deleting content: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

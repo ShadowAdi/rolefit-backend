@@ -155,15 +155,16 @@ class ContentServiceClass:
                     detail="User does not exist. Invalid user ID.",
                 )
 
-            genDocs = (
-                db.query(GeneratedDocumment)
-                .filter(
-                    GeneratedDocumment.userId == userId,
-                    GeneratedDocumment.jobId == jobId,
-                    GeneratedDocumment.gen_doc_type == content_type,
-                )
-                .all()
+            query = db.query(GeneratedDocumment).filter(
+                GeneratedDocumment.userId == userId,
+                GeneratedDocumment.jobId == jobId,
             )
+
+            # Only filter by content_type if provided
+            if content_type:
+                query = query.filter(GeneratedDocumment.gen_doc_type == content_type)
+
+            genDocs = query.all()
 
             return [
                 GeneratedDocumnetResponse.model_validate(genDoc) for genDoc in genDocs
