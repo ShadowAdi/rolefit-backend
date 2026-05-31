@@ -1,7 +1,8 @@
 from pydantic import BaseModel, ConfigDict, Field
 from enum import Enum
 from typing import Optional, Generic, TypeVar
-from datetime import datetime
+from datetime import datetime, timezone
+from uuid import UUID
 
 T = TypeVar("T")
 
@@ -33,9 +34,9 @@ class CreateGeneratedDocumnet(BaseModel):
 
 
 class GeneratedDocumentResponseSchema(BaseModel):
-    id: str
-    userId: str
-    jobId: str
+    id: UUID
+    userId: UUID
+    jobId: UUID
     resume_text: Optional[str] = None
     cover_letter_text: Optional[str] = None
     gen_doc_type: str
@@ -47,6 +48,15 @@ class GeneratedDocumentResponseSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @property
+    def document_type(self) -> str:
+        """Map gen_doc_type to document_type for frontend compatibility"""
+        if self.gen_doc_type == "Resume":
+            return "resume"
+        elif self.gen_doc_type == "Cover-letter":
+            return "cover_letter"
+        return self.gen_doc_type.lower()
+
 
 class ApiResponse(BaseModel, Generic[T]):
     """Generic API response wrapper"""
@@ -56,7 +66,7 @@ class ApiResponse(BaseModel, Generic[T]):
     message: Optional[str] = Field(None, description="Response message")
     data: Optional[T] = Field(None, description="Response data")
     timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(datetime.timezone.utc),
+        default_factory=lambda: datetime.now(timezone.utc),
         description="Response timestamp",
     )
 

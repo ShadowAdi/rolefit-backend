@@ -11,7 +11,7 @@ from app.schema.GeneratedDocument import (
     DocumentStatusApiResponse,
 )
 
-router = APIRouter(prefix="/content", tags=["Content"])
+router = APIRouter(prefix="", tags=["Content"])
 
 content_service = ContentServiceClass()
 

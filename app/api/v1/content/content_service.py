@@ -147,14 +147,6 @@ class ContentServiceClass:
                     detail="Failed to fetch all content.",
                 )
 
-            user = db.query(User).filter(User.id == userId).first()
-            if not user:
-                logger.warning(f"User not found: {userId}")
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User does not exist. Invalid user ID.",
-                )
-
             query = db.query(GeneratedDocumment).filter(
                 GeneratedDocumment.userId == userId,
                 GeneratedDocumment.jobId == jobId,
@@ -165,6 +157,11 @@ class ContentServiceClass:
                 query = query.filter(GeneratedDocumment.gen_doc_type == content_type)
 
             genDocs = query.all()
+
+            # Return empty array if no contents exist - this is not an error
+            if not genDocs:
+                logger.info(f"No content found for jobId={jobId}, userId={userId}")
+                return []
 
             return [
                 GeneratedDocumnetResponse.model_validate(genDoc) for genDoc in genDocs
@@ -240,6 +237,13 @@ class ContentServiceClass:
                 )
                 .first()
             )
+
+            if not genDoc:
+                logger.warning(f"Content not found: {contentId}")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Content not found",
+                )
 
             return GeneratedDocumnetResponse.model_validate(genDoc)
 
