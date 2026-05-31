@@ -1,5 +1,5 @@
-from fastapi import logger
 from fastapi import WebSocket
+from app.core.logger import logger
 
 
 class ConnectionManager:
