@@ -11,6 +11,7 @@ from app.helpers.build_pdf import build_pdf
 from app.helpers.pdf_helpers import get_verified_doc, parse_resume_text
 from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 from app.tasks.pdf_task import generate_resume_pdf
+from app.response.base import APIResponse
 
 from app.core.logger import logger
 
@@ -123,7 +124,7 @@ async def preview_resume_pdf(
     return _stream_pdf(pdf_bytes, "resume_preview.pdf", inline=True)
 
 
-@router.get("/{docId}/status")
+@router.get("/{docId}/status", response_model=APIResponse)
 async def get_pdf_generation_status(
     docId: str,
     task_id: str,
@@ -143,33 +144,41 @@ async def get_pdf_generation_status(
 
     task = celery_app.AsyncResult(task_id)
 
-    return {
-        "task_id": task_id,
-        "status": task.status,
-        "result": task.result if task.successful() else None,
-        "success": True,
-    }
+    return APIResponse(
+        success=True,
+        message="PDF generation status retrieved",
+        status_code=200,
+        data={
+            "task_id": task_id,
+            "status": task.status,
+            "result": task.result if task.successful() else None,
+        },
+    )
 
 
-@router.get("/templates")
+@router.get("/templates", response_model=APIResponse)
 async def list_templates():
     """Return available template IDs for the frontend to display as options."""
-    return {
-        "templates": [
-            {
-                "id": "classic",
-                "name": "Classic",
-                "description": "Clean single-column layout with accent-coloured headings.",
-            },
-            {
-                "id": "minimalist",
-                "name": "Minimalist",
-                "description": "Generous white space, thin rules, muted tones — very readable.",
-            },
-            {
-                "id": "bold",
-                "name": "Bold",
-                "description": "Dark header block, vivid accent sidebar rules — stands out.",
-            },
-        ]
-    }
+    templates = [
+        {
+            "id": "classic",
+            "name": "Classic",
+            "description": "Clean single-column layout with accent-coloured headings.",
+        },
+        {
+            "id": "minimalist",
+            "name": "Minimalist",
+            "description": "Generous white space, thin rules, muted tones — very readable.",
+        },
+        {
+            "id": "bold",
+            "name": "Bold",
+            "description": "Dark header block, vivid accent sidebar rules — stands out.",
+        },
+    ]
+    return APIResponse(
+        success=True,
+        message="Templates retrieved",
+        status_code=200,
+        data={"templates": templates},
+    )
