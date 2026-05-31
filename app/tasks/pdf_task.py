@@ -100,8 +100,8 @@ def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
             logger.info(f"PDF generated successfully | doc={docId} type={resume_type}")
 
             _push_event(
-                user_id=userId,
-                doc_id=docId,
+                userId=userId,
+                docId=docId,
                 event_type="resume_pdf_generated",
                 status="completed",
                 message="Resume pdf has been generated based on choosen template.",
