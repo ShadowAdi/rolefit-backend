@@ -135,13 +135,16 @@ def generate_resume_task(
         doc.status = "completed"
         db.commit()
 
-        _push_event(
-            userId=user_id,
-            docId=doc_id,
-            event_type="generate_resume_content",
-            status="completed",
-            message="Your resume is ready. Choose a template to download.",
-        )
+        try:
+            _push_event(
+                userId=user_id,
+                docId=doc_id,
+                event_type="generate_resume_content",
+                status="completed",
+                message="Your resume is ready. Choose a template to download.",
+            )
+        except Exception as e:
+            logger.warning(f"[resume] Event push failed (non-fatal): {e}")
 
         logger.info(f"[resume] Completed doc={doc_id}")
         return {"status": "completed", "doc_id": doc_id}
@@ -212,13 +215,16 @@ def generate_cover_letter_task(
         doc.status = "completed"
         db.commit()
 
-        _push_event(
-            userId=user_id,
-            docId=doc_id,
-            event_type="cover_letter_generation_completed",
-            status="completed",
-            message="Your cover letter is ready. Choose a template to download.",
-        )
+        try:
+            _push_event(
+                userId=user_id,
+                docId=doc_id,
+                event_type="cover_letter_generation_completed",
+                status="completed",
+                message="Your cover letter is ready. Choose a template to download.",
+            )
+        except Exception as e:
+            logger.warning(f"[cover_letter] Event push failed (non-fatal): {e}")
 
         logger.info(f"[cover_letter] Completed doc={doc_id}")
         return {"status": "completed", "doc_id": doc_id}

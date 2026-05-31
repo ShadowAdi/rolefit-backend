@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, computed_field
 from enum import Enum
 from typing import Optional, Generic, TypeVar
 from datetime import datetime, timezone
@@ -48,6 +48,7 @@ class GeneratedDocumentResponseSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @computed_field
     @property
     def document_type(self) -> str:
         """Map gen_doc_type to document_type for frontend compatibility"""
@@ -56,6 +57,17 @@ class GeneratedDocumentResponseSchema(BaseModel):
         elif self.gen_doc_type == "Cover-letter":
             return "cover_letter"
         return self.gen_doc_type.lower()
+
+
+class GenerateContentResponseSchema(BaseModel):
+    """Response schema for content generation - returns queued task info"""
+
+    doc_id: str
+    task_id: str
+    status: str
+    message: str
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ApiResponse(BaseModel, Generic[T]):
@@ -75,6 +87,12 @@ class ApiResponse(BaseModel, Generic[T]):
 
 class GeneratedDocumentApiResponse(ApiResponse[GeneratedDocumentResponseSchema]):
     """API response wrapper for generated document"""
+
+    pass
+
+
+class GenerateContentApiResponse(ApiResponse[GenerateContentResponseSchema]):
+    """API response wrapper for content generation (returns task info)"""
 
     pass
 

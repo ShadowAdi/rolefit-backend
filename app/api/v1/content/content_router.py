@@ -6,6 +6,7 @@ from app.core.logger import logger
 from app.models.GeneratedDocument import GeneratedDocumentEnumType
 from app.schema.GeneratedDocument import (
     GeneratedDocumentApiResponse,
+    GenerateContentApiResponse,
     GeneratedDocumentListApiResponse,
     DeleteDocumentApiResponse,
     DocumentStatusApiResponse,
@@ -19,7 +20,7 @@ content_service = ContentServiceClass()
 @router.post(
     "/cover-letter/{jobId}",
     status_code=status.HTTP_201_CREATED,
-    response_model=GeneratedDocumentApiResponse,
+    response_model=GenerateContentApiResponse,
 )
 async def generate_cover_letter_content(
     jobId: str,
@@ -36,7 +37,7 @@ async def generate_cover_letter_content(
             user_specifications=user_specifications,
             db=db,
         )
-        return GeneratedDocumentApiResponse(
+        return GenerateContentApiResponse(
             success=True,
             status_code=201,
             message="Cover letter generation queued. Poll /status/{doc_id} for updates.",
@@ -92,7 +93,11 @@ async def delete_content(
             success=True,
             status_code=200,
             message="Content deleted successfully",
-            data=result,
+            data={
+                "id": str(result.id),
+                "success": result.success,
+                "message": result.message,
+            },
         )
     except Exception as e:
         logger.error(f"Error deleting content: {str(e)}")
@@ -129,7 +134,7 @@ async def get_document_status(
 @router.post(
     "/{jobId}",
     status_code=status.HTTP_201_CREATED,
-    response_model=GeneratedDocumentApiResponse,
+    response_model=GenerateContentApiResponse,
 )
 async def generate_resume_content(
     jobId: str,
@@ -146,7 +151,7 @@ async def generate_resume_content(
             user_specifications=user_specifications,
             db=db,
         )
-        return GeneratedDocumentApiResponse(
+        return GenerateContentApiResponse(
             success=True,
             status_code=201,
             message="Resume generation queued. Poll /status/{doc_id} for updates.",
