@@ -27,6 +27,9 @@ async def start_redis_subscriber():
                     continue
                 try:
                     event = json.loads(message["data"])
+                    logger.info(
+                        f"[Redis subscriber] Received event: type={event.get('type')} doc_id={event.get('doc_id')} user_id={event.get('user_id')}"
+                    )
                 except json.JSONDecodeError:
                     logger.warning(
                         f"[Redis subscriber] Bad JSON: {message['data'][:100]}"
@@ -38,6 +41,7 @@ async def start_redis_subscriber():
                     logger.warning("[Redis subscriber] Event missing user_id — skipped")
                     continue
 
+                logger.info(f"[Redis subscriber] Sending event to user_id={user_id}")
                 await manager.send(user_id, event)
 
         except asyncio.CancelledError:
@@ -48,7 +52,18 @@ async def start_redis_subscriber():
             await asyncio.sleep(3)
 
 
-async def publish_event_sync(redis_url: str, event: dict):
-    r = sync_redis.from_url(redis_url, decode_responses=True)
-    r.publish(CHANNEL, json.dumps(event))
-    r.close()
+def publish_event_sync(redis_url: str, event: dict):
+    """
+    Synchronous function to publish events to Redis.
+    Called from Celery tasks (which run in separate threads).
+    """
+    try:
+        r = sync_redis.from_url(redis_url, decode_responses=True)
+        payload = json.dumps(event)
+        result = r.publish(CHANNEL, payload)
+        r.close()
+        logger.info(
+            f"[Redis publish] Event sent to {result} subscriber(s): doc_id={event.get('doc_id')} user_id={event.get('user_id')}"
+        )
+    except Exception as e:
+        logger.error(f"[Redis publish] Failed to publish event: {e}", exc_info=True)

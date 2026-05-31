@@ -39,10 +39,14 @@ def _push_event(
 
     if error:
         event["error"] = error
+
+    logger.info(f"[_push_event] Publishing WebSocket event: {event}")
+
     try:
         publish_event_sync(redis_url=REDIS_URL, event=event)
+        logger.info(f"[_push_event] Event published successfully for doc={docId}")
     except Exception as e:
-        logger.warning(f"[WS event] Failed to publish: {e}")
+        logger.warning(f"[_push_event] Failed to publish: {e}", exc_info=True)
 
 
 def _get_session() -> Session:
