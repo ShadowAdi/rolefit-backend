@@ -55,6 +55,10 @@ class ResumeExtractorServiceClass:
                     detail="Profile already exists for this user. Please update the existing profile or contact support.",
                 )
 
+            existing_profile.isOnboarded = True
+            db.commit()
+            db.refresh(existing_profile)
+
             parsed = urlparse(resume_url.strip())
             if parsed.scheme not in ("http", "https"):
                 raise HTTPException(
