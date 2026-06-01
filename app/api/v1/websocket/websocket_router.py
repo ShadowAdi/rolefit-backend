@@ -55,14 +55,22 @@ async def websocket_endpoint(
     """
     try:
         payload = decode_token(token)
+        if not payload:
+            await websocket.accept()
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            logger.warning(f"[WS] Auth missing or invalid token for user={user_id}")
+            return
+
         token_user_id = str(payload.get("sub"))
         if token_user_id != user_id:
+            await websocket.accept()
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             logger.warning(f"[WS] Auth mismatch: token={token_user_id} path={user_id}")
             return
     except Exception as e:
         logger.warning(f"[WS] Invalid token for user={user_id}: {e}")
         try:
+            await websocket.accept()
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         except:
             pass
