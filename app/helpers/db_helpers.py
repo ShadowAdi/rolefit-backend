@@ -64,6 +64,7 @@ def _save_profile(db: Session, user_id: str, resume_url: str, data: dict) -> Pro
         resume_link=resume_url,
         cover_letter_link=None,
         links=links if any(links.values()) else None,
+        isOnboarded=True,
     )
 
     db.add(profile)
