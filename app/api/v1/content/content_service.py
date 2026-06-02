@@ -132,6 +132,75 @@ class ContentServiceClass:
                 detail="An unexpected error occurred while creating the resume content.",
             )
 
+    def get_all_user_contents(
+        self,
+        userId: str,
+        content_type: GeneratedDocumentEnumType,
+        db: Session,
+    ):
+        """Get all generated content for user across all JDs"""
+        try:
+            if not userId:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User ID is required",
+                )
+
+            query = db.query(GeneratedDocumment).filter(
+                GeneratedDocumment.userId == userId,
+            )
+
+            if content_type:
+                query = query.filter(GeneratedDocumment.gen_doc_type == content_type)
+
+            genDocs = query.all()
+
+            if not genDocs:
+                return []
+
+            return [
+                GeneratedDocumnetResponse.model_validate(genDoc) for genDoc in genDocs
+            ]
+
+        except HTTPException:
+            raise
+
+        except IntegrityError as e:
+            db.rollback()
+            logger.error(
+                f"DB integrity error for user={userId}",
+                extra={"error": str(e.orig)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database constraint violation occurred.",
+            )
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"DB error for fetching all user content for user={userId}",
+                extra={"error": str(e)},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while fetching contents.",
+            )
+
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error for user={userId}",
+                extra={"error": str(e), "errorType": type(e).__name__},
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while fetching contents.",
+            )
+
     def get_all_contents(
         self,
         userId: str,

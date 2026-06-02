@@ -163,6 +163,33 @@ async def generate_resume_content(
 
 
 @router.get(
+    "/all",
+    status_code=status.HTTP_200_OK,
+    response_model=GeneratedDocumentListApiResponse,
+)
+async def get_all_user_contents(
+    content_type: GeneratedDocumentEnumType = Query(None),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get all generated content for the current user across all JDs"""
+    user_id = current_user.id
+    try:
+        result = content_service.get_all_user_contents(
+            userId=str(user_id), content_type=content_type, db=db
+        )
+        return GeneratedDocumentListApiResponse(
+            success=True,
+            status_code=200,
+            message="All contents retrieved successfully",
+            data=result,
+        )
+    except Exception as e:
+        logger.error(f"Error fetching all contents: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
     "/{jobId}",
     status_code=status.HTTP_200_OK,
     response_model=GeneratedDocumentListApiResponse,
