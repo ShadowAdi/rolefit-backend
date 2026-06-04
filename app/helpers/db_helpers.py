@@ -11,6 +11,8 @@ from app.models.Project import Project
 from app.models.Publication import Publication
 from app.models.Skill import Skill
 from app.models.Tool import Tool
+from app.models.UserSkill import UserSkill
+from app.models.UserTool import UserTool
 from app.core.logger import logger
 from app.helpers.redis_cache_helpers import get_cache, set_cache
 from fastapi.encoders import jsonable_encoder
@@ -156,37 +158,58 @@ def _save_publications(db: Session, profile_id, items: list):
 def _save_skills(
     db: Session, user_id: str, profile_id: str, skill_names: list[str]
 ) -> list[Skill]:
+    """
+    Skills are global (unique by name). Reuse existing ones and link each to the
+    user via a UserSkill row, otherwise the user's profile would show no skills
+    even though the catalog rows were created.
+    """
     saved = []
     for name in skill_names or []:
         name = name.strip().lower()
         if not name:
             continue
-        existing = db.query(Skill).filter(Skill.name == name).first()
-        if existing:
-            saved.append(existing)
-        else:
+        skill = db.query(Skill).filter(Skill.name == name).first()
+        if not skill:
             skill = Skill(name=name, created_by=user_id)
             db.add(skill)
             db.flush()
-            saved.append(skill)
+
+        link_exists = (
+            db.query(UserSkill)
+            .filter(UserSkill.userId == user_id, UserSkill.skillId == skill.id)
+            .first()
+        )
+        if not link_exists:
+            db.add(UserSkill(userId=user_id, skillId=skill.id))
+
+        saved.append(skill)
     return saved
 
 
 def _save_tools(db: Session, user_id, profile_id, tool_names: list) -> list[Tool]:
     """
-    Tools are global (unique by name). Reuse existing ones.
+    Tools are global (unique by name). Reuse existing ones and link each to the
+    user via a UserTool row, otherwise the user's profile would show no tools
+    even though the catalog rows were created.
     """
     saved = []
     for name in tool_names or []:
         name = name.strip().lower()
         if not name:
             continue
-        existing = db.query(Tool).filter(Tool.name == name).first()
-        if existing:
-            saved.append(existing)
-        else:
+        tool = db.query(Tool).filter(Tool.name == name).first()
+        if not tool:
             tool = Tool(name=name, created_by=user_id)
             db.add(tool)
             db.flush()
-            saved.append(tool)
+
+        link_exists = (
+            db.query(UserTool)
+            .filter(UserTool.userId == user_id, UserTool.toolId == tool.id)
+            .first()
+        )
+        if not link_exists:
+            db.add(UserTool(userId=user_id, toolId=tool.id))
+
+        saved.append(tool)
     return saved
