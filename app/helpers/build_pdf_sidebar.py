@@ -29,6 +29,7 @@ from reportlab.platypus import (
     TableStyle,
     HRFlowable,
     KeepTogether,
+    KeepInFrame,
 )
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
@@ -265,8 +266,32 @@ def build_pdf_sidebar(data, bold_pattern: re.Pattern = None) -> bytes:
         )
         return t
 
-    sb_cell = _padded(sb, SB_PAD_H, SB_PAD_T)
-    mn_cell = _padded(mn, MN_PAD_H, MN_PAD_T)
+    # Shrink each column's content to fit one page height within its own
+    # fixed-width cell. Wrapping per-column (instead of the whole page) keeps
+    # the column widths fixed so the canvas-painted sidebar strip stays aligned.
+    sb_fitted = [
+        KeepInFrame(
+            SIDE_W - 2 * SB_PAD_H,
+            PH - SB_PAD_T - V_PAD,
+            content=sb,
+            mode="shrink",
+            hAlign="LEFT",
+            vAlign="TOP",
+        )
+    ]
+    mn_fitted = [
+        KeepInFrame(
+            MAIN_W - 2 * MN_PAD_H,
+            PH - MN_PAD_T - V_PAD,
+            content=mn,
+            mode="shrink",
+            hAlign="LEFT",
+            vAlign="TOP",
+        )
+    ]
+
+    sb_cell = _padded(sb_fitted, SB_PAD_H, SB_PAD_T)
+    mn_cell = _padded(mn_fitted, MN_PAD_H, MN_PAD_T)
 
     outer = Table(
         [[sb_cell, mn_cell]],

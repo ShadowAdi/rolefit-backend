@@ -12,6 +12,7 @@ from reportlab.lib.pagesizes import letter
 from app.utils.style.cl_style_factory import _build_cl_styles
 from app.core.resume_colors import RULE
 from app.schema.CoverLetterData import CoverLetterData
+from .build_pdf import fit_single_page
 
 
 def build_cover_letter_pdf(data: CoverLetterData) -> bytes:
@@ -94,6 +95,6 @@ def build_cover_letter_pdf(data: CoverLetterData) -> bytes:
     if name:
         story.append(Paragraph(name, styles["signed_name"]))
 
-    doc.build(story)
+    doc.build(fit_single_page(story, doc))
     buff.seek(0)
     return buff.read()

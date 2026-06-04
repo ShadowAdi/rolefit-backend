@@ -11,7 +11,7 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.styles import ParagraphStyle
-from .build_pdf import _format_header_links, _render_project_links
+from .build_pdf import _format_header_links, _render_project_links, fit_single_page
 from app.utils.style.build_styles_minimalist import (
     build_styles_minimalist,
     section_header_minimalist,
@@ -212,6 +212,6 @@ def build_pdf_minimalist(data, minimal_pattern: re.Pattern = None) -> bytes:
                 )
                 story.append(Paragraph(safe, styles["edu_desc"]))
 
-    doc.build(story)
+    doc.build(fit_single_page(story, doc))
     buff.seek(0)
     return buff.read()

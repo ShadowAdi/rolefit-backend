@@ -23,6 +23,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from app.schema.CoverLetterData import CoverLetterData
 from app.utils.style.cl_style_minimal import _build_cl_styles_minimal, MINI_SUBTEXT
+from .build_pdf import fit_single_page
 
 
 def build_cover_letter_pdf_minimal(data: CoverLetterData) -> bytes:
@@ -97,6 +98,6 @@ def build_cover_letter_pdf_minimal(data: CoverLetterData) -> bytes:
     if candidate.name:
         story.append(Paragraph(candidate.name, styles["signed_name"]))
 
-    doc.build(story)
+    doc.build(fit_single_page(story, doc))
     buff.seek(0)
     return buff.read()

@@ -9,6 +9,7 @@ from reportlab.platypus import (
     Spacer,
     Table,
     TableStyle,
+    KeepInFrame,
 )
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
@@ -150,6 +151,27 @@ def _render_project_links(
         fontSize=8.5,
     )
     return Paragraph("  ".join(parts), link_style)
+
+
+def fit_single_page(story: list, doc: SimpleDocTemplate) -> list:
+    """Wrap a flowable story so it always shrinks to fit exactly one page.
+
+    Uses ReportLab's KeepInFrame in ``shrink`` mode sized to the document's
+    usable area (page size minus margins). Content that already fits is left
+    untouched; content that would overflow is scaled down so the resume never
+    spills onto a second page. ``vAlign='TOP'`` keeps content anchored at the
+    top instead of being pushed to the bottom of the page.
+    """
+    return [
+        KeepInFrame(
+            doc.width,
+            doc.height,
+            content=story,
+            mode="shrink",
+            hAlign="LEFT",
+            vAlign="TOP",
+        )
+    ]
 
 
 def build_pdf(data: ResumeData) -> bytes:

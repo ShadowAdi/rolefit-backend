@@ -25,6 +25,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from app.schema.CoverLetterData import CoverLetterData
 from app.utils.style.cl_styles_bold import _build_cl_styles_bold, BOLD_BG, BOLD_ACCENT
+from .build_pdf import fit_single_page
 
 
 class BoldCLHeader(Flowable):
@@ -168,6 +169,6 @@ def build_cover_letter_pdf_bold(data: CoverLetterData) -> bytes:
     if candidate.name:
         story.append(Paragraph(candidate.name, styles["signed_name"]))
 
-    doc.build(story)
+    doc.build(fit_single_page(story, doc))
     buff.seek(0)
     return buff.read()
