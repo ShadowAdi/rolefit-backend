@@ -45,12 +45,28 @@ async def websocket_endpoint(
 
     Connect: ws://api/ws/{user_id}?token=<jwt>
 
-    Events you'll receive:
-      { type: "resume_completed",       doc_id, status, message }
-      { type: "resume_failed",          doc_id, status, message, error }
-      { type: "cover_letter_completed", doc_id, status, message }
-      { type: "cover_letter_failed",    doc_id, status, message, error }
-      { type: "pdf_ready",              doc_id, status, message }
+    Every event has the shape:
+      { type, doc_id, status, message, error? }
+    where status ∈ { "pending", "processing", "completed", "failed" }.
+
+    Content generation (resume / cover letter text):
+      { type: "generate_resume_content",            status: "completed" }
+      { type: "generate_resume_content_failed",     status: "failed", error }
+      { type: "cover_letter_generation_completed",  status: "completed" }
+      { type: "cover_letter_failed",                status: "failed", error }
+
+    PDF generation (resume):
+      { type: "resume_pdf_processing",  status: "processing" }
+      { type: "resume_pdf_generated",   status: "completed" }
+      { type: "resume_pdf_error",       status: "failed", error }
+
+    PDF generation (cover letter):
+      { type: "cover_letter_pdf_processing",  status: "processing" }
+      { type: "cover_letter_pdf_generated",   status: "completed" }
+      { type: "cover_letter_pdf_error",       status: "failed", error }
+
+    Connection / keepalive:
+      { type: "connected", user_id, message }
       { type: "ping" }  ← keepalive from server
     """
     try:

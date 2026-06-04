@@ -76,6 +76,15 @@ def generate_cover_letter_pdf(self, docId: str, userId: str, cover_letter_type: 
         if str(doc.userId) != str(userId):
             raise PermissionError(f"User {userId} does not own document {docId}")
 
+        # Notify the client that PDF generation has started
+        _push_event(
+            userId=userId,
+            docId=docId,
+            event_type="cover_letter_pdf_processing",
+            status="processing",
+            message="Your cover letter PDF is being generated...",
+        )
+
         raw = doc.cover_letter_text.strip()
         if raw.startswith("```"):
             lines = raw.splitlines()

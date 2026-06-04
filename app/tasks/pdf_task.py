@@ -77,6 +77,15 @@ def generate_resume_pdf(self, docId: str, userId: str, resume_type: str):
         if str(doc.userId) != str(userId):
             raise PermissionError(f"User {userId} does not own document {docId}")
 
+        # Notify the client that PDF generation has started
+        _push_event(
+            userId=userId,
+            docId=docId,
+            event_type="resume_pdf_processing",
+            status="processing",
+            message="Your resume PDF is being generated...",
+        )
+
         raw = doc.resume_text.strip()
         if raw.startswith("```"):
             lines = raw.splitlines()

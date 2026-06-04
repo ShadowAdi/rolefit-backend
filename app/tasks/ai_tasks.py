@@ -98,7 +98,7 @@ def _mark_failed(db, doc_id: str, error: str):
     doc = db.query(GeneratedDocumment).filter(GeneratedDocumment.id == doc_id).first()
     if doc:
         doc.status = "failed"
-        doc.error = error[:500]
+        doc.error_message = error[:500]
         db.commit()
 
 
@@ -161,8 +161,8 @@ def generate_resume_task(
         except self.MaxRetriesExceededError:
             _mark_failed(db, doc_id, str(exc))
             _push_event(
-                user_id=user_id,
-                doc_id=doc_id,
+                userId=user_id,
+                docId=doc_id,
                 event_type="generate_resume_content_failed",
                 status="failed",
                 message="Resume generation failed. Please try again.",
@@ -272,22 +272,25 @@ def cleanup_old_tasks():
         )
         for doc in stuck:
             doc.status = "failed"
-            doc.error = "Task timed out — please regenerate."
+            doc.error_message = "Task timed out — please regenerate."
             logger.warning(f"[cleanup] Marked stuck doc={doc.id} as failed")
         db.commit()
         logger.info(f"[cleanup] Cleaned {len(stuck)} stuck tasks")
-        _push_event(
-            userId=str(doc.userId),
-            docId=str(doc.id),
-            event_type=(
-                "resume_failed"
-                if doc.gen_doc_type == "Resume"
-                else "cover_letter_failed"
-            ),
-            status="failed",
-            message="Generation timed out. Please try again.",
-            error="Task timed out after 30 minutes.",
-        )
+
+        # Notify each affected user that their generation timed out
+        for doc in stuck:
+            _push_event(
+                userId=str(doc.userId),
+                docId=str(doc.id),
+                event_type=(
+                    "generate_resume_content_failed"
+                    if doc.gen_doc_type == "Resume"
+                    else "cover_letter_failed"
+                ),
+                status="failed",
+                message="Generation timed out. Please try again.",
+                error="Task timed out after 30 minutes.",
+            )
         return {"cleaned": len(stuck)}
 
     except SQLAlchemyError as e:
