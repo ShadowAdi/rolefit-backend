@@ -168,12 +168,12 @@ async def list_templates():
         {
             "id": "minimalist",
             "name": "Minimalist",
-            "description": "Generous white space, thin rules, muted tones — very readable.",
+            "description": "Generous white space, thin rules, muted tones - very readable.",
         },
         {
             "id": "bold",
             "name": "Bold",
-            "description": "Dark header block, vivid accent sidebar rules — stands out.",
+            "description": "Dark header block, vivid accent sidebar rules - stands out.",
         },
     ]
     return APIResponse(
