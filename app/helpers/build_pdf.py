@@ -153,21 +153,12 @@ def _render_project_links(
 
 
 def build_pdf(data: ResumeData) -> bytes:
-    buff = io.BytesIO()
-    M = 0.50 * inch
+    """Render the resume PDF, shrinking content to fit a single page.
 
-    doc = SimpleDocTemplate(
-        buff,
-        pagesize=letter,
-        leftMargin=M,
-        rightMargin=M,
-        topMargin=0.40 * inch,
-        bottomMargin=0.40 * inch,
-    )
-
-    styles = build_styles()
-    story = []
-
+    ReportLab cannot auto-scale, so we compose the story at progressively
+    smaller scale factors and re-render until it fits on one page (or we hit
+    the readability floor, in which case the smallest render is returned).
+    """
     extra_bold_terms: list[str] = []
     if hasattr(data, "job_description") and data.job_description:
         jd = data.job_description
@@ -179,6 +170,36 @@ def build_pdf(data: ResumeData) -> bytes:
             extra_bold_terms.append(jd.role_name)
 
     bold = _make_bold_pattern(extra_bold_terms)
+
+    def _render(scale: float) -> tuple[io.BytesIO, int]:
+        buff = io.BytesIO()
+        M = 0.50 * inch
+        doc = SimpleDocTemplate(
+            buff,
+            pagesize=letter,
+            leftMargin=M,
+            rightMargin=M,
+            topMargin=max(0.30 * inch, 0.40 * inch * scale),
+            bottomMargin=max(0.30 * inch, 0.40 * inch * scale),
+        )
+        doc.build(_compose_story(data, bold, scale))
+        return buff, doc.page
+
+    last_buff: io.BytesIO | None = None
+    for scale in (1.0, 0.97, 0.94, 0.91, 0.88, 0.85, 0.82, 0.79, 0.76, 0.73, 0.70):
+        buff, pages = _render(scale)
+        last_buff = buff
+        if pages <= 1:
+            break
+
+    last_buff.seek(0)
+    return last_buff.read()
+
+
+def _compose_story(data: ResumeData, bold: re.Pattern, scale: float = 1.0) -> list:
+    """Build the flowable story for the resume at the given scale factor."""
+    styles = build_styles(scale)
+    story: list = []
 
     h = data.header
     story.append(Paragraph(h.name, styles["name"]))
@@ -200,11 +221,11 @@ def build_pdf(data: ResumeData) -> bytes:
         story.append(Paragraph(" | ".join(contact_text_parts), styles["contact"]))
 
     if data.summary:
-        story += section_header("Summary", styles)
+        story += section_header("Summary", styles, scale=scale)
         story.append(Paragraph(_apply_bold(data.summary, bold), styles["summary"]))
 
     if data.skills:
-        story += section_header("Skills & Technologies", styles)
+        story += section_header("Skills & Technologies", styles, scale=scale)
         for grp in data.skills:
             if not grp.items:
                 continue
@@ -225,7 +246,7 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(t)
 
     if data.experience:
-        story += section_header("Professional Experience", styles)
+        story += section_header("Professional Experience", styles, scale=scale)
         for exp in data.experience:
             date_str = f"{exp.start} – {exp.end}" if exp.start else (exp.end or "")
             company_display = f" · {exp.company}" if exp.company else ""
@@ -245,7 +266,7 @@ def build_pdf(data: ResumeData) -> bytes:
                         "date",
                         parent=styles["company_meta"],
                         alignment=TA_RIGHT,
-                        fontSize=10,
+                        fontSize=10 * scale,
                     ),
                 ),
             ]
@@ -264,7 +285,7 @@ def build_pdf(data: ResumeData) -> bytes:
                 story.append(Paragraph(f"• {_apply_bold(b, bold)}", styles["bullet"]))
 
     if data.projects:
-        story += section_header("Projects", styles)
+        story += section_header("Projects", styles, scale=scale)
         for proj in data.projects:
             story.append(Paragraph(proj.title, styles["role"]))
             link_para = _render_project_links(proj.links, styles["company_meta"])
@@ -292,15 +313,15 @@ def build_pdf(data: ResumeData) -> bytes:
 
             for b in proj.bullets:
                 story.append(Paragraph(f"• {_apply_bold(b, bold)}", styles["bullet"]))
-            story.append(Spacer(1, 3))
+            story.append(Spacer(1, 3 * scale))
 
     if data.achievements:
-        story += section_header("Achievements & Certifications", styles)
+        story += section_header("Achievements & Certifications", styles, scale=scale)
         for ach in data.achievements:
             story.append(Paragraph(f"• {_apply_bold(ach, bold)}", styles["bullet"]))
 
     if data.publications:
-        story += section_header("Publications", styles)
+        story += section_header("Publications", styles, scale=scale)
         for pub in data.publications:
             line = pub.title
             if pub.publisher:
@@ -310,7 +331,7 @@ def build_pdf(data: ResumeData) -> bytes:
             story.append(Paragraph(f"• {_apply_bold(line, bold)}", styles["pub"]))
 
     if data.education:
-        story += section_header("Education", styles)
+        story += section_header("Education", styles, scale=scale)
         for edu in data.education:
             row = [
                 Paragraph(f"<b>{edu.degree}</b>, {edu.institution}", styles["role"]),
@@ -320,7 +341,7 @@ def build_pdf(data: ResumeData) -> bytes:
                         "edu_year",
                         parent=styles["company_meta"],
                         alignment=TA_RIGHT,
-                        fontSize=9,
+                        fontSize=9 * scale,
                     ),
                 ),
             ]
@@ -344,6 +365,4 @@ def build_pdf(data: ResumeData) -> bytes:
                 )
                 story.append(Paragraph(safe, styles["edu_desc"]))
 
-    doc.build(story)
-    buff.seek(0)
-    return buff.read()
+    return story

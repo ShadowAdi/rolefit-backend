@@ -24,10 +24,15 @@ class SectionHeaderFlowable(Flowable):
     SPACE_AFTER = 6  # pts below the rule before next element
     GAP = 2  # pts between baseline and rule
 
-    def __init__(self, text: str, accent_color):
+    def __init__(self, text: str, accent_color, scale: float = 1.0):
         super().__init__()
         self.text = text.upper()
         self.accent = accent_color
+        # Per-instance scaled metrics (shadow the class defaults) so the
+        # shrink-to-fit pass can compress section headers along with the body.
+        self.FONT_SIZE = self.FONT_SIZE * scale
+        self.SPACE_BEFORE = self.SPACE_BEFORE * scale
+        self.SPACE_AFTER = self.SPACE_AFTER * scale
         # Tell ReportLab how tall this flowable is
         self._height = (
             self.SPACE_BEFORE
@@ -60,7 +65,7 @@ class SectionHeaderFlowable(Flowable):
         # c.line(0, rule_y, w, rule_y)
 
 
-def build_styles() -> dict[str, ParagraphStyle]:
+def build_styles(scale: float = 1.0) -> dict[str, ParagraphStyle]:
     base = getSampleStyleSheet()
 
     def s(name, **kw) -> ParagraphStyle:
@@ -73,6 +78,10 @@ def build_styles() -> dict[str, ParagraphStyle]:
             spaceBefore=0,
         )
         defaults.update(kw)
+        # Scale vertical metrics so the whole resume can be shrunk to fit one page.
+        for key in ("fontSize", "leading", "spaceAfter", "spaceBefore"):
+            if defaults.get(key):
+                defaults[key] = defaults[key] * scale
         return ParagraphStyle(name=name, parent=base["Normal"], **defaults)
 
     return {
@@ -138,9 +147,9 @@ def build_styles() -> dict[str, ParagraphStyle]:
     }
 
 
-def section_header(text: str, styles: dict, accent=ACCENT) -> list:
+def section_header(text: str, styles: dict, accent=ACCENT, scale: float = 1.0) -> list:
     """Return a single SectionHeaderFlowable — one element, one line, no duplicates."""
-    return [SectionHeaderFlowable(text, accent)]
+    return [SectionHeaderFlowable(text, accent, scale)]
 
 
 def bullet_para(text: str, styles: dict) -> Paragraph:
