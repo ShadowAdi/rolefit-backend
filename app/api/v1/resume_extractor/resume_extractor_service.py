@@ -18,6 +18,7 @@ from app.helpers.db_helpers import (
     _save_skills,
     _save_tools,
 )
+from app.helpers.redis_cache_helpers import invalidate_user_profile_cache
 
 
 class ResumeExtractorServiceClass:
@@ -113,6 +114,11 @@ class ResumeExtractorServiceClass:
 
             db.commit()
             db.refresh(profile)
+
+            # A profile may have been deleted+recreated; drop any stale cached
+            # profile so the experience/academics/publications services resolve
+            # this freshly-created profile id instead of the old one.
+            await invalidate_user_profile_cache(userId)
 
             logger.info(
                 f"Resume import completed for user {userId}: "

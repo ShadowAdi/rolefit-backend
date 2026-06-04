@@ -57,6 +57,10 @@ async def create_profile(
             db=db, payload=data, userId=str(current_user.id)
         )
 
+        # Clear any stale cached profile (e.g. from a profile that was just
+        # deleted) so profile-scoped services resolve this new profile.
+        await invalidate_user_cache(str(current_user.id))
+
         logger.info(
             f"Profile creation endpoint completed successfully for user: {current_user.id}",
             extra={"userId": str(current_user.id), "profileId": str(profile.id)},
