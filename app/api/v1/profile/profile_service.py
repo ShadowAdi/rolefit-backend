@@ -4,6 +4,11 @@ from sqlalchemy import text
 from fastapi import HTTPException, status
 from app.models.Profile import Profile
 from app.models.User import User
+from app.models.Project import Project
+from app.models.Experience import Experience
+from app.models.Publication import Publication
+from app.models.Academic import Academic
+from app.models.Achievement import Achievement
 from app.schema.Profile import (
     ProfileCreateRequest,
     ProfileUpdateRequest,
@@ -566,6 +571,28 @@ class ProfileServiceClass:
                 f"Deleting profile for user: {userId}",
                 extra={"userId": userId, "profileId": str(profile_id)},
             )
+
+            # Delete child records that reference this profile first, otherwise
+            # the Profile delete violates their foreign-key constraints
+            # (the DB FKs are not declared ON DELETE CASCADE).
+            for child_model in (
+                Project,
+                Experience,
+                Publication,
+                Academic,
+                Achievement,
+            ):
+                deleted_count = (
+                    db.query(child_model)
+                    .filter(child_model.profileId == profile_id)
+                    .delete(synchronize_session=False)
+                )
+                logger.debug(
+                    f"Deleted {deleted_count} {child_model.__name__} record(s) "
+                    f"for profile {profile_id}",
+                    extra={"userId": userId, "profileId": str(profile_id)},
+                )
+
             db.query(Profile).filter(Profile.userId == user.id).delete()
             db.commit()
 
