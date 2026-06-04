@@ -9,6 +9,8 @@ from app.models.Experience import Experience
 from app.models.Publication import Publication
 from app.models.Academic import Academic
 from app.models.Achievement import Achievement
+from app.models.UserSkill import UserSkill
+from app.models.UserTool import UserTool
 from app.schema.Profile import (
     ProfileCreateRequest,
     ProfileUpdateRequest,
@@ -465,9 +467,7 @@ class ProfileServiceClass:
                     detail="User does not exist",
                 )
 
-            user_profile = (
-                db.query(Profile).filter(Profile.userId == user.id).first()
-            )
+            user_profile = db.query(Profile).filter(Profile.userId == user.id).first()
             if not user_profile:
                 logger.warning(
                     f"Complete onboarding failed: User profile not found",
@@ -572,9 +572,6 @@ class ProfileServiceClass:
                 extra={"userId": userId, "profileId": str(profile_id)},
             )
 
-            # Delete child records that reference this profile first, otherwise
-            # the Profile delete violates their foreign-key constraints
-            # (the DB FKs are not declared ON DELETE CASCADE).
             for child_model in (
                 Project,
                 Experience,
@@ -591,6 +588,22 @@ class ProfileServiceClass:
                     f"Deleted {deleted_count} {child_model.__name__} record(s) "
                     f"for profile {profile_id}",
                     extra={"userId": userId, "profileId": str(profile_id)},
+                )
+
+            # The user's skills and tools are linked by userId (not profileId),
+            # so they survive a profile delete unless removed explicitly. Clear
+            # them too so deleting the profile resets the account for a fresh
+            # onboarding run.
+            for user_link_model in (UserSkill, UserTool):
+                unlinked_count = (
+                    db.query(user_link_model)
+                    .filter(user_link_model.userId == user.id)
+                    .delete(synchronize_session=False)
+                )
+                logger.debug(
+                    f"Deleted {unlinked_count} {user_link_model.__name__} record(s) "
+                    f"for user {userId}",
+                    extra={"userId": userId},
                 )
 
             db.query(Profile).filter(Profile.userId == user.id).delete()
