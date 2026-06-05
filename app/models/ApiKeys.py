@@ -16,12 +16,11 @@ import uuid
 import enum
 
 
-# Define supported providers as enum
 class ProviderType(enum.Enum):
     GROQ = "groq"
     OPENAI = "openai"
-    ANTHROPIC = "anthropic"  # Claude
-    GOOGLE = "google"  # Gemini
+    ANTHROPIC = "anthropic"
+    GOOGLE = "google"
     COHERE = "cohere"
     MISTRAL = "mistral"
     OTHER = "other"
