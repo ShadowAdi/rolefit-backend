@@ -21,6 +21,14 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
+def hash_ai_api_key(apiKey: str) -> str:
+    return pwd_context.hash(apiKey.encode("utf-8")[:72])
+
+
+def verify_ai_api_key(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
+
+
 def create_access_token(user_id: str, email: str) -> str:
     exp_at = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_EXPIRE)
     payload = {

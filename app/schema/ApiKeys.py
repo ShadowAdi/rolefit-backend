@@ -27,6 +27,8 @@ class ApiKeyCreateRequest(BaseModel):
 
     is_active: Optional[bool]
 
+    expires_at: Optional[datetime]
+
 
 class ApiKeyUpdateRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -39,6 +41,8 @@ class ApiKeyUpdateRequest(BaseModel):
     api_version: Optional[str]
 
     is_active: Optional[bool]
+
+    expires_at: Optional[datetime]
 
 
 class ApiKeyResponse(BaseModel):

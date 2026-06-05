@@ -15,6 +15,19 @@ class ProviderTypeEnumType(str, Enum):
     OTHER = "other"
 
 
+class ValidationException(Exception):
+    """Custom exception for validation errors with error code"""
+
+    def __init__(
+        self, field: str, code: str, message: str, constraint: Optional[str] = None
+    ):
+        self.field = field
+        self.code = code
+        self.message = message
+        self.constraint = constraint
+        super().__init__(self.message)
+
+
 class ApiKeyValidator(BaseModel):
     """Validators for ApiKey model"""
 
