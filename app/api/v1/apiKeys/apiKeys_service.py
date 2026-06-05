@@ -8,9 +8,56 @@ from app.core.logger import logger
 from app.validators.api_key_validators import ApiKeyValidator, ValidationException
 from app.core.validation_error import ValidationErrorField, ValidationErrorResponse
 from app.helpers.db_helpers import get_user_profile
+from app.helpers.api_key_encryption import api_key_encryption
 
 
 class ApiKeysServiceClass:
+    async def get_decrypted_key_for_use(
+        self, db: Session, key_id: str, user_id: str
+    ) -> str:
+        """Retrieve and decrypt API key for making API calls"""
+        api_key = (
+            db.query(ApiKey)
+            .filter(
+                ApiKey.id == key_id, ApiKey.user_id == user_id, ApiKey.is_active == True
+            )
+            .first()
+        )
+
+        if not api_key:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Active API key not found"
+            )
+
+        decrypted_key = api_key_encryption.decrypt_api_key(api_key.key_value)
+        return decrypted_key
+
+    async def test_api_key(self, provider: str, api_key: str) -> bool:
+        """Test if the API key works with the provider"""
+        try:
+            if provider == "groq":
+                from groq import Groq
+
+                client = Groq(api_key=api_key)
+                # Make a minimal test call (e.g., list models)
+                client.models.list()
+            elif provider == "anthropic":
+                # from anthropic import Anthropic
+
+                # client = Anthropic(api_key=api_key)
+                # Test with a minimal API call
+                pass
+            # Add other providers...
+            return True
+        except Exception as e:
+            logger.warning(f"API key test failed for {provider}: {str(e)}")
+            raise ValidationException(
+                field="key_value",
+                code="invalid_key",
+                message=f"Invalid {provider} API key. Please check your key and try again.",
+                constraint="valid_api_key",
+            )
+
     async def create_api_keys(
         self, db: Session, payload: ApiKeyCreateRequest, userId: str
     ) -> ApiKeyResponse:
@@ -31,8 +78,11 @@ class ApiKeysServiceClass:
                 ApiKeyValidator.validate_api_version(payload.api_version)
                 ApiKeyValidator.validate_is_active(payload.is_active)
                 ApiKeyValidator.validate_key_name(payload.key_name)
-                ApiKeyValidator.validate_key_value(payload.key_value)
                 ApiKeyValidator.validate_expiry_format(payload.expires_at)
+
+                ApiKeyValidator.validate_key_value(payload.key_value, payload.provider)
+
+                await self.test_api_key(payload.provider, payload.key_value)
 
                 logger.info(f"Payload validation successful for user {userId}")
             except ValidationException as validation_error:
@@ -72,30 +122,35 @@ class ApiKeysServiceClass:
                     detail="User does not exist. Invalid user ID.",
                 )
 
+            encrypted_key = api_key_encryption.encrypt_api_key(payload.key_value)
+
+            masked_key = ApiKeyValidator.sanitize_key_value_for_logging(
+                payload.key_value
+            )
+            logger.debug(
+                f"Storing API key: {masked_key} for provider: {payload.provider}"
+            )
+
             apiKey = ApiKey(
                 provider=payload.provider,
                 key_name=payload.key_name,
-                key_value=payload.key_value,
+                key_value=encrypted_key,
                 api_base_url=payload.api_base_url,
                 api_version=payload.api_version,
                 is_active=payload.is_active,
                 expires_at=payload.expires_at,
+                user_id=userId,
             )
 
             db.add(apiKey)
             db.commit()
             db.refresh(apiKey)
 
-            logger.info(
-                f"Experience created successfully",
-                extra={
-                    "userId": userId,
-                    "apiKeyId": apiKey.id,
-                    "apiKeyName": apiKey.key_name,
-                },
-            )
+            response = ApiKeyResponse.model_validate(apiKey)
+            response.key_value = "••••••••"
 
-            return ApiKeyResponse.model_validate(apiKey)
+            logger.info(f"API key created successfully for user {userId}")
+            return response
 
         except HTTPException:
             raise
