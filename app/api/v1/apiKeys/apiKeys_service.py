@@ -356,3 +356,345 @@ class ApiKeysServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while api key",
             )
+
+    async def update_api_key(
+        self,
+        db: Session,
+        userId: str,
+        keyId: str,
+        payload: ApiKeyUpdateRequest,
+    ) -> ApiKeyResponse:
+        try:
+            if not userId:
+                logger.error(
+                    "Api Key creation failed: No user ID provided (authentication missing)"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication required: User ID is missing",
+                )
+
+            if not keyId:
+                logger.error(
+                    "Api Key update failed: No api key ID provided",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Api Key ID is required",
+                )
+
+            user = db.query(User).filter(User.id == userId).first()
+
+            if not user:
+                logger.warning(
+                    f"Api Key creation failed: User not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist. Invalid user ID.",
+                )
+
+            try:
+                logger.info(
+                    f"Validating api key update payload for update api key {userId}"
+                )
+                if payload.api_base_url is not None:
+                    ApiKeyValidator.validate_api_base_url(payload.api_base_url)
+                if payload.api_version is not None:
+                    ApiKeyValidator.validate_api_version(payload.api_version)
+                if payload.key_name is not None:
+                    ApiKeyValidator.validate_key_name(payload.key_name)
+                if payload.key_value is not None:
+                    ApiKeyValidator.validate_key_value(payload.key_value)
+                if payload.is_active is not None:
+                    ApiKeyValidator.validate_is_active(payload.is_active)
+                if payload.expires_at is not None:
+                    ApiKeyValidator.validate_expiry_format(payload.expires_at)
+                if payload.provider is not None:
+                    ApiKeyValidator.validate_provider(payload.provider)
+
+                logger.info(
+                    f"Payload validation successful for update api key {userId}"
+                )
+            except ValidationException as validation_error:
+                logger.warning(
+                    f"Api Key payload validation failed for user {userId}",
+                    extra={
+                        "userId": userId,
+                        "apiKeyId": keyId,
+                        "field": validation_error.field,
+                        "code": validation_error.code,
+                        "error": validation_error.message,
+                    },
+                )
+                error_field = ValidationErrorField(
+                    field=validation_error.field,
+                    code=validation_error.code,
+                    message=validation_error.message,
+                    constraint=validation_error.constraint,
+                )
+                error_response = ValidationErrorResponse(
+                    message="Please fix the validation errors below",
+                    errors=[error_field],
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=error_response.model_dump(),
+                )
+
+            api_key = (
+                db.query(ApiKey)
+                .filter(
+                    ApiKey.id == keyId,
+                    ApiKey.user_id == userId,
+                    ApiKey.is_active == True,
+                )
+                .first()
+            )
+
+            if not api_key:
+                logger.warning(
+                    f"Api Key update failed: Api Key not found or does not belong to user",
+                    extra={
+                        "userId": userId,
+                        "apiKeyId": keyId,
+                    },
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Experience not found or does not belong to this user.",
+                )
+
+            updated_fields = {}
+
+            if payload.api_base_url is not None:
+                api_key.api_base_url = payload.api_base_url
+                updated_fields["api_base_url"] = payload.api_base_url
+
+            if payload.api_version is not None:
+                api_key.api_version = payload.api_version
+                updated_fields["api_version"] = payload.api_version
+
+            if payload.key_name is not None:
+                api_key.key_name = payload.key_name
+                updated_fields["key_name"] = payload.key_name
+
+            if payload.key_value is not None:
+                api_key.key_value = payload.key_value
+                updated_fields["key_value"] = payload.key_value
+
+            if payload.is_active is not None:
+                api_key.is_active = payload.is_active
+                updated_fields["is_active"] = payload.is_active
+
+            if payload.expires_at is not None:
+                api_key.expires_at = payload.expires_at
+                updated_fields["expires_at"] = payload.expires_at
+
+            if payload.provider is not None:
+                api_key.provider = payload.provider
+                updated_fields["provider"] = payload.provider
+
+            if not updated_fields:
+                logger.warning(
+                    f"No fields provided for update",
+                    extra={
+                        "userId": userId,
+                        "apikeyId": keyId,
+                    },
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No fields provided for update",
+                )
+
+            db.commit()
+            db.refresh(api_key)
+
+            return ApiKeyResponse.model_validate(api_key)
+        except HTTPException:
+            raise
+
+        except IntegrityError as e:
+            db.rollback()
+            logger.error(
+                f"Database integrity error during api key fetch for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e.orig),
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database constraint violation occurred. This api key may already exist.",
+            )
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"Database error during api keys fetch for api key {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while fetching api key.",
+            )
+
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error during fetching api key for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                    "errorType": type(e).__name__,
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while api key",
+            )
+
+    async def delete_api_key(
+        self,
+        db: Session,
+        userId: str,
+        keyId: str,
+    ) -> ApiKeyResponse:
+        try:
+            if not userId:
+                logger.error(
+                    "Api Key creation failed: No user ID provided (authentication missing)"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication required: User ID is missing",
+                )
+
+            if not keyId:
+                logger.error(
+                    "Api Key update failed: No api key ID provided",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Api Key ID is required",
+                )
+
+            user = db.query(User).filter(User.id == userId).first()
+
+            if not user:
+                logger.warning(
+                    f"Api Key creation failed: User not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist. Invalid user ID.",
+                )
+
+            api_key = (
+                db.query(ApiKey)
+                .filter(
+                    ApiKey.id == keyId,
+                    ApiKey.user_id == userId,
+                    ApiKey.is_active == True,
+                )
+                .first()
+            )
+
+            if not api_key:
+                logger.warning(
+                    f"Api Key update failed: Api Key not found or does not belong to user",
+                    extra={
+                        "userId": userId,
+                        "apiKeyId": keyId,
+                    },
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Experience not found or does not belong to this user.",
+                )
+
+            deleted_api_key_id = api_key.id
+            deleted_api_key = api_key.key_name
+
+            logger.info(
+                f"Api Key found, proceeding with deletion",
+                extra={
+                    "userId": userId,
+                    "experienceId": deleted_api_key_id,
+                },
+            )
+
+            db.delete(api_key)
+            db.commit()
+
+            logger.info(
+                f"Api Key deleted successfully",
+                extra={"userId": userId, "apiKeyId": api_key.id},
+            )
+
+            return {
+                "success": True,
+                "message": "Experience deleted successfully",
+                "apiKeyId": str(api_key.id),
+                "key value": api_key.key_name,
+            }
+
+        except HTTPException:
+            raise
+
+        except IntegrityError as e:
+            db.rollback()
+            logger.error(
+                f"Database integrity error during api key fetch for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e.orig),
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database constraint violation occurred. This api key may already exist.",
+            )
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"Database error during api keys fetch for api key {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while fetching api key.",
+            )
+
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error during fetching api key for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                    "errorType": type(e).__name__,
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while api key",
+            )
