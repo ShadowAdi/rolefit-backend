@@ -201,3 +201,81 @@ class ApiKeysServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred while creating the api key.",
             )
+
+    async def get_api_keys(self, db: Session, userId: str) -> list[ApiKeyResponse]:
+        try:
+            if not userId:
+                logger.error(
+                    "Api Key creation failed: No user ID provided (authentication missing)"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication required: User ID is missing",
+                )
+
+            user = db.query(User).filter(User.id == userId).first()
+
+            if not user:
+                logger.warning(
+                    f"Api Key creation failed: User not found",
+                    extra={"userId": userId},
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User does not exist. Invalid user ID.",
+                )
+
+            api_keys = db.query(ApiKey).filter(
+                ApiKey.user_id == userId, ApiKey.is_active == True
+            )
+
+            return [ApiKeyResponse.model_validate(api_key) for api_key in api_keys]
+
+        except HTTPException:
+            raise
+
+        except IntegrityError as e:
+            db.rollback()
+            logger.error(
+                f"Database integrity error during api key fetch for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e.orig),
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database constraint violation occurred. This api key may already exist.",
+            )
+
+        except SQLAlchemyError as e:
+            db.rollback()
+            logger.error(
+                f"Database error during api keys fetch for api key {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while fetching api key.",
+            )
+
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Unexpected error during fetching api key for user {userId}",
+                extra={
+                    "userId": userId,
+                    "error": str(e),
+                    "errorType": type(e).__name__,
+                },
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while api key",
+            )
