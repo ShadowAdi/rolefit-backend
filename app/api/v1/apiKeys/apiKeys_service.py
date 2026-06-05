@@ -280,9 +280,7 @@ class ApiKeysServiceClass:
                 detail="An unexpected error occurred while api key",
             )
 
-    async def get_api_key(
-        self, db: Session, userId: str, keyId: str
-    ) -> list[ApiKeyResponse]:
+    async def get_api_key(self, db: Session, userId: str, keyId: str) -> ApiKeyResponse:
         try:
             if not userId:
                 logger.error(
