@@ -20,7 +20,7 @@ ApiKeysService = ApiKeysServiceClass()
     response_model=APIResponse[ApiKeyResponse],
     status_code=status.HTTP_201_CREATED,
 )
-async def create_achievement(
+async def create_apiKey(
     data: ApiKeyCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -157,7 +157,7 @@ async def get_api_Key(
     response_model=APIResponse[ApiKeyResponse],
     status_code=status.HTTP_200_OK,
 )
-async def update_achievement(
+async def update_apiKey(
     apiKeyId: str,
     data: ApiKeyUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -206,7 +206,7 @@ async def update_achievement(
     "/{apiKeyId}",
     status_code=status.HTTP_200_OK,
 )
-async def delete_achievement(
+async def delete_api_key(
     apiKeyId: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
