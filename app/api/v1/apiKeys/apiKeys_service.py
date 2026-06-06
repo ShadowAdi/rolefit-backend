@@ -3,7 +3,13 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from fastapi import HTTPException, status
 from app.models.User import User
 from app.models.ApiKeys import ApiKey
-from app.schema.ApiKeys import ApiKeyCreateRequest, ApiKeyUpdateRequest, ApiKeyResponse
+from app.schema.ApiKeys import (
+    ApiKeyCreateRequest,
+    ApiKeyUpdateRequest,
+    ApiKeyResponse,
+    ProviderTypeEnumType,
+    KeyFetchHelperResponse,
+)
 from app.core.logger import logger
 from app.validators.api_key_validators import ApiKeyValidator, ValidationException
 from app.core.validation_error import ValidationErrorField, ValidationErrorResponse
@@ -12,6 +18,25 @@ from app.helpers.api_key_encryption import api_key_encryption
 
 
 class ApiKeysServiceClass:
+
+    async def get_api_key_by_model_helper(
+        self, db: Session, userId: str, provider: ProviderTypeEnumType
+    ) -> KeyFetchHelperResponse:
+        api_key = (
+            db.query(ApiKey)
+            .filter(
+                ApiKey.user_id == userId,
+                ApiKey.is_active == True,
+                ApiKey.provider == provider,
+            )
+            .first()
+        )
+
+        if not api_key:
+            return {"success": False, "message": "Api Key Does not Exist"}
+
+        return {"success": True, "api_key": api_key}
+
     async def get_decrypted_key_for_use(
         self, db: Session, key_id: str, user_id: str
     ) -> str:

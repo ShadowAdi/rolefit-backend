@@ -45,6 +45,12 @@ class ApiKeyUpdateRequest(BaseModel):
     expires_at: Optional[datetime]
 
 
+class KeyFetchHelperResponse(BaseModel):
+    message: Optional[str]
+    success: bool
+    api_key: Optional[str]
+
+
 class ApiKeyResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
