@@ -1,10 +1,9 @@
-from typing import Dict, Any, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.ApiKeys import ApiKey, ProviderType
 from app.api.v1.apiKeys.apiKeys_service import ApiKeysServiceClass
 from app.core.logger import logger
-import json
+from app.helpers.api_key_encryption import api_key_encryption
 
 
 class LLMService:
@@ -52,9 +51,7 @@ class LLMService:
         )
 
         # Get decrypted key
-        decrypted_key = self.api_keys_service.get_decrypted_key_for_use(
-            self.db, str(api_key_record.id), self.user_id
-        )
+        decrypted_key = api_key_encryption.decrypt_api_key(api_key_record.key_value)
 
         # Log first/last few chars (safe)
         key_preview = (
