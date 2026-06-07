@@ -24,7 +24,7 @@ class ContentServiceClass:
         jobId: str,
         user_specifications: str,
         db: Session,
-        provider: str,
+        api_key_id: str,  # Change from provider to api_key_id
     ):
         try:
             logger.info(f"Starting resume generation for user: {userId}")
@@ -59,7 +59,7 @@ class ContentServiceClass:
                 resume_text=None,
                 gen_doc_type="Resume",
                 status="pending",
-                provider_used=ProviderType(provider.lower()) if provider else None,
+                # Store the API key ID in the document
             )
             db.add(gen_doc)
             db.commit()
@@ -80,12 +80,13 @@ class ContentServiceClass:
                     job_profile_cache_key, json.dumps(job_profile_response), ttl=21600
                 )
 
+            # Pass api_key_id to Celery task
             task = generate_resume_task.delay(
                 doc_id=doc_id,
                 user_id=userId,
                 job_id=jobId,
                 user_specifications=user_specifications or "",
-                provider=provider,
+                api_key_id=api_key_id,  # Pass api_key_id instead of provider
             )
 
             logger.info(f"Resume task queued | doc={doc_id} celery_task={task.id}")
@@ -528,7 +529,7 @@ class ContentServiceClass:
         jobId: str,
         user_specifications: str,
         db: Session,
-        provider: str = None,
+        api_key_id: str,
     ):
         try:
             logger.info(f"Starting cover letter generation for user: {userId}")
@@ -568,7 +569,6 @@ class ContentServiceClass:
                 cover_letter_text=None,
                 gen_doc_type="Cover-letter",
                 status="pending",
-                provider_used=ProviderType(provider.lower()) if provider else None,
             )
             db.add(gen_doc)
             db.commit()
@@ -581,7 +581,7 @@ class ContentServiceClass:
                 user_id=userId,
                 job_id=jobId,
                 user_specifications=user_specifications or "",
-                provider=provider,
+                api_key_id=api_key_id,
             )
 
             logger.info(

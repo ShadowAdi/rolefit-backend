@@ -59,6 +59,11 @@ class GeneratedDocumentResponseSchema(BaseModel):
         return self.gen_doc_type.lower()
 
 
+class GenerateContent(BaseModel):
+    user_specifications: Optional[str] = None
+    api_key_id: str  # ← Add this field
+
+
 class GenerateContentResponseSchema(BaseModel):
     """Response schema for content generation - returns queued task info"""
 

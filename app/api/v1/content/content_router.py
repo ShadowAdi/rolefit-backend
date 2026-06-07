@@ -12,6 +12,7 @@ from app.schema.GeneratedDocument import (
     DocumentStatusApiResponse,
 )
 from typing import Optional
+from app.schema.GeneratedDocument import GenerateContent
 
 router = APIRouter(prefix="", tags=["Content"])
 
@@ -25,10 +26,9 @@ content_service = ContentServiceClass()
 )
 async def generate_cover_letter_content(
     jobId: str,
-    user_specifications: str = Query(None),
+    payload: GenerateContent,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
-    provider: Optional[str] = None,
 ):
     user_id = current_user.id
     logger.info(f"Creating cover letter content for user: {user_id}")
@@ -36,9 +36,9 @@ async def generate_cover_letter_content(
         result = await content_service.generate_cover_letter_content(
             userId=str(user_id),
             jobId=jobId,
-            user_specifications=user_specifications,
+            user_specifications=payload.user_specifications,
             db=db,
-            provider=provider,
+            api_key_id=payload.api_key_id,
         )
         return GenerateContentApiResponse(
             success=True,
@@ -141,7 +141,7 @@ async def get_document_status(
 )
 async def generate_resume_content(
     jobId: str,
-    user_specifications: str = Query(None),
+    payload: GenerateContent,
     provider: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -159,9 +159,9 @@ async def generate_resume_content(
         result = await content_service.generate_resume_content(
             userId=str(user_id),
             jobId=jobId,
-            user_specifications=user_specifications,
+            user_specifications=payload.user_specifications,
             db=db,
-            provider=provider,
+            api_key_id=payload.api_key_id,
         )
         return GenerateContentApiResponse(
             success=True,

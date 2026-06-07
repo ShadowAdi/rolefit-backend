@@ -61,6 +61,59 @@ def _get_session() -> Session:
     return db_module.SessionLocal()
 
 
+def _call_llm_sync_with_key(
+    db: Session, user_id: str, prompt: str, api_key_id: str
+) -> dict:
+    """Synchronous LLM call for Celery tasks using specific API key ID"""
+    from app.models.ApiKeys import ApiKey
+    from app.helpers.api_key_encryption import api_key_encryption
+    from groq import Groq
+    import asyncio
+
+    # Get the specific API key from database
+    api_key_record = (
+        db.query(ApiKey)
+        .filter(
+            ApiKey.id == api_key_id, ApiKey.user_id == user_id, ApiKey.is_active == True
+        )
+        .first()
+    )
+
+    if not api_key_record:
+        raise ValueError(f"API key {api_key_id} not found or inactive")
+
+    # Decrypt the key
+    decrypted_key = api_key_encryption.decrypt_api_key(api_key_record.key_value)
+
+    # Initialize the appropriate client based on provider
+    provider = api_key_record.provider.lower()
+
+    if provider == "groq":
+        from groq import Groq
+
+        client = Groq(api_key=decrypted_key)
+
+        # Make the API call
+        completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a JSON-only resume writer. Output ONLY valid JSON. No markdown, no explanation, no extra text.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            model="llama-3.3-70b-versatile",
+            max_tokens=2000,
+            temperature=0.1,
+        )
+        content = completion.choices[0].message.content
+        if not content:
+            raise ValueError("Groq returned empty content")
+        return _extract_clean_json(content)
+    else:
+        raise ValueError(f"Unsupported provider: {provider}")
+
+
 def _call_llm_sync(
     db: Session, user_id: str, prompt: str, provider: str = None
 ) -> dict:
@@ -151,9 +204,11 @@ def generate_resume_task(
     user_id: str,
     job_id: str,
     user_specifications: str,
-    provider: str = None,
+    api_key_id: str,  # Change from provider to api_key_id
 ):
-    logger.info(f"[resume] Task started - doc={doc_id} user={user_id} job={job_id}")
+    logger.info(
+        f"[resume] Task started - doc={doc_id} user={user_id} job={job_id} api_key_id={api_key_id}"
+    )
     db = _get_session()
     try:
         _mark_processing(db, doc_id)
@@ -167,8 +222,9 @@ def generate_resume_task(
         prompt = build_resume_prompt(job_profile, user_specifications)
         logger.info(f"[resume] Built prompt - doc={doc_id}")
 
-        clean_json = _call_llm_sync(db, user_id, prompt, provider)
-        logger.info(f"[resume] Got response from Groq - doc={doc_id}")
+        # Use the new function with api_key_id
+        clean_json = _call_llm_sync_with_key(db, user_id, prompt, api_key_id)
+        logger.info(f"[resume] Got response from LLM - doc={doc_id}")
 
         doc = (
             db.query(GeneratedDocumment).filter(GeneratedDocumment.id == doc_id).first()
@@ -211,7 +267,6 @@ def generate_resume_task(
             )
             logger.error(f"[resume] Max retries exceeded doc={doc_id}")
             return {"status": "failed", "doc_id": doc_id}
-
     finally:
         db.close()
 
@@ -229,15 +284,10 @@ def generate_cover_letter_task(
     user_id: str,
     job_id: str,
     user_specifications: str,
-    provider: str = None,
+    api_key_id: str,  # Change from provider to api_key_id
 ):
-    """
-    Worker task: build cover letter content via Groq and save to DB.
-
-    Called by: ContentService.generate_cover_letter_content()
-    """
     logger.info(
-        f"[cover_letter] Starting task doc={doc_id} user={user_id} job={job_id}"
+        f"[cover_letter] Task started doc={doc_id} user={user_id} job={job_id} api_key_id={api_key_id}"
     )
     db = _get_session()
 
@@ -250,7 +300,8 @@ def generate_cover_letter_task(
 
         prompt = _build_cover_letter_prompt(job_profile, user_specifications)
 
-        clean_json = _call_llm_sync(db, user_id, prompt, provider)
+        # Use the new function with api_key_id
+        clean_json = _call_llm_sync_with_key(db, user_id, prompt, api_key_id)
 
         doc = (
             db.query(GeneratedDocumment).filter(GeneratedDocumment.id == doc_id).first()
