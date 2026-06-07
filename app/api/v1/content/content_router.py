@@ -146,6 +146,13 @@ async def generate_resume_content(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if provider:
+        valid_providers = ["groq", "openai", "anthropic", "google"]
+        if provider.lower() not in valid_providers:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid provider. Must be one of: {', '.join(valid_providers)}",
+            )
     user_id = current_user.id
     logger.info(f"Creating resume content for user: {user_id}")
     try:

@@ -1,9 +1,7 @@
+# app/utils/jd_parser.py (COMPLETE FIXED VERSION)
 import json
 from fastapi import HTTPException, status
 from app.core.logger import logger
-from app.helpers.grok_ai_headers import grok_api_key_headers
-from groq import Groq
-from app.utils.extract_clean_json_content import _extract_clean_json
 from sqlalchemy.orm import Session
 from app.models.ApiKeys import ProviderType
 from typing import Optional
@@ -18,9 +16,6 @@ async def parse_jd_with_ai(
     db: Session, user_id: str, raw_jd: str, provider: Optional[ProviderType] = None
 ) -> dict:
     logger.debug("Entered parse_jd_with_ai")
-
-    api_key = grok_api_key_headers()
-    groq_client = Groq(api_key=api_key)
 
     prompt = f"""Parse the following job description and extract structured data.
 
@@ -72,8 +67,8 @@ Job Description:
         return parsed_json
 
     except Exception as e:
-        logger.error(f"Groq API error during resume parsing: {e}")
+        logger.error(f"LLM API error during JD parsing: {e}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Resume parsing service error. Please try again.",
+            detail=f"Job description parsing service error: {str(e)}",
         )
