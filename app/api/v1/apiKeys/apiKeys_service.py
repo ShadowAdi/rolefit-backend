@@ -13,7 +13,6 @@ from app.schema.ApiKeys import (
 from app.core.logger import logger
 from app.validators.api_key_validators import ApiKeyValidator, ValidationException
 from app.core.validation_error import ValidationErrorField, ValidationErrorResponse
-from app.helpers.db_helpers import get_user_profile
 from app.helpers.api_key_encryption import api_key_encryption
 
 
