@@ -5,6 +5,8 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from groq import Groq
+from app.models.ApiKeys import ProviderType
+
 
 from app.core.celery_app import celery_app
 from app.helpers.grok_ai_headers import grok_api_key_headers
@@ -59,6 +61,40 @@ def _get_session() -> Session:
     return db_module.SessionLocal()
 
 
+def _call_llm_sync(
+    db: Session, user_id: str, prompt: str, provider: str = None
+) -> dict:
+    """Synchronous LLM call for Celery tasks"""
+    from app.utils.llm_helper import LLMHelper
+    import asyncio
+
+    # Convert provider string to enum if provided
+    provider_enum = None
+    if provider:
+        try:
+            provider_enum = ProviderType(provider.lower())
+        except ValueError:
+            logger.warning(f"Invalid provider: {provider}, using default")
+
+    llm_helper = LLMHelper(db, user_id, provider_enum)
+
+    # Run async function in sync context
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        response = loop.run_until_complete(
+            llm_helper.call_with_json_response(
+                prompt=prompt,
+                system_prompt="You are a JSON-only resume writer. Output ONLY valid JSON. No markdown, no explanation, no extra text.",
+                max_tokens=2000,
+                temperature=0.1,
+            )
+        )
+        return response
+    finally:
+        loop.close()
+
+
 def _get_groq_client() -> Groq:
     return Groq(api_key=grok_api_key_headers())
 
@@ -110,7 +146,12 @@ def _mark_failed(db, doc_id: str, error: str):
     acks_late=True,
 )
 def generate_resume_task(
-    self, doc_id: str, user_id: str, job_id: str, user_specifications: str
+    self,
+    doc_id: str,
+    user_id: str,
+    job_id: str,
+    user_specifications: str,
+    provider: str = None,
 ):
     logger.info(f"[resume] Task started - doc={doc_id} user={user_id} job={job_id}")
     db = _get_session()
@@ -126,7 +167,7 @@ def generate_resume_task(
         prompt = build_resume_prompt(job_profile, user_specifications)
         logger.info(f"[resume] Built prompt - doc={doc_id}")
 
-        clean_json = _call_groq(prompt)
+        clean_json = _call_llm_sync(db, user_id, prompt, provider)
         logger.info(f"[resume] Got response from Groq - doc={doc_id}")
 
         doc = (
@@ -188,6 +229,7 @@ def generate_cover_letter_task(
     user_id: str,
     job_id: str,
     user_specifications: str,
+    provider: str = None,
 ):
     """
     Worker task: build cover letter content via Groq and save to DB.
@@ -207,7 +249,8 @@ def generate_cover_letter_task(
         )
 
         prompt = _build_cover_letter_prompt(job_profile, user_specifications)
-        clean_json = _call_groq(prompt)
+
+        clean_json = _call_llm_sync(db, user_id, prompt, provider)
 
         doc = (
             db.query(GeneratedDocumment).filter(GeneratedDocumment.id == doc_id).first()

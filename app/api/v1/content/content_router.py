@@ -11,6 +11,7 @@ from app.schema.GeneratedDocument import (
     DeleteDocumentApiResponse,
     DocumentStatusApiResponse,
 )
+from typing import Optional
 
 router = APIRouter(prefix="", tags=["Content"])
 
@@ -27,6 +28,7 @@ async def generate_cover_letter_content(
     user_specifications: str = Query(None),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
+    provider: Optional[str] = None,
 ):
     user_id = current_user.id
     logger.info(f"Creating cover letter content for user: {user_id}")
@@ -36,6 +38,7 @@ async def generate_cover_letter_content(
             jobId=jobId,
             user_specifications=user_specifications,
             db=db,
+            provider=provider,
         )
         return GenerateContentApiResponse(
             success=True,
@@ -139,6 +142,7 @@ async def get_document_status(
 async def generate_resume_content(
     jobId: str,
     user_specifications: str = Query(None),
+    provider: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -150,6 +154,7 @@ async def generate_resume_content(
             jobId=jobId,
             user_specifications=user_specifications,
             db=db,
+            provider=provider,
         )
         return GenerateContentApiResponse(
             success=True,

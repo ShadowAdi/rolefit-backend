@@ -23,6 +23,7 @@ class ContentServiceClass:
         jobId: str,
         user_specifications: str,
         db: Session,
+        provider: str,
     ):
         try:
             logger.info(f"Starting resume generation for user: {userId}")
@@ -82,6 +83,7 @@ class ContentServiceClass:
                 user_id=userId,
                 job_id=jobId,
                 user_specifications=user_specifications or "",
+                provider=provider,
             )
 
             logger.info(f"Resume task queued | doc={doc_id} celery_task={task.id}")
@@ -524,6 +526,7 @@ class ContentServiceClass:
         jobId: str,
         user_specifications: str,
         db: Session,
+        provider: str = None,
     ):
         try:
             logger.info(f"Starting cover letter generation for user: {userId}")
@@ -575,6 +578,7 @@ class ContentServiceClass:
                 user_id=userId,
                 job_id=jobId,
                 user_specifications=user_specifications or "",
+                provider=provider,
             )
 
             logger.info(
