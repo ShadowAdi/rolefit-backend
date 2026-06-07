@@ -21,11 +21,16 @@ from app.helpers.db_helpers import (
 from app.models.ApiKeys import ProviderType
 from app.helpers.redis_cache_helpers import invalidate_user_profile_cache
 from app.api.v1.llm.llm_factory import LLMServiceFactory
+from app.utils.llm_helper import LLMHelper
+from app.utils.llm_helper import LLMHelper
+from app.utils.build_user_prompt import _build_user_prompt
+from app.utils.create_profile_by_resume import CREATE_PROFILE_BY_RESUME_PROMPT
+import hashlib
 
 
 class ResumeExtractorServiceClass:
     async def resumeextractor(
-        self, db: Session, resume_url: str, userId: str, provider: str
+        self, db: Session, resume_url: str, userId: str, provider: str = None
     ):
         if not userId:
             logger.error(
@@ -36,18 +41,12 @@ class ResumeExtractorServiceClass:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User ID is required",
             )
+
+        provider_enum = None
         if provider:
             provider_enum = ProviderType(provider.lower())
-        else:
-            default_provider = await LLMServiceFactory.get_default_provider_for_user(
-                db, userId
-            )
-            if not default_provider:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="No API key configured. Please add an API key first.",
-                )
-            provider_enum = default_provider
+
+        llm_helper = LLMHelper(db, userId, provider_enum)
 
         llm_service = await LLMServiceFactory.get_llm_service(db, userId, provider_enum)
 
@@ -95,15 +94,22 @@ class ResumeExtractorServiceClass:
             resume_text: str = extracted["raw_text"]
             pdf_links: list[str] = extracted["links"]
 
+            cache_key = self._make_resume_cache_keys(resume_url)
+
             logger.info(
                 f"PDF extracted for user {userId}: "
                 f"{extracted['page_count']} pages, {len(resume_text)} chars"
             )
 
-            groq_data = await _call_groq(
-                resume_text=resume_text,
-                extracted_links=pdf_links,
-                resume_url=resume_url.strip(),
+            user_prompt = _build_user_prompt(resume_text, pdf_links)
+
+            groq_data = await llm_helper.call_with_json_response(
+                prompt=user_prompt,
+                system_prompt=CREATE_PROFILE_BY_RESUME_PROMPT,
+                use_cache=True,
+                cache_key=cache_key,
+                max_tokens=2000,
+                temperature=0.1,
             )
 
             logger.info(
@@ -210,3 +216,7 @@ class ResumeExtractorServiceClass:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred during resume import.",
             )
+
+    def _make_resume_cache_keys(self, resume_url: str) -> str:
+        url_hash = hashlib.sha256(resume_url.encode()).hexdigest()[:16]
+        return f"resume-llm:{url_hash}"
