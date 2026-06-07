@@ -1,6 +1,6 @@
 from app.db.db import Base
 from sqlalchemy import Column, String, DateTime, Enum as SQLEnum, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy.dialects.postgresql import UUID
 from datetime import timezone, datetime
 import uuid
 from app.models.ApiKeys import ProviderType
@@ -43,7 +43,6 @@ class GeneratedDocumment(Base):
     provider_used = Column(
         SQLEnum(ProviderType),
         nullable=True,
-        help="Which LLM provider was used to generate this content",
     )
     user_specifications = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
