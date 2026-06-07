@@ -63,6 +63,25 @@ class LLMService:
                 detail=f"Unsupported provider: {self.provider.value}",
             )
 
+    async def call_llm(self, promot: str, system_prompt: str = None, **kwargs) -> str:
+        try:
+            if self.provider == ProviderType.GROQ:
+                return await self._call_groq(prompt, system_prompt, **kwargs)
+            elif self.provider == ProviderType.OPENAI:
+                return await self._call_openai(prompt, system_prompt, **kwargs)
+            elif self.provider == ProviderType.ANTHROPIC:
+                return await self._call_anthropic(prompt, system_prompt, **kwargs)
+            elif self.provider == ProviderType.GOOGLE:
+                return await self._call_google(prompt, system_prompt, **kwargs)
+            else:
+                raise ValueError(f"Unsupported provider: {self.provider}")
+        except Exception as e:
+            logger.error(f"LLM call failed for {self.provider.value}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Error calling {self.provider.value} API: {str(e)}",
+            )
+
     async def _call_groq(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
         messages = []
         if system_prompt:
