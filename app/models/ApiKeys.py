@@ -34,7 +34,7 @@ class ApiKey(Base):
         UUID, ForeignKey("User.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
-    provider = Column(Enum(ProviderType), nullable=False, index=True)
+    provider = Column(String, nullable=False, index=True)
     key_name = Column(String, nullable=False)
     key_value = Column(String, nullable=False)
 
