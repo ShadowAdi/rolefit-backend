@@ -17,10 +17,15 @@ class LLMService:
         self._initialize_client()
 
     def _initialize_client(self):
+        # Get the API key from database
         provider_value = (
             self.provider.value
             if hasattr(self.provider, "value")
             else str(self.provider)
+        )
+
+        logger.info(
+            f"Looking for API key - User: {self.user_id}, Provider: {provider_value}"
         )
 
         api_key_record = (
@@ -34,19 +39,50 @@ class LLMService:
         )
 
         if not api_key_record:
+            logger.error(
+                f"No active API key found for user {self.user_id}, provider {provider_value}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"No active API key found for provider {self.provider.value}",
             )
 
+        logger.info(
+            f"Found API key record: {api_key_record.id}, name: {api_key_record.key_name}"
+        )
+
+        # Get decrypted key
         decrypted_key = self.api_keys_service.get_decrypted_key_for_use(
             self.db, str(api_key_record.id), self.user_id
         )
 
+        # Log first/last few chars (safe)
+        key_preview = (
+            f"{decrypted_key[:10]}...{decrypted_key[-10:]}"
+            if len(decrypted_key) > 20
+            else "***"
+        )
+        logger.info(
+            f"Decrypted API key for {self.provider.value}: {key_preview} (length: {len(decrypted_key)})"
+        )
+
+        # Validate the decrypted key looks correct
+        if self.provider == ProviderType.GROQ and not decrypted_key.startswith("gsk_"):
+            logger.error(
+                f"Decrypted Groq key doesn't start with 'gsk_'! Got: {decrypted_key[:10]}..."
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Decrypted API key format is incorrect. Please re-enter your API key.",
+            )
+
+        # Initialize client
         if self.provider == ProviderType.GROQ:
             from groq import Groq
 
             self.client = Groq(api_key=decrypted_key)
+            logger.info(f"Groq client initialized successfully")
+
         elif self.provider == ProviderType.OPENAI:
             from openai import OpenAI
 

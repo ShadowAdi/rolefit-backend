@@ -249,7 +249,6 @@ async def delete_api_key(
         )
 
 
-# app/api/v1/apiKeys/apiKeys_router.py
 @router.post("/test/{key_id}")
 async def test_api_key_endpoint(
     key_id: str,
@@ -265,20 +264,102 @@ async def test_api_key_endpoint(
         )
 
         if not api_key:
-            raise HTTPException(status_code=404, detail="API key not found")
+            return {"success": False, "is_valid": False, "error": "API key not found"}
 
-        # Decrypt and test the key
-        decrypted_key = api_key_encryption.decrypt_api_key(api_key.key_value)
+        # Decrypt the key
+        try:
+            decrypted_key = api_key_encryption.decrypt_api_key(api_key.key_value)
+        except Exception as e:
+            return {
+                "success": False,
+                "is_valid": False,
+                "error": f"Decryption failed: {str(e)}",
+            }
 
-        # Test the key
-        is_valid = await ApiKeysServiceClass().test_api_key(
-            api_key.provider.value, decrypted_key
-        )
+        # Test the key with detailed error
+        try:
+            from groq import Groq
 
-        return {
-            "success": True,
-            "is_valid": is_valid,
-            "provider": api_key.provider.value,
-        }
+            client = Groq(api_key=decrypted_key)
+            # Try to list models
+            models = client.models.list()
+            model_list = list(models)
+            return {
+                "success": True,
+                "is_valid": True,
+                "provider": api_key.provider.value,
+                "models_count": len(model_list),
+                "key_preview": f"{decrypted_key[:10]}...{decrypted_key[-10:]}",
+            }
+        except Exception as e:
+            # Return the actual error message
+            error_msg = str(e)
+            return {
+                "success": False,
+                "is_valid": False,
+                "error": error_msg,
+                "key_preview": f"{decrypted_key[:10]}...{decrypted_key[-10:]}",
+            }
+
     except Exception as e:
         return {"success": False, "is_valid": False, "error": str(e)}
+
+
+# Add to app/api/v1/apiKeys/apiKeys_router.py
+@router.get("/debug-decrypt/{key_id}")
+async def debug_decrypt(
+    key_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Debug endpoint to check decryption"""
+    from app.helpers.api_key_encryption import api_key_encryption
+
+    api_key = (
+        db.query(ApiKey)
+        .filter(ApiKey.id == key_id, ApiKey.user_id == current_user.id)
+        .first()
+    )
+
+    if not api_key:
+        return {"error": "Key not found"}
+
+    result = {
+        "key_id": key_id,
+        "key_name": api_key.key_name,
+        "provider": api_key.provider,
+        "encrypted_length": len(api_key.key_value),
+        "encrypted_preview": api_key.key_value[:50] + "...",
+    }
+
+    # Try to decrypt
+    try:
+        decrypted = api_key_encryption.decrypt_api_key(api_key.key_value)
+        result["decrypted_length"] = len(decrypted)
+        result["decrypted_preview"] = (
+            f"{decrypted[:15]}...{decrypted[-15:]}"
+            if len(decrypted) > 30
+            else decrypted
+        )
+        result["decryption_success"] = True
+
+        # Test the decrypted key with Groq
+        from groq import Groq
+
+        try:
+            client = Groq(api_key=decrypted)
+            models = client.models.list()
+            model_count = len(list(models))
+            result["groq_test"] = f"SUCCESS - Found {model_count} models"
+            result["is_valid"] = True
+        except Exception as e:
+            result["groq_test"] = f"FAILED - {str(e)}"
+            result["is_valid"] = False
+            result["error"] = str(e)
+
+    except Exception as e:
+        result["decryption_success"] = False
+        result["decryption_error"] = str(e)
+        result["is_valid"] = False
+
+    return result

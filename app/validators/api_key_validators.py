@@ -1,6 +1,7 @@
 import re
 from typing import Optional, Dict, Any
 from enum import Enum
+from app.core.logger import logger
 
 
 class ProviderTypeEnumType(str, Enum):
@@ -97,23 +98,16 @@ class ApiKeyValidator:
         v: str, provider: Optional[ProviderTypeEnumType] = None
     ) -> str:
         """Validate the actual API key value"""
-        if not v or not v.strip():
-            raise ValidationException(
-                field="key_value",
-                code="required",
-                message="API key cannot be empty",
-                constraint="required",
-            )
+        if not v:
+            raise ValidationException(...)
 
         v = v.strip()
+        v = v.replace("\n", "").replace("\r", "").replace("\t", "")
+        v = v.replace(" ", "")  # Remove ALL spaces
 
-        if len(v) < 10:
-            raise ValidationException(
-                field="key_value",
-                code="min_length",
-                message="API key is too short. Most API keys are at least 10 characters.",
-                constraint="min_length:10",
-            )
+        logger.info(
+            f"Validating API key for {provider}: length={len(v)}, first_10={v[:10]}"
+        )
 
         if len(v) > 500:
             raise ValidationException(
