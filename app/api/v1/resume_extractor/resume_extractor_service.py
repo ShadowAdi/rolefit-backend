@@ -18,7 +18,9 @@ from app.helpers.db_helpers import (
     _save_skills,
     _save_tools,
 )
+from app.models.ApiKeys import ProviderType
 from app.helpers.redis_cache_helpers import invalidate_user_profile_cache
+from app.api.v1.llm.llm_factory import LLMServiceFactory
 
 
 class ResumeExtractorServiceClass:
@@ -34,6 +36,21 @@ class ResumeExtractorServiceClass:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User ID is required",
             )
+        if provider:
+            provider_enum = ProviderType(provider.lower())
+        else:
+            default_provider = await LLMServiceFactory.get_default_provider_for_user(
+                db, userId
+            )
+            if not default_provider:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No API key configured. Please add an API key first.",
+                )
+            provider_enum = default_provider
+
+        llm_service = await LLMServiceFactory.get_llm_service(db, userId, provider_enum)
+
         try:
             if not resume_url or not resume_url.strip():
                 logger.error(

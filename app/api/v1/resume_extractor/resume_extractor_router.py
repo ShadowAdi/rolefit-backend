@@ -26,7 +26,7 @@ async def resume_extractor(
 ):
     try:
         resume_extractor = await ResumeExtractorService.resumeextractor(
-            db=db, resume_url=resume_url, userId=str(current_user.id)
+            db=db, resume_url=resume_url, userId=str(current_user.id), provider=provider
         )
 
         return APIResponse(
