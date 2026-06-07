@@ -96,6 +96,8 @@ class ApiKeysServiceClass:
                     detail="Authentication required: User ID is missing",
                 )
 
+            await self.test_api_key(payload.provider, payload.key_value)
+
             try:
                 logger.info(f"Validating Api Key creation payload for user {userId}")
                 ApiKeyValidator.validate_provider(payload.provider)

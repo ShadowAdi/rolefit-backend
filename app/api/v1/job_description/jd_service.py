@@ -685,9 +685,18 @@ class JobDescriptionClass:
                     extra={"userId": userId},
                 )
             else:
-                parsed_data = await parse_jd_with_ai(db, userId, raw_jd, provider_enum)
-                # Cache the parse result for 24 hours (expensive AI operation)
-                await set_cache(cache_key, json.dumps(parsed_data), ttl=86400)
+                try:
+                    parsed_data = await parse_jd_with_ai(
+                        db, userId, raw_jd, provider_enum
+                    )
+                    await set_cache(cache_key, json.dumps(parsed_data), ttl=86400)
+                except HTTPException as e:
+                    if e.status_code == 502 and "Invalid API Key" in str(e.detail):
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Invalid API key for {api_key_record.provider}. Please check your API key in settings.",
+                        )
+                    raise
 
             logger.debug(f"Parsed role_name: {parsed_data.get('role_name')}")
 

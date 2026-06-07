@@ -9,6 +9,8 @@ from app.dependency.dependencies import get_current_user
 from app.core.logger import logger
 from app.response.base import APIResponse
 from typing import List
+from app.models.ApiKeys import ApiKey
+from app.helpers.api_key_encryption import api_key_encryption
 
 router = APIRouter(prefix="", tags=["api-keys"])
 
@@ -245,3 +247,38 @@ async def delete_api_key(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred",
         )
+
+
+# app/api/v1/apiKeys/apiKeys_router.py
+@router.post("/test/{key_id}")
+async def test_api_key_endpoint(
+    key_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Test if an API key is valid"""
+    try:
+        api_key = (
+            db.query(ApiKey)
+            .filter(ApiKey.id == key_id, ApiKey.user_id == current_user.id)
+            .first()
+        )
+
+        if not api_key:
+            raise HTTPException(status_code=404, detail="API key not found")
+
+        # Decrypt and test the key
+        decrypted_key = api_key_encryption.decrypt_api_key(api_key.key_value)
+
+        # Test the key
+        is_valid = await ApiKeysServiceClass().test_api_key(
+            api_key.provider.value, decrypted_key
+        )
+
+        return {
+            "success": True,
+            "is_valid": is_valid,
+            "provider": api_key.provider.value,
+        }
+    except Exception as e:
+        return {"success": False, "is_valid": False, "error": str(e)}
