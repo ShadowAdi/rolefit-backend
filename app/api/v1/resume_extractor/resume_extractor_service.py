@@ -29,9 +29,7 @@ import hashlib
 
 
 class ResumeExtractorServiceClass:
-    async def resumeextractor(
-        self, db: Session, resume_url: str, userId: str, provider: str = None
-    ):
+    async def resumeextractor(self, db: Session, resume_url: str, userId: str):
         if not userId:
             logger.error(
                 f"Project creation failed: Missing user ID",
@@ -42,13 +40,10 @@ class ResumeExtractorServiceClass:
                 detail="User ID is required",
             )
 
-        provider_enum = None
-        if provider:
-            provider_enum = ProviderType(provider.lower())
-
-        llm_helper = LLMHelper(db, userId, provider_enum)
-
-        llm_service = await LLMServiceFactory.get_llm_service(db, userId, provider_enum)
+        # NOTE: For profile creation, we ignore the provider parameter
+        # and always use the backend's Groq API key
+        # This avoids the chicken-and-egg problem where new users
+        # don't have API keys configured yet
 
         try:
             if not resume_url or not resume_url.strip():
@@ -94,26 +89,21 @@ class ResumeExtractorServiceClass:
             resume_text: str = extracted["raw_text"]
             pdf_links: list[str] = extracted["links"]
 
-            cache_key = self._make_resume_cache_keys(resume_url)
-
             logger.info(
                 f"PDF extracted for user {userId}: "
                 f"{extracted['page_count']} pages, {len(resume_text)} chars"
             )
 
-            user_prompt = _build_user_prompt(resume_text, pdf_links)
-
-            groq_data = await llm_helper.call_with_json_response(
-                prompt=user_prompt,
-                system_prompt=CREATE_PROFILE_BY_RESUME_PROMPT,
-                use_cache=True,
-                cache_key=cache_key,
-                max_tokens=2000,
-                temperature=0.1,
+            # ALWAYS use backend's Groq API key for profile creation
+            # This uses YOUR key, not the user's
+            groq_data = await _call_groq(
+                resume_text=resume_text,
+                extracted_links=pdf_links,
+                resume_url=resume_url.strip(),
             )
 
             logger.info(
-                f"Groq AI data processed for user {userId}", extra={"userId": userId}
+                f"AI data processed for user {userId}", extra={"userId": userId}
             )
 
             profile = _save_profile(db, userId, resume_url.strip(), groq_data)
@@ -140,9 +130,6 @@ class ResumeExtractorServiceClass:
             db.commit()
             db.refresh(profile)
 
-            # A profile may have been deleted+recreated; drop any stale cached
-            # profile so the experience/academics/publications services resolve
-            # this freshly-created profile id instead of the old one.
             await invalidate_user_profile_cache(userId)
 
             logger.info(

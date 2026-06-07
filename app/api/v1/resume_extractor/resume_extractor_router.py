@@ -20,13 +20,12 @@ ResumeExtractorService = ResumeExtractorServiceClass()
 )
 async def resume_extractor(
     resume_url: str,
-    provider: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     try:
         resume_extractor = await ResumeExtractorService.resumeextractor(
-            db=db, resume_url=resume_url, userId=str(current_user.id), provider=provider
+            db=db, resume_url=resume_url, userId=str(current_user.id)
         )
 
         return APIResponse(
