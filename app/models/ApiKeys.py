@@ -56,7 +56,7 @@ class ApiKey(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    isDefault = Column(bool, default=False, nullable=False, index=True)
+    isDefault = Column(Boolean, default=False, nullable=False, index=True)
 
     metadata = Column(JSON, nullable=True)
 
