@@ -26,7 +26,11 @@ class LLMServiceFactory:
 
         api_key = (
             db.query(ApiKey)
-            .filter(ApiKey.user_id == user_id, ApiKey.is_active == True)
+            .filter(
+                ApiKey.user_id == user_id,
+                ApiKey.is_active == True,
+                ApiKey.isDefault == True,
+            )
             .first()
         )
 

@@ -104,6 +104,7 @@ class ApiKeysServiceClass:
                 ApiKeyValidator.validate_is_active(payload.is_active)
                 ApiKeyValidator.validate_key_name(payload.key_name)
                 ApiKeyValidator.validate_expiry_format(payload.expires_at)
+                ApiKeyValidator.validate_isDefault(payload.isDefault)
 
                 ApiKeyValidator.validate_key_value(payload.key_value, payload.provider)
 
@@ -165,6 +166,7 @@ class ApiKeysServiceClass:
                 is_active=payload.is_active,
                 expires_at=payload.expires_at,
                 user_id=userId,
+                isDefault=payload.isDefault,
             )
 
             db.add(apiKey)
@@ -521,6 +523,10 @@ class ApiKeysServiceClass:
             if payload.provider is not None:
                 api_key.provider = payload.provider
                 updated_fields["provider"] = payload.provider
+
+            if payload.isDefault is not None:
+                api_key.isDefault = payload.isDefault
+                updated_fields["isDefault"] = payload.isDefault
 
             if not updated_fields:
                 logger.warning(

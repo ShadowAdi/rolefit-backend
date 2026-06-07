@@ -23,6 +23,8 @@ class ApiKeyCreateRequest(BaseModel):
     key_value: str
 
     api_base_url: Optional[str]
+    isDefault: Optional[bool]
+
     api_version: Optional[str]
 
     is_active: Optional[bool]
@@ -38,6 +40,7 @@ class ApiKeyUpdateRequest(BaseModel):
     key_value: Optional[str]
 
     api_base_url: Optional[str]
+    isDefault: Optional[bool]
     api_version: Optional[str]
 
     is_active: Optional[bool]
@@ -67,3 +70,4 @@ class ApiKeyResponse(BaseModel):
     expires_at: Optional[datetime]
     created_at: datetime
     updated_at: Optional[datetime]
+    isDefault: Optional[bool]

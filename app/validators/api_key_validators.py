@@ -186,6 +186,13 @@ class ApiKeyValidator(BaseModel):
         return v
 
     @staticmethod
+    def validate_isDefault(v: Optional[bool]) -> bool:
+        """Validate isDefault flag"""
+        if v is None:
+            return True
+        return v
+
+    @staticmethod
     def validate_key_uniqueness(
         user_id: str,
         provider: ProviderTypeEnumType,

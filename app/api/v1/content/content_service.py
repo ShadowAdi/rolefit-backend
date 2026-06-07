@@ -14,6 +14,7 @@ from app.response.GenerateDocument_responses import (
 from app.tasks.ai_tasks import generate_resume_task, generate_cover_letter_task
 from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 from uuid import UUID
+from app.models.ApiKeys import ProviderType
 
 
 class ContentServiceClass:
@@ -58,6 +59,7 @@ class ContentServiceClass:
                 resume_text=None,
                 gen_doc_type="Resume",
                 status="pending",
+                provider_used=ProviderType(provider.lower()) if provider else None,
             )
             db.add(gen_doc)
             db.commit()
@@ -566,6 +568,7 @@ class ContentServiceClass:
                 cover_letter_text=None,
                 gen_doc_type="Cover-letter",
                 status="pending",
+                provider_used=ProviderType(provider.lower()) if provider else None,
             )
             db.add(gen_doc)
             db.commit()
