@@ -170,7 +170,7 @@ async def update_apiKey(
             db=db,
             payload=data,
             userId=str(current_user.id),
-            apiKeyId=apiKeyId,
+            keyId=apiKeyId,
         )
 
         return APIResponse(
@@ -215,7 +215,7 @@ async def delete_api_key(
     try:
 
         response = await ApiKeysService.delete_api_key(
-            db=db, userId=str(current_user.id), achievementId=apiKeyId
+            db=db, userId=str(current_user.id), keyId=apiKeyId
         )
 
         return APIResponse(
