@@ -110,7 +110,7 @@ async def list_api_keys(
 
 
 @router.get(
-    "/{achievementId}",
+    "/{apiKeyId}",
     response_model=APIResponse[ApiKeyResponse],
     status_code=status.HTTP_200_OK,
 )
