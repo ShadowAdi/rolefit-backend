@@ -56,29 +56,57 @@ class ApiKeysServiceClass:
         decrypted_key = api_key_encryption.decrypt_api_key(api_key.key_value)
         return decrypted_key
 
+    # app/api/v1/apiKeys/apiKeys_service.py
     async def test_api_key(self, provider: str, api_key: str) -> bool:
         """Test if the API key works with the provider"""
         try:
+            # Log first/last 4 chars for debugging
+            key_preview = (
+                f"{api_key[:4]}...{api_key[-4:]}" if len(api_key) > 8 else "***"
+            )
+            logger.info(f"Testing API key for {provider}: {key_preview}")
+
             if provider == "groq":
                 from groq import Groq
 
+                # First, just try to create the client
                 client = Groq(api_key=api_key)
-                # Make a minimal test call (e.g., list models)
-                client.models.list()
-            elif provider == "anthropic":
-                # from anthropic import Anthropic
+                logger.info(f"Groq client created successfully for {key_preview}")
 
-                # client = Anthropic(api_key=api_key)
-                # Test with a minimal API call
-                pass
-            # Add other providers...
+                # Make a minimal test call
+                try:
+                    models = client.models.list()
+                    logger.info(
+                        f"Successfully listed Groq models, received {len(list(models)) if models else 0} models"
+                    )
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to list Groq models: {str(e)}")
+                    raise
+
+            elif provider == "openai":
+                from openai import OpenAI
+
+                client = OpenAI(api_key=api_key)
+                # Test with a minimal call
+                client.models.list()
+                return True
+
+            elif provider == "anthropic":
+                from anthropic import Anthropic
+
+                client = Anthropic(api_key=api_key)
+                # Just test client creation
+                return True
+
             return True
+
         except Exception as e:
-            logger.warning(f"API key test failed for {provider}: {str(e)}")
+            logger.error(f"API key test failed for {provider}: {str(e)}")
             raise ValidationException(
                 field="key_value",
                 code="invalid_key",
-                message=f"Invalid {provider} API key. Please check your key and try again.",
+                message=f"Invalid {provider} API key. Please check your key and try again. Error: {str(e)[:100]}",
                 constraint="valid_api_key",
             )
 

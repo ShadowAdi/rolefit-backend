@@ -653,6 +653,7 @@ class JobDescriptionClass:
             logger.info(f"Generating job description from raw JD for user: {userId}")
 
             from app.models.ApiKeys import ApiKey
+            from app.helpers.api_key_encryption import api_key_encryption
 
             api_key_record = (
                 db.query(ApiKey)
@@ -668,6 +669,29 @@ class JobDescriptionClass:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="API key not found or inactive",
+                )
+
+            decrypted_key = api_key_encryption.decrypt_api_key(api_key_record.key_value)
+            key_preview = (
+                f"{decrypted_key[:8]}...{decrypted_key[-8:]}"
+                if len(decrypted_key) > 16
+                else "***"
+            )
+            logger.info(
+                f"Using API key for {api_key_record.provider}: {key_preview} (ID: {api_key_id})"
+            )
+
+            from groq import Groq
+
+            try:
+                test_client = Groq(api_key=decrypted_key)
+                test_client.models.list()
+                logger.info(f"API key test passed for {api_key_record.provider}")
+            except Exception as e:
+                logger.error(f"API key test failed immediately: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"API key is invalid. Please check your {api_key_record.provider} API key in settings. Error: {str(e)[:100]}",
                 )
 
             provider_enum = ProviderType(api_key_record.provider.lower())
