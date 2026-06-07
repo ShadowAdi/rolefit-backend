@@ -4,13 +4,19 @@ from app.core.logger import logger
 from app.helpers.grok_ai_headers import grok_api_key_headers
 from groq import Groq
 from app.utils.extract_clean_json_content import _extract_clean_json
+from sqlalchemy.orm import Session
+from app.models.ApiKeys import ProviderType
+from typing import Optional
+from app.utils.llm_helper import LLMHelper
 
 
 class JDParseError(ValueError):
     """Raised when an LLM response cannot be parsed into the expected JD JSON."""
 
 
-def parse_jd_with_ai(raw_jd: str) -> dict:
+async def parse_jd_with_ai(
+    db: Session, user_id: str, raw_jd: str, provider: Optional[ProviderType] = None
+) -> dict:
     logger.debug("Entered parse_jd_with_ai")
 
     api_key = grok_api_key_headers()
@@ -41,57 +47,33 @@ Schema:
 Job Description:
 {raw_jd}"""
 
+    llm_helper = LLMHelper(db, user_id, provider)
+
     try:
-        chat_completion = groq_client.chat.completions.create(
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
-            model="llama-3.3-70b-versatile",
+        parsed_json = await llm_helper.call_with_json_response(
+            prompt=prompt,
+            system_prompt="You are a JSON-only job description parser. Output ONLY valid JSON.",
             max_tokens=600,
             temperature=0.1,
         )
+
+        logger.debug(
+            "Successfully parsed JD with AI",
+            extra={
+                "parsed_keys": (
+                    list(parsed_json.keys()) if isinstance(parsed_json, dict) else None
+                )
+            },
+        )
+
+        if not isinstance(parsed_json, dict):
+            raise JDParseError("AI output JSON was not an object")
+
+        return parsed_json
+
     except Exception as e:
         logger.error(f"Groq API error during resume parsing: {e}")
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Resume parsing service error. Please try again.",
         )
-
-    message_content = chat_completion.choices[0].message.content
-
-    if not message_content or not message_content.strip():
-        logger.error("Groq returned empty message content")
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Resume parsing service returned empty content.",
-        )
-
-    try:
-        parsed_json = _extract_clean_json(message_content)
-    except ValueError as e:
-        logger.error(
-            f"Could not extract JSON from Groq content. "
-            f"Extraction error: {e}. "
-            f"First 500 chars of content: {message_content[:500]}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Resume parsing service did not return valid JSON.",
-        )
-
-    logger.debug(
-        "Successfully parsed JD with AI",
-        extra={
-            "parsed_keys": (
-                list(parsed_json.keys()) if isinstance(parsed_json, dict) else None
-            )
-        },
-    )
-
-    if not isinstance(parsed_json, dict):
-        raise JDParseError("AI output JSON was not an object")
-
-    return parsed_json
