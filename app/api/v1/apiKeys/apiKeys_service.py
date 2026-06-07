@@ -104,7 +104,7 @@ class ApiKeysServiceClass:
                 ApiKeyValidator.validate_is_active(payload.is_active)
                 ApiKeyValidator.validate_key_name(payload.key_name)
                 ApiKeyValidator.validate_expiry_format(payload.expires_at)
-                ApiKeyValidator.validate_isDefault(payload.isDefault)
+                ApiKeyValidator.validate_is_default(payload.isDefault)
 
                 ApiKeyValidator.validate_key_value(payload.key_value, payload.provider)
 

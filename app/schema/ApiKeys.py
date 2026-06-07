@@ -16,36 +16,29 @@ class ProviderTypeEnumType(str, Enum):
 
 
 class ApiKeyCreateRequest(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     provider: ProviderTypeEnumType
     key_name: str
     key_value: str
-
-    api_base_url: Optional[str]
-    isDefault: Optional[bool]
-
-    api_version: Optional[str]
-
-    is_active: Optional[bool]
-
-    expires_at: Optional[datetime]
+    api_base_url: Optional[str] = None  # Make optional with default None
+    api_version: Optional[str] = None  # Make optional with default None
+    is_active: Optional[bool] = True
+    isDefault: Optional[bool] = False  # Keep as isDefault for DB
+    expires_at: Optional[datetime] = None  # Make optional with default None
 
 
 class ApiKeyUpdateRequest(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-    provider: Optional[ProviderTypeEnumType]
-    key_name: Optional[str]
-    key_value: Optional[str]
-
-    api_base_url: Optional[str]
-    isDefault: Optional[bool]
-    api_version: Optional[str]
-
-    is_active: Optional[bool]
-
-    expires_at: Optional[datetime]
+    provider: Optional[ProviderTypeEnumType] = None
+    key_name: Optional[str] = None
+    key_value: Optional[str] = None
+    api_base_url: Optional[str] = None
+    api_version: Optional[str] = None
+    is_active: Optional[bool] = None
+    isDefault: Optional[bool] = None
+    expires_at: Optional[datetime] = None
 
 
 class KeyFetchHelperResponse(BaseModel):
@@ -55,19 +48,19 @@ class KeyFetchHelperResponse(BaseModel):
 
 
 class ApiKeyResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     id: UUID
-    userId: UUID
+    user_id: UUID = Field(alias="userId")
     provider: ProviderTypeEnumType
     key_name: str
     key_value: str
-    api_base_url: Optional[str]
-    api_version: Optional[str]
-    last_used_at: Optional[datetime]
-    total_requests: int
-    is_active: Optional[bool]
-    expires_at: Optional[datetime]
+    api_base_url: Optional[str] = None
+    api_version: Optional[str] = None
+    last_used_at: Optional[datetime] = None
+    total_requests: int = 0
+    is_active: Optional[bool] = None
+    expires_at: Optional[datetime] = None
     created_at: datetime
-    updated_at: Optional[datetime]
-    isDefault: Optional[bool]
+    updated_at: Optional[datetime] = None
+    isDefault: Optional[bool] = None

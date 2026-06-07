@@ -246,7 +246,7 @@ class ApiKeyValidator:
         return v
 
     @staticmethod
-    def validate_is_default(v: Optional[bool]) -> bool:  # ← Changed from isDefault
+    def validate_is_default(v: Optional[bool]) -> bool:
         """Validate is_default flag"""
         if v is None:
             return False
