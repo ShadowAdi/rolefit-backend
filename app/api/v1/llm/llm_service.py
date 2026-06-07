@@ -10,8 +10,8 @@ import json
 class LLMService:
     def __init__(self, db: Session, user_id: str, provider: ProviderType):
         self.db = db
-        self.userId = user_id
-        self.provider = self.provider
+        self.user_id = user_id
+        self.provider = provider
         self.api_keys_service = ApiKeysServiceClass()
         self.client = None
         self._initialize_client()
@@ -45,25 +45,22 @@ class LLMService:
             from openai import OpenAI
 
             self.client = OpenAI(api_key=decrypted_key)
-            pass
         elif self.provider == ProviderType.ANTHROPIC:
             from anthropic import Anthropic
 
             self.client = Anthropic(api_key=decrypted_key)
-            pass
         elif self.provider == ProviderType.GOOGLE:
             import google.generativeai as genai
 
             genai.configure(api_key=decrypted_key)
             self.client = genai
-            pass
         else:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Unsupported provider: {self.provider.value}",
             )
 
-    async def call_llm(self, promot: str, system_prompt: str = None, **kwargs) -> str:
+    async def call_llm(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
         try:
             if self.provider == ProviderType.GROQ:
                 return await self._call_groq(prompt, system_prompt, **kwargs)
@@ -94,10 +91,11 @@ class LLMService:
             max_tokens=kwargs.get("max_tokens", 2000),
             temperature=kwargs.get("temperature", 0.1),
         )
-
         return response.choices[0].message.content
 
-    async def _call_groq(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
+    async def _call_openai(
+        self, prompt: str, system_prompt: str = None, **kwargs
+    ) -> str:
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -109,7 +107,6 @@ class LLMService:
             max_tokens=kwargs.get("max_tokens", 2000),
             temperature=kwargs.get("temperature", 0.1),
         )
-
         return response.choices[0].message.content
 
     async def _call_anthropic(
@@ -131,3 +128,10 @@ class LLMService:
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         response = model.generate_content(full_prompt)
         return response.text
+
+    # Add sync version for Celery tasks
+    def call_llm_sync(self, prompt: str, system_prompt: str = None, **kwargs) -> str:
+        """Synchronous version for Celery tasks"""
+        import asyncio
+
+        return asyncio.run(self.call_llm(prompt, system_prompt, **kwargs))
