@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from app.schema.ApiKeys import ApiKeyCreateRequest, ApiKeyResponse, ApiKeyUpdateRequest
-from app.schema.ApiKeys import ApiKeyResponses
+from app.schema.ApiKeys import ApiKeyResponse
 from sqlalchemy.orm import Session
 from app.db.db import get_db
 from .apiKeys_service import ApiKeysServiceClass

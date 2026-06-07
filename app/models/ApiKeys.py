@@ -31,7 +31,7 @@ class ApiKey(Base):
 
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID, ForeignKey("User.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     provider = Column(Enum(ProviderType), nullable=False, index=True)
