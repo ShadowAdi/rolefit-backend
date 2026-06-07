@@ -1,8 +1,6 @@
 import re
 from typing import Optional, Dict, Any
-from pydantic import field_validator, BaseModel
 from enum import Enum
-from pydantic import BaseModel, ConfigDict
 
 
 class ProviderTypeEnumType(str, Enum):
@@ -28,7 +26,7 @@ class ValidationException(Exception):
         super().__init__(self.message)
 
 
-class ApiKeyValidator(BaseModel):
+class ApiKeyValidator:
     """Validators for ApiKey model"""
 
     PROVIDER_KEY_PATTERNS = {
@@ -59,19 +57,37 @@ class ApiKeyValidator(BaseModel):
     def validate_key_name(v: str) -> str:
         """Validate API key name (user-friendly label)"""
         if not v or not v.strip():
-            raise ValueError("Key name cannot be empty")
+            raise ValidationException(
+                field="key_name",
+                code="required",
+                message="Key name cannot be empty",
+                constraint="required",
+            )
 
         if len(v) < 3:
-            raise ValueError("Key name must be at least 3 characters long")
+            raise ValidationException(
+                field="key_name",
+                code="min_length",
+                message="Key name must be at least 3 characters long",
+                constraint="min_length:3",
+            )
 
         if len(v) > 100:
-            raise ValueError("Key name must not exceed 100 characters")
+            raise ValidationException(
+                field="key_name",
+                code="max_length",
+                message="Key name must not exceed 100 characters",
+                constraint="max_length:100",
+            )
 
         v = v.strip()
 
         if not re.match(r"^[a-zA-Z0-9\s\-_()]+$", v):
-            raise ValueError(
-                "Key name contains invalid characters. Use alphanumeric, spaces, hyphens, underscores, and parentheses."
+            raise ValidationException(
+                field="key_name",
+                code="invalid_characters",
+                message="Key name contains invalid characters. Use alphanumeric, spaces, hyphens, underscores, and parentheses.",
+                constraint="pattern:^[a-zA-Z0-9\\s\\-_()]+$",
             )
 
         return v
@@ -82,30 +98,55 @@ class ApiKeyValidator(BaseModel):
     ) -> str:
         """Validate the actual API key value"""
         if not v or not v.strip():
-            raise ValueError("API key cannot be empty")
+            raise ValidationException(
+                field="key_value",
+                code="required",
+                message="API key cannot be empty",
+                constraint="required",
+            )
 
         v = v.strip()
 
         if len(v) < 10:
-            raise ValueError(
-                "API key is too short. Most API keys are at least 10 characters."
+            raise ValidationException(
+                field="key_value",
+                code="min_length",
+                message="API key is too short. Most API keys are at least 10 characters.",
+                constraint="min_length:10",
             )
 
         if len(v) > 500:
-            raise ValueError("API key exceeds maximum length of 500 characters")
+            raise ValidationException(
+                field="key_value",
+                code="max_length",
+                message="API key exceeds maximum length of 500 characters",
+                constraint="max_length:500",
+            )
 
         if " " in v:
-            raise ValueError("API key should not contain spaces")
+            raise ValidationException(
+                field="key_value",
+                code="invalid_format",
+                message="API key should not contain spaces",
+                constraint="no_spaces",
+            )
 
         if "\n" in v or "\r" in v:
-            raise ValueError("API key should not contain line breaks")
+            raise ValidationException(
+                field="key_value",
+                code="invalid_format",
+                message="API key should not contain line breaks",
+                constraint="no_line_breaks",
+            )
 
         if provider and provider in ApiKeyValidator.PROVIDER_KEY_PATTERNS:
             pattern = ApiKeyValidator.PROVIDER_KEY_PATTERNS[provider]
             if not re.match(pattern, v):
-                raise ValueError(
-                    f"Invalid {provider.value} API key format. "
-                    f"Expected format: {pattern}"
+                raise ValidationException(
+                    field="key_value",
+                    code="invalid_format",
+                    message=f"Invalid {provider.value} API key format. Expected format: {pattern}",
+                    constraint=f"pattern:{pattern}",
                 )
 
         return v
@@ -114,14 +155,22 @@ class ApiKeyValidator(BaseModel):
     def validate_provider(v: ProviderTypeEnumType) -> ProviderTypeEnumType:
         """Validate provider type"""
         if not v:
-            raise ValueError("Provider type is required")
+            raise ValidationException(
+                field="provider",
+                code="required",
+                message="Provider type is required",
+                constraint="required",
+            )
 
         if not isinstance(v, ProviderTypeEnumType):
             try:
                 v = ProviderTypeEnumType(v)
             except ValueError:
-                raise ValueError(
-                    f"Invalid provider. Must be one of: {[p.value for p in ProviderTypeEnumType]}"
+                raise ValidationException(
+                    field="provider",
+                    code="invalid_value",
+                    message=f"Invalid provider. Must be one of: {[p.value for p in ProviderTypeEnumType]}",
+                    constraint="enum",
                 )
 
         return v
@@ -141,7 +190,12 @@ class ApiKeyValidator(BaseModel):
 
         url_pattern = r"^https?://[a-zA-Z0-9\-\.]+(?::\d+)?(?:/[a-zA-Z0-9\-\._~:/?#\[\]@!$&'()*+,;=]*)?$"
         if not re.match(url_pattern, v):
-            raise ValueError("Invalid URL format. Must start with http:// or https://")
+            raise ValidationException(
+                field="api_base_url",
+                code="invalid_format",
+                message="Invalid URL format. Must start with http:// or https://",
+                constraint="url_format",
+            )
 
         if provider and provider in ApiKeyValidator.PROVIDER_BASE_URLS:
             is_valid_pattern = any(
@@ -150,8 +204,11 @@ class ApiKeyValidator(BaseModel):
             )
             if not is_valid_pattern:
                 expected_urls = ", ".join(ApiKeyValidator.PROVIDER_BASE_URLS[provider])
-                raise ValueError(
-                    f"For {provider.value}, API base URL should typically start with: {expected_urls}"
+                raise ValidationException(
+                    field="api_base_url",
+                    code="invalid_provider_url",
+                    message=f"For {provider.value}, API base URL should typically start with: {expected_urls}",
+                    constraint=f"starts_with:{expected_urls}",
                 )
 
         if v.endswith("/"):
@@ -172,8 +229,11 @@ class ApiKeyValidator(BaseModel):
 
         version_pattern = r"^v?\d+(?:\.\d+)*(?:[-_]\d{4}-\d{2}-\d{2})?$"
         if not re.match(version_pattern, v):
-            raise ValueError(
-                "Invalid API version format. Examples: v1, v1.0, 2023-01-01, 1.0.0"
+            raise ValidationException(
+                field="api_version",
+                code="invalid_format",
+                message="Invalid API version format. Examples: v1, v1.0, 2023-01-01, 1.0.0",
+                constraint="version_format",
             )
 
         return v
@@ -186,10 +246,10 @@ class ApiKeyValidator(BaseModel):
         return v
 
     @staticmethod
-    def validate_isDefault(v: Optional[bool]) -> bool:
-        """Validate isDefault flag"""
+    def validate_is_default(v: Optional[bool]) -> bool:  # ← Changed from isDefault
+        """Validate is_default flag"""
         if v is None:
-            return True
+            return False
         return v
 
     @staticmethod
@@ -198,27 +258,17 @@ class ApiKeyValidator(BaseModel):
         provider: ProviderTypeEnumType,
         existing_keys: Optional[list] = None,
     ) -> bool:
-        """Check if user already has an active key for this provider
-
-        Args:
-            user_id: User ID
-            provider: Provider type
-            existing_keys: List of existing API keys for the user
-
-        Returns:
-            True if unique for the user-provider combination
-
-        Raises:
-            ValueError: If user already has an active key for this provider
-        """
+        """Check if user already has an active key for this provider"""
         if not existing_keys:
             return True
 
         for key in existing_keys:
             if key.provider == provider and key.is_active:
-                raise ValueError(
-                    f"User already has an active {provider.value} API key. "
-                    f"Please deactivate the existing key first or update it instead."
+                raise ValidationException(
+                    field="provider",
+                    code="duplicate",
+                    message=f"User already has an active {provider.value} API key. Please deactivate the existing key first or update it instead.",
+                    constraint="unique_per_provider",
                 )
 
         return True
@@ -231,8 +281,11 @@ class ApiKeyValidator(BaseModel):
 
         date_pattern = r"^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{3})?)?$"
         if not re.match(date_pattern, expires_at):
-            raise ValueError(
-                "Invalid date format. Use ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+            raise ValidationException(
+                field="expires_at",
+                code="invalid_format",
+                message="Invalid date format. Use ISO format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS",
+                constraint="iso_date_format",
             )
 
         return expires_at
@@ -260,22 +313,31 @@ class ApiKeyValidator(BaseModel):
 
         for key in metadata.keys():
             if key not in allowed_keys:
-                raise ValueError(
-                    f"Invalid metadata key: {key}. Allowed: {', '.join(allowed_keys)}"
+                raise ValidationException(
+                    field="metadata",
+                    code="invalid_key",
+                    message=f"Invalid metadata key: {key}. Allowed: {', '.join(allowed_keys)}",
+                    constraint=f"allowed_keys:{', '.join(allowed_keys)}",
                 )
 
         if "rate_limit_per_minute" in metadata:
             rl = metadata["rate_limit_per_minute"]
             if not isinstance(rl, int) or rl < 1 or rl > 10000:
-                raise ValueError(
-                    "rate_limit_per_minute must be an integer between 1 and 10000"
+                raise ValidationException(
+                    field="metadata.rate_limit_per_minute",
+                    code="invalid_range",
+                    message="rate_limit_per_minute must be an integer between 1 and 10000",
+                    constraint="range:1-10000",
                 )
 
         if "rate_limit_per_day" in metadata:
             rl = metadata["rate_limit_per_day"]
             if not isinstance(rl, int) or rl < 1 or rl > 1000000:
-                raise ValueError(
-                    "rate_limit_per_day must be an integer between 1 and 1000000"
+                raise ValidationException(
+                    field="metadata.rate_limit_per_day",
+                    code="invalid_range",
+                    message="rate_limit_per_day must be an integer between 1 and 1000000",
+                    constraint="range:1-1000000",
                 )
 
         return metadata

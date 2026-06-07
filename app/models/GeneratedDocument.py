@@ -41,7 +41,7 @@ class GeneratedDocumment(Base):
     )
     error_message = Column(String, nullable=True)
     provider_used = Column(
-        Enum(ProviderType),
+        SQLEnum(ProviderType),
         nullable=True,
         help="Which LLM provider was used to generate this content",
     )
