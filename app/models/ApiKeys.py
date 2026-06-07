@@ -58,7 +58,7 @@ class ApiKey(Base):
 
     isDefault = Column(Boolean, default=False, nullable=False, index=True)
 
-    metadata = Column(JSON, nullable=True)
+    extra_metadata = Column(JSON, nullable=True)
 
     __table_args__ = (
         Index("idx_user_active_keys", "user_id", "provider", "is_active"),
