@@ -17,11 +17,17 @@ class LLMService:
         self._initialize_client()
 
     def _initialize_client(self):
+        provider_value = (
+            self.provider.value
+            if hasattr(self.provider, "value")
+            else str(self.provider)
+        )
+
         api_key_record = (
             self.db.query(ApiKey)
             .filter(
                 ApiKey.user_id == self.user_id,
-                ApiKey.provider == self.provider,
+                ApiKey.provider == provider_value,
                 ApiKey.is_active == True,
             )
             .first()
