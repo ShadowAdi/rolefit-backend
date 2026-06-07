@@ -20,6 +20,7 @@ ResumeExtractorService = ResumeExtractorServiceClass()
 )
 async def resume_extractor(
     resume_url: str,
+    provider: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

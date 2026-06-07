@@ -22,7 +22,9 @@ from app.helpers.redis_cache_helpers import invalidate_user_profile_cache
 
 
 class ResumeExtractorServiceClass:
-    async def resumeextractor(self, db: Session, resume_url: str, userId: str):
+    async def resumeextractor(
+        self, db: Session, resume_url: str, userId: str, provider: str
+    ):
         if not userId:
             logger.error(
                 f"Project creation failed: Missing user ID",
