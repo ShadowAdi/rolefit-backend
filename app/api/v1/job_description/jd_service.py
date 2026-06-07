@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
 from uuid import UUID
-from app.models.JobDescription import JobDescription, RoleTypeEnum, LocationTypeEnum
+from app.models.JobDescription import JobDescription
 from app.models.User import User
 from app.schema.JobDescription import (
     JobDescriptionCreate,
@@ -28,6 +28,7 @@ from app.validators.job_description_validators import (
 from app.helpers.jd_parser import JDParseError, parse_jd_with_ai
 from app.helpers.redis_cache_helpers import get_cache, set_cache, delete_cache
 from typing import List
+from app.models.ApiKeys import ProviderType
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -625,7 +626,7 @@ class JobDescriptionClass:
             )
 
     async def generate_jd(
-        self, db: Session, userId: str, raw_jd: str
+        self, db: Session, userId: str, raw_jd: str, api_key_id: str
     ) -> JobDescriptionResponse:
 
         try:
@@ -651,6 +652,26 @@ class JobDescriptionClass:
 
             logger.info(f"Generating job description from raw JD for user: {userId}")
 
+            from app.models.ApiKeys import ApiKey
+
+            api_key_record = (
+                db.query(ApiKey)
+                .filter(
+                    ApiKey.id == api_key_id,
+                    ApiKey.user_id == userId,
+                    ApiKey.is_active == True,
+                )
+                .first()
+            )
+
+            if not api_key_record:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="API key not found or inactive",
+                )
+
+            provider_enum = ProviderType(api_key_record.provider.lower())
+
             # Create hash of raw JD for caching parsed results
             raw_jd_hash = hashlib.md5(raw_jd.strip().encode()).hexdigest()
             cache_key = f"jd-parse-{raw_jd_hash}"
@@ -664,7 +685,7 @@ class JobDescriptionClass:
                     extra={"userId": userId},
                 )
             else:
-                parsed_data = parse_jd_with_ai(raw_jd)
+                parsed_data = await parse_jd_with_ai(db, userId, raw_jd, provider_enum)
                 # Cache the parse result for 24 hours (expensive AI operation)
                 await set_cache(cache_key, json.dumps(parsed_data), ttl=86400)
 

@@ -12,6 +12,7 @@ class RoleTypeEnum(str, Enum):
 
 class JDInput(BaseModel):
     payload: str
+    api_key_id: str
 
 
 class LocationTypeEnum(str, Enum):

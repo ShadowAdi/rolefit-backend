@@ -52,7 +52,7 @@ async def generate_job_description(
 ):
     user_id = current_user.id
     logger.info(f"Generating job description from raw JD for user: {current_user.id}")
-    jd = await jd_service.generate_jd(db, str(user_id), body.payload)
+    jd = await jd_service.generate_jd(db, str(user_id), body.payload, body.api_key_id)
 
     return APIResponse(
         status_code=201,
