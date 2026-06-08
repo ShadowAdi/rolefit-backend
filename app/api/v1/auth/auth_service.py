@@ -66,6 +66,15 @@ class AuthServiceClass:
                     detail="Incorrect email or password",
                 )
 
+            if not existing_user.is_verified:
+                logger.warning(
+                    f"Login blocked for unverified email: {existing_user.email}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Email not verified. Please verify your email before logging in.",
+                )
+
             access_token = create_access_token(
                 user_id=str(existing_user.id), email=existing_user.email
             )

@@ -38,7 +38,40 @@ def send_verification_email(email_to: str, token: str, frontend_url: str = None)
         },
         "to": [{"email": email_to}],
         "subject": "Verify Your Email Address - Rolefit",
-        "htmlContent": f"""...""",  # keep your existing HTML
+        "htmlContent": f"""
+        <!DOCTYPE html>
+        <html>
+          <body style="margin:0;padding:0;background-color:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:32px 0;">
+              <tr>
+                <td align="center">
+                  <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;padding:40px;">
+                    <tr>
+                      <td style="text-align:center;">
+                        <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Verify your email</h1>
+                        <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#4b5563;">
+                          Thanks for signing up for {mail_from_name}. Please confirm your email address to activate your account.
+                        </p>
+                        <a href="{verification_url}"
+                           style="display:inline-block;background-color:#a3e635;color:#030712;text-decoration:none;font-size:15px;font-weight:bold;padding:12px 28px;border-radius:6px;">
+                          Verify Email Address
+                        </a>
+                        <p style="margin:24px 0 0;font-size:13px;color:#6b7280;">
+                          Or paste this link into your browser:<br>
+                          <a href="{verification_url}" style="color:#65a30d;word-break:break-all;">{verification_url}</a>
+                        </p>
+                        <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;">
+                          If you didn't create an account, you can safely ignore this email.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+        """,
     }
 
     try:
