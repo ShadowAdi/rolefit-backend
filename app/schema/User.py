@@ -22,6 +22,7 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     email: str
+    is_verified: bool
     created_at: datetime
     updated_at: datetime
 
@@ -33,6 +34,7 @@ class UserRegisterResponse(BaseModel):
 
     id: UUID = Field(..., description="User unique identifier")
     email: str = Field(..., description="User email address")
+    is_verified: bool
     created_at: datetime = Field(..., description="Account creation timestamp")
 
 
@@ -43,6 +45,7 @@ class UserGetResponse(BaseModel):
 
     id: UUID = Field(..., description="User unique identifier")
     email: str = Field(..., description="User email address")
+    is_verified: bool
     created_at: datetime = Field(..., description="Account creation timestamp")
     updated_at: datetime = Field(..., description="Last profile update timestamp")
 
@@ -56,6 +59,7 @@ class UserAuthenticatedResponse(BaseModel):
     email: str = Field(..., description="User email address")
     created_at: datetime = Field(..., description="Account creation timestamp")
     access_token: str = Field(..., description="JWT access token")
+    is_verified: bool
     token_type: str = Field(default="bearer", description="Token type")
     expires_in: int = Field(..., description="Token expiration time in seconds")
 
@@ -66,6 +70,7 @@ class UserUpdateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID = Field(..., description="User unique identifier")
+    is_verified: bool
     email: str = Field(..., description="User email address")
     updated_at: datetime = Field(..., description="Last profile update timestamp")
 
