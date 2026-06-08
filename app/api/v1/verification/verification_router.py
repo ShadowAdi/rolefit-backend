@@ -1,4 +1,3 @@
-# app/routers/verification.py
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
