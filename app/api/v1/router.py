@@ -39,4 +39,4 @@ v1_router.include_router(resume_extractor_router.router, prefix="/resume-extract
 v1_router.include_router(websocket_router.router, prefix="/websocket")
 v1_router.include_router(dashboard_router.router, prefix="/dashboard")
 v1_router.include_router(apiKeys_router.router, prefix="/api-keys")
-v1_router.include_router(verification_router, prefix="/verification")
+v1_router.include_router(verification_router.router, prefix="/verification")

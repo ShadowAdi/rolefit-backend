@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, BackgroundTasks  # Add BackgroundTasks here
 from uuid import UUID
 from app.models.User import User
 from app.models.UserVerification import EmailVerification
@@ -16,13 +16,16 @@ from app.core.email import send_verification_email
 class UserServiceClass:
     """Service class for user-related operations"""
 
-    def register(self, db: Session, data: UserCreateRequest) -> UserResponse:
+    def register(
+        self, db: Session, data: UserCreateRequest, background_tasks: BackgroundTasks
+    ) -> UserResponse:  # Add background_tasks parameter
         """
         Register a new user with validation and error handling.
 
         Args:
             db: Database session
             data: User registration data
+            background_tasks: FastAPI background tasks for sending email
 
         Returns:
             UserResponse: Created user data
@@ -79,6 +82,7 @@ class UserServiceClass:
             db.commit()
             db.refresh(email_verify)
 
+            # Send verification email in background
             background_tasks.add_task(send_verification_email, user.email, token)
 
             logger.info(f"User successfully registered: {user.email}")

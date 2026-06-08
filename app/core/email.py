@@ -1,8 +1,12 @@
-# app/utils/email.py
+# app/core/email.py
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from typing import List
 import os
+from dotenv import load_dotenv
 from app.core.logger import logger
+import asyncio
+
+# Load environment variables
+load_dotenv()
 
 # Brevo SMTP Configuration
 conf = ConnectionConfig(
@@ -19,8 +23,10 @@ conf = ConnectionConfig(
 )
 
 
-async def send_verification_email(email_to: str, token: str, frontend_url: str = None):
-    """Send email verification link to user"""
+def send_verification_email(
+    email_to: str, token: str, frontend_url: str = None
+):  # Note: no async
+    """Send email verification link to user (synchronous version for BackgroundTasks)"""
     if frontend_url is None:
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
@@ -81,9 +87,14 @@ async def send_verification_email(email_to: str, token: str, frontend_url: str =
 
     try:
         fm = FastMail(conf)
-        await fm.send_message(message)
+        # Run the async function in a new event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(fm.send_message(message))
+        loop.close()
         logger.info(f"Verification email sent to {email_to}")
         return True
     except Exception as e:
         logger.error(f"Failed to send verification email to {email_to}: {str(e)}")
-        raise e
+        # Don't raise the exception - we don't want to fail registration if email fails
+        return False
