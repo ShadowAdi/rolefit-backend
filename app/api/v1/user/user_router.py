@@ -4,9 +4,8 @@ from app.schema.User import (
     UserRegisterResponse,
     GetUserApiResponse,
     DeleteUserApiResponse,
-    UserDeleteResponse,
 )
-from app.schema.User import UserCreateRequest, UserUpdateRequest, UserResponse
+from app.schema.User import UserCreateRequest
 from sqlalchemy.orm import Session
 from app.db.db import get_db
 from .user_service import UserService
@@ -14,8 +13,11 @@ from datetime import datetime, timezone
 from app.models.User import User
 from app.dependency.dependencies import get_current_user
 from app.helpers.redis_cache_helpers import invalidate_user_cache
+from passlib.context import CryptContext
+from fastapi import BackgroundTasks
 
 router = APIRouter(tags=["Users"])
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 @router.post(
@@ -23,7 +25,11 @@ router = APIRouter(tags=["Users"])
     response_model=RegisterApiResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def register(data: UserCreateRequest, db: Session = Depends(get_db)):
+def register(
+    data: UserCreateRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """
     Register a new user account.
 
@@ -35,7 +41,7 @@ def register(data: UserCreateRequest, db: Session = Depends(get_db)):
         RegisterApiResponse: User account created with success status
     """
     data.email = data.email.lower().strip()
-    user = UserService.register(db=db, data=data)
+    user = UserService.register(db=db, data=data, background_tasks=background_tasks)
 
     return RegisterApiResponse(
         success=True,

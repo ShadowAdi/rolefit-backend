@@ -3,10 +3,14 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from fastapi import HTTPException, status
 from uuid import UUID
 from app.models.User import User
+from app.models.UserVerification import EmailVerification
 from app.schema.User import UserCreateRequest, UserResponse
 from app.core.logger import logger
 from app.utils.utils import hash_password
 from app.validators.user_validators import UserValidator
+from app.utils.generate_verification_token import generate_verification_token
+from datetime import datetime, timezone, timedelta
+from app.core.email import send_verification_email
 
 
 class UserServiceClass:
@@ -55,14 +59,27 @@ class UserServiceClass:
                     detail="Email already registered",
                 )
 
+            token = generate_verification_token()
+            token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+
             user = User(
                 email=validated_email,
                 password=hash_password(data.password),
             )
 
+            email_verify = EmailVerification(
+                user_id=user.id, token=token, expires_at=token_expires
+            )
+
             db.add(user)
             db.commit()
             db.refresh(user)
+
+            db.add(email_verify)
+            db.commit()
+            db.refresh(email_verify)
+
+            background_tasks.add_task(send_verification_email, user.email, token)
 
             logger.info(f"User successfully registered: {user.email}")
             return UserResponse.model_validate(user)

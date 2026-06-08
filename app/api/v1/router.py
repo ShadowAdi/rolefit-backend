@@ -17,8 +17,8 @@ from app.api.v1.resume_extractor import resume_extractor_router
 from app.api.v1.websocket import websocket_router
 from app.api.v1.apiKeys import apiKeys_router
 from app.api.v1.dashboard import dashboard_router
+from app.api.v1.verification import verification_router
 
-0
 v1_router = APIRouter()
 
 v1_router.include_router(health_router.router, prefix="/health")
@@ -39,3 +39,4 @@ v1_router.include_router(resume_extractor_router.router, prefix="/resume-extract
 v1_router.include_router(websocket_router.router, prefix="/websocket")
 v1_router.include_router(dashboard_router.router, prefix="/dashboard")
 v1_router.include_router(apiKeys_router.router, prefix="/api-keys")
+v1_router.include_router(verification_router, prefix="/verification")
