@@ -1,33 +1,37 @@
+# app/api/v1/verification/verification_router.py
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, timedelta
 from app.db.db import get_db
 from app.models.User import User
 from app.models.UserVerification import EmailVerification
-from app.schema.UserVerification import (
-    EmailVerificationResponse,
-    ResendVerificationRequest,
-    EmailVerificationStatus,
-)
-from app.core.email import send_verification_email
-from app.utils.generate_verification_token import generate_verification_token
 from app.core.logger import logger
+from app.utils.generate_verification_token import generate_verification_token
+from app.core.email import send_verification_email
 
-router = APIRouter(prefix="/verify", tags=["Email Verification"])
+router = APIRouter(prefix="", tags=["Email Verification"])
 
 
-@router.get("/email", response_model=EmailVerificationResponse)
+@router.get("/status")
+async def get_verification_status(email: str, db: Session = Depends(get_db)):
+    """Check if a user's email is verified."""
+    user = db.query(User).filter(User.email == email.lower().strip()).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    return {
+        "is_verified": user.is_verified,
+        "user_id": str(user.id),
+        "email": user.email,
+    }
+
+
+@router.get("/email")
 async def verify_email(token: str, db: Session = Depends(get_db)):
-    """
-    Verify user's email address with the provided token.
-
-    Args:
-        token: Verification token sent to user's email
-        db: Database session
-
-    Returns:
-        EmailVerificationResponse: Verification status
-    """
+    """Verify user's email address with the provided token."""
     # Find valid verification record
     verification = (
         db.query(EmailVerification)
@@ -56,52 +60,44 @@ async def verify_email(token: str, db: Session = Depends(get_db)):
 
     if user.is_verified:
         logger.info(f"User {user.email} already verified")
-        return EmailVerificationResponse(
-            message="Email already verified",
-            is_verified=True,
-            verified_at=user.updated_at,
-        )
+        return {
+            "message": "Email already verified",
+            "is_verified": True,
+            "verified_at": user.updated_at.isoformat() if user.updated_at else None,
+        }
 
     # Mark user as verified
     user.is_verified = True
     user.updated_at = datetime.now(timezone.utc)
-
-    # Optionally delete or keep the verification record
-    # db.delete(verification)  # Uncomment if you want to delete after verification
-
     db.commit()
 
     logger.info(f"User {user.email} successfully verified")
 
-    return EmailVerificationResponse(
-        message="Email verified successfully! You can now log in.",
-        is_verified=True,
-        verified_at=user.updated_at,
-    )
+    return {
+        "message": "Email verified successfully! You can now log in.",
+        "is_verified": True,
+        "verified_at": user.updated_at.isoformat(),
+    }
 
 
-@router.post("/resend", status_code=status.HTTP_200_OK)
+@router.post("/resend")
 async def resend_verification_email(
-    request: ResendVerificationRequest,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
+    request: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
 ):
-    """
-    Resend verification email to user.
+    """Resend verification email to user."""
+    email = request.get("email")
 
-    Args:
-        request: Contains user email
-        background_tasks: FastAPI background tasks
-        db: Database session
-    """
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required"
+        )
+
     # Find user by email
-    user = db.query(User).filter(User.email == request.email.lower().strip()).first()
+    user = db.query(User).filter(User.email == email.lower().strip()).first()
 
     if not user:
         # Don't reveal that user doesn't exist for security reasons
-        logger.info(
-            f"Resend verification requested for non-existent email: {request.email}"
-        )
+        logger.info(f"Resend verification requested for non-existent email: {email}")
         return {
             "message": "If your email is registered, you will receive a verification link"
         }
@@ -141,27 +137,3 @@ async def resend_verification_email(
     logger.info(f"Verification email resent to {user.email}")
 
     return {"message": "Verification email sent. Please check your inbox."}
-
-
-@router.get("/status", response_model=EmailVerificationStatus)
-async def get_verification_status(email: str, db: Session = Depends(get_db)):
-    """
-    Check if a user's email is verified.
-
-    Args:
-        email: User email address
-        db: Database session
-
-    Returns:
-        EmailVerificationStatus: Verification status
-    """
-    user = db.query(User).filter(User.email == email.lower().strip()).first()
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-
-    return EmailVerificationStatus(
-        is_verified=user.is_verified, user_id=user.id, email=user.email
-    )
