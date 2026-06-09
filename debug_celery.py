@@ -22,22 +22,11 @@ def check_redis_connection():
         redis_url = os.getenv("REDIS_CELERY_URL", "redis://localhost:6379/0")
         print(f"Redis URL: {redis_url}")
 
-        # Parse Redis URL
-        if redis_url.startswith("redis://"):
-            # Simple parsing for redis://host:port/db format
-            parts = redis_url.replace("redis://", "").split("/")
-            host_port = parts[0]
-            db = parts[1] if len(parts) > 1 else "0"
-
-            host, port = host_port.split(":")
-            port = int(port)
-            db = int(db)
-
-            print(f"Connecting to Redis: host={host}, port={port}, db={db}")
-            r = redis.Redis(host=host, port=port, db=db, decode_responses=True)
-            r.ping()
-            print("✓ Redis connection successful!")
-            return True
+        # from_url handles redis://, rediss:// (TLS / Upstash) and token auth.
+        r = redis.from_url(redis_url, decode_responses=True)
+        r.ping()
+        print("✓ Redis connection successful!")
+        return True
     except Exception as e:
         print(f"✗ Redis connection failed: {e}")
         return False

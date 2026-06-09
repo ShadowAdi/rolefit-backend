@@ -1,4 +1,5 @@
 import os
+import ssl
 from celery import Celery
 from dotenv import load_dotenv
 from celery.schedules import crontab
@@ -7,6 +8,14 @@ load_dotenv()
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 REDIS_CELERY_URL = os.getenv("REDIS_CELERY_URL", "redis://localhost:6379/0")
+
+# Upstash (and any managed Redis) is reached over TLS via a `rediss://` URL.
+# Celery/kombu refuses a rediss:// broker or backend unless the SSL cert
+# requirement is specified, so configure it whenever TLS is in use. Upstash
+# serves valid certificates, so CERT_REQUIRED is correct.
+_ssl_opts = {"ssl_cert_reqs": ssl.CERT_REQUIRED}
+broker_use_ssl = _ssl_opts if REDIS_CELERY_URL.startswith("rediss://") else None
+redis_backend_use_ssl = _ssl_opts if REDIS_URL.startswith("rediss://") else None
 
 
 celery_app = Celery(name="Rolefit_worker", broker=REDIS_CELERY_URL, backend=REDIS_URL)
@@ -28,6 +37,8 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_autoretry_for={"exc": Exception, "max_retries": 3, "countdown": 5},
     broker_connection_retry_on_startup=True,
+    broker_use_ssl=broker_use_ssl,
+    redis_backend_use_ssl=redis_backend_use_ssl,
 )
 
 celery_app.conf.beat_schedule = {

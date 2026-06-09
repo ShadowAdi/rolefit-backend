@@ -8,8 +8,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     volumes:
       - ./app:/app/app
       - ./main.py:/app/main.py
@@ -22,8 +20,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     volumes:
       - ./app:/app/app
       - ./run_celery_worker.py:/app/run_celery_worker.py
@@ -45,14 +41,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init.sql/:/docker-entrypoint-initdb.d/
-  
-  redis:
-    image: redis:7-alpine        
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+
+  # Redis now runs on Upstash (external managed Redis). To go back to a local
+  # Redis, uncomment this service, re-add `redis` under each service's
+  # depends_on, restore the redis_data volume, and switch the REDIS_URL /
+  # REDIS_CELERY_URL values in .env back to the redis://redis:6379/... ones.
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
 
 volumes:
   postgres_data:
-  redis_data:
+  # redis_data:
