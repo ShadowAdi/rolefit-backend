@@ -8,6 +8,26 @@ from app.core.AppError import AppError
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+
+def _pg_connect_args(database_url: str) -> dict:
+    """
+    Build psycopg2 connect args, deciding the SSL mode.
+
+    Managed Postgres (Neon, Render, Supabase, ...) *requires* TLS, while a
+    local Docker Postgres typically has TLS off. Precedence:
+      1. If the URL already pins `sslmode=...`, respect it (and don't pass a
+         conflicting kwarg to the driver).
+      2. Otherwise fall back to the DB_SSLMODE env var, defaulting to
+         `require` so cloud deployments work out of the box.
+    Set DB_SSLMODE=disable (or put ?sslmode=disable in the URL) for local dev.
+    """
+    if "postgresql" not in database_url.lower():
+        return {}
+    if "sslmode=" in database_url.lower():
+        return {}
+    return {"sslmode": os.getenv("DB_SSLMODE", "require")}
+
+
 if not DATABASE_URL:
     logger.exception("DATABASE_URL environment variable is not set")
     raise AppError(
@@ -27,9 +47,7 @@ async def connect_with_retry(
     retry_count = 0
     delay = initial_delay
 
-    connect_args = {}
-    if "postgresql" in database_url.lower():
-        connect_args["sslmode"] = "disable"
+    connect_args = _pg_connect_args(database_url)
 
     while retry_count < max_retries:
         try:
@@ -103,9 +121,7 @@ def init_db_sync():
     try:
         logger.info("Initializing database for Celery worker...")
 
-        connect_args = {}
-        if "postgresql" in DATABASE_URL.lower():
-            connect_args["sslmode"] = "disable"
+        connect_args = _pg_connect_args(DATABASE_URL)
 
         engine = create_engine(
             url=DATABASE_URL,
